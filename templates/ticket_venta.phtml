@@ -1,0 +1,90 @@
+<?php
+	require_once './core/defines.php';
+	if($_SESSION['usuario']->usuario_tipo_id == 3) {
+		header('Location: '.URL_ROOT.'/tienda');
+		exit;
+	}
+
+	class MYPDF extends TCPDF {
+		public function Header() {}
+		public function Footer() {}
+	}
+
+	$pdf = new MYPDF('P', 'mm', array(80, 170), true, 'UTF-8', false);
+	$pdf->SetCreator('www.ddsmedia.net');
+	$pdf->SetAuthor('DDS.media');
+	$pdf->SetTitle('TICKET VENTA');
+	$pdf->SetSubject(SITE_NAME);
+	$pdf->SetKeywords('');
+	$pdf->SetAutoPageBreak(TRUE, PDF_MARGIN_BOTTOM);
+	$pdf->SetMargins(3, 3, 3, false);
+	$pdf->SetFillColor(120, 120, 120);
+	$pdf->SetFont(PDF_FONT_NAME_MAIN, 'B', 12);
+	$pdf->AddPage();
+	
+	$pdf->SetY(1);
+	$pdf->MultiCell(0, 6, strtoupper($sucursal->nombre), 0, 'C', 0, 1, '', '', true);
+	$pdf->SetFont(PDF_FONT_NAME_MAIN, 'B', 9);
+	//$pdf->Cell(0, 6, 'CUAUHTÉMOC, CIUDAD DE MÉXICO', 0, 1, 'C');
+	$pdf->SetFont(PDF_FONT_NAME_MAIN, '', 9);
+	$pdf->MultiCell(0, 3, $sucursal->direccion, 0, 'C', 0, 1, '', '', true);
+	if ($sucursal->rfc != '') {
+		$pdf->Cell(0, 3, 'RFC '.$sucursal->rfc, 0, 1, 'C');
+	}
+	if ($sucursal->curp != '') {
+		$pdf->Cell(0, 3, 'CURP '.$sucursal->curp, 0, 1, 'C');
+	}
+	if ($sucursal->telefono != '') {
+		$pdf->Cell(0, 3, 'TEL '.$sucursal->telefono, 0, 1, 'C');
+	}
+	$pdf->SetY($pdf->getY()+7);
+	
+	//$pdf->Cell(20, 5, 'Tienda No.:', 0, 0, 'L');		$pdf->SetX(27);		$pdf->Cell(20, 5, sprintf('%02d', $venta->sucursal_id), 0, 1, 'L');
+	//$pdf->Cell(20, 5, 'Caja No.:', 0, 0, 'L');			$pdf->SetX(27);		$pdf->Cell(20, 5, '01', 0, 1, 'L');
+	//$pdf->Cell(20, 5, 'Ticket de venta:', 0, 0, 'L');		$pdf->SetX(27);		$pdf->Cell(20, 5, sprintf('%07d', $venta->nota_venta), 0, 1, 'L');
+	$pdf->Cell(20, 5, 'Ticket de venta:', 0, 0, 'L');		$pdf->SetX(27);		$pdf->Cell(20, 5, sprintf('%07d', $venta->folio), 0, 1, 'L');
+	$meses = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+	$fecha = $venta->fecha; $mes = '';
+	foreach(str_split($meses[intval(date('m', strtotime($fecha)))]) as $key => $char) {
+		$mes .= "\\$char";
+	}
+	//$pdf->Cell(20, 5, 'Fecha:', 0, 0, 'L');				$pdf->SetX(27);		$pdf->Cell(20, 5, date("d/$mes/Y", strtotime($venta->fecha)), 0, 1, 'L');
+	$pdf->Cell(20, 5, 'Fecha:', 0, 0, 'L');				$pdf->SetX(27);		$pdf->Cell(20, 5, date("d/$mes/Y", strtotime($venta->fecha)).' '.date('H:i', strtotime($venta->fecha)), 0, 1, 'L');
+	//$pdf->Cell(20, 5, 'Hora:', 0, 0, 'L');				$pdf->SetX(27);		$pdf->Cell(20, 5, date('H:i', strtotime($venta->fecha)), 0, 1, 'L');
+	$pdf->Cell(20, 5, 'Atendido por:', 0, 0, 'L');		$pdf->SetX(27);		$pdf->Cell(20, 5, "$empleado->nombre $empleado->apellidos", 0, 1, 'L');
+	
+	$pdf->SetY($pdf->getY()+7);
+	$pdf->Cell(10, 6, 'Cant.', 'B', 0, 'C',0);
+	$pdf->Cell(20, 6, 'SKU', 'B', 0, 'C',0);
+	$pdf->Cell(35, 6, 'Descripción del Producto ', 'B', 1, 'L',0);
+	$pdf->Cell(25, 6, '', 0, 0, 'C',0);
+	$pdf->Cell(20, 6, 'Precio Unit.', 'B', 0, 'R',0);
+	$pdf->Cell(20, 6, 'Importe', 'B', 1, 'R',0);
+	$pdf->SetFont(PDF_FONT_NAME_MAIN, '', 8);
+	$total = 0;
+	foreach($detVenta as $detalle) {
+		$pdf->Cell(10, 6, $detalle->cantidad, 0, 0, 'C',0);
+		$pdf->MultiCell(15, 6, $detalle->sku, 0, 'C', 0, 1, '', '', true);
+		$pdf->SetXY(30,$pdf->getY()-7);
+		$pdf->Cell(35, 6, "$detalle->nombre $detalle->modelo", 0, 1, 'L',0);
+		$pdf->Cell(25, 6, '', 0, 0, 'C',0);
+		//$pdf->Cell(20, 6, "$ ".number_format(floatval($detalle->costo)/1.16) , 0, 0, 'R',0);
+		$pdf->Cell(20, 6, "$ ".$detalle->costo , 0, 0, 'R',0);
+		$pdf->SetFont('helvetica', 'B', 9);
+		$pdf->Cell(20, 6, "$ $detalle->importe", 0, 1, 'R',0);
+		$total += $detalle->importe;
+	}
+	$pdf->SetFont(PDF_FONT_NAME_MAIN, 'B', 10);
+	$total = number_format($total, 2, '.', '');
+	$pdf->SetX(40);
+	$pdf->Cell(20, 6, "TOTAL:      $ $total", 0, 1, 'R',0);
+	$pdf->SetFont(PDF_FONT_NAME_MAIN, '', 8);
+	$pdf->SetY($pdf->getY()+10);	
+	// set font
+	$pdf->SetFont('helvetica', '', 7);
+	$pdf->MultiCell(0, 6, $sucursal->mensaje, 0, 'C', 0, 1, '', '', true);
+
+	// $pdf->Image('../../img/logo.jpg', 10, 8, 40);
+	$pdf->Output("ticket_venta_$venta->id", 'I');
+	exit;
+?>

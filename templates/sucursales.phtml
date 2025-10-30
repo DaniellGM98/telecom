@@ -1,0 +1,480 @@
+<?php 
+	include 'header.phtml';
+	define('MOD_SUCURSALES_ADD', 	12);
+	define('MOD_SUCURSALES_EDIT', 	13);
+	define('MOD_SUCURSALES_DEL', 	14);
+	define('MOD_SUCURSALES_DESB', 	110);
+
+	if(isset($_SESSION['sucursal']) && (!isset($solicitudes) || count($solicitudes)==0)):
+?>
+	<div class="row page-titles">
+		<div class="col-md-5 align-self-center">
+			<h3 class="text-themecolor"><i class="fa fa-home"></i> Sucursales</h3>
+		</div>
+	</div>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-12">
+				<div class="card">
+					<div class="card-body">
+						<?php if(in_array(MOD_SUCURSALES_ADD, $permisos)) : ?>
+						<button class="btn btn-success pull-right" id="btnAddSucursal"><i class="mdi mdi-plus"></i> Agregar</button>
+						<?php endif; ?>
+
+						<h4 class="card-title">Sucursales</h4>
+						<h6 class="card-subtitle">Crea, edita y elimina puntos de venta</h6>
+
+						<div class="table-responsive">
+							<table id="tbl-sucursal" class="table table-hover table-striped">
+								<thead>
+									<tr>
+										<th class="text-center font-weight-bold">Nombre</th>
+										<th class="text-center font-weight-bold">Dirección</th>
+										<th class="text-center font-weight-bold">Email</th>
+										<th class="text-center font-weight-bold">RFC</th>
+										<th class="text-center font-weight-bold">Curp</th>
+										<th class="text-center font-weight-bold">Teléfono</th>
+										<!-- <th class="text-center font-weight-bold">Mensaje</th> -->
+										<th class="text-center font-weight-bold">Estado</th>
+										<th class="text-center font-weight-bold">Acciones</th>
+									</tr>
+								</thead>
+								<tbody></tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div id="frm-sucursal" class="modal">
+			<div class="modal-dialog">
+				<div class="modal-content d-flex p-2">
+					<div class="modal-header">
+						<h3 class="modal-title">Datos de la sucursal</h3>
+					</div>
+					<div class="modal-body">
+						<form class="form p-t-20">
+							<div class="form-group">
+								<label for="sucursal-nombre">Nombre</label>
+								<div class="input-group">
+									<div class="input-group-prepend">
+										<span class="input-group-text">
+											<i class="ti-home"></i>
+										</span>
+									</div>
+									<input type="text" class="form-control" id="sucursal-nombre" placeholder="Ingresa el Nombre" required>
+								</div>
+							</div>
+							<div class="form-group">
+								<label for="sucursal-direccion">Direccion</label>
+								<div class="input-group">
+									<div class="input-group-prepend">
+										<span class="input-group-text">
+											<i class="ti-direction"></i>
+										</span>
+									</div>
+									<input type="text" class="form-control" id="sucursal-direccion" placeholder="Ingresa la dirección">
+								</div>
+							</div>
+							<div class="form-group">
+								<label for="sucursal-rfc">RFC</label>
+								<div class="input-group">
+									<div class="input-group-prepend">
+										<span class="input-group-text">
+											<i class="ti-file"></i>
+										</span>
+									</div>
+									<input type="text" class="form-control" id="sucursal-rfc" placeholder="Ingresa el RFC">
+								</div>
+							</div>
+							<div class="form-group">
+								<label for="sucursal-curp">Curp</label>
+								<div class="input-group">
+									<div class="input-group-prepend">
+										<span class="input-group-text">
+											<i class="ti-file"></i>
+										</span>
+									</div>
+									<input type="text" class="form-control" id="sucursal-curp" placeholder="Ingresa el curp">
+								</div>
+							</div>
+							<div class="form-group">
+								<label for="sucursal-telefono">Telefono</label>
+								<div class="input-group">
+									<div class="input-group-prepend">
+										<span class="input-group-text">
+											<i class="mdi mdi-cellphone"></i>
+										</span>
+									</div>
+									<input type="text" class="form-control phone-inputmask" id="sucursal-telefono" placeholder="Ingresa el telefono">
+								</div>
+							</div>
+							<div class="form-group">
+								<label for="sucursal-correo">Email</label>
+								<div class="input-group form-group">
+									<div class="input-group-prepend">
+										<span class="input-group-text">
+											<i class="ti-email"></i>
+										</span>
+									</div>
+									<input type="text" class="form-control email-inputmask" id="sucursal-correo" placeholder="Ingresa el email">
+								</div>
+							</div>
+							<div class="form-group">
+								<label for="sucursal-contrasena">Contrase&ntilde;a</label>
+								<div class="input-group">
+									<div class="input-group-prepend">
+										<span class="input-group-text">
+											<i class="ti-lock"></i>
+										</span>
+									</div>
+									<input type="password" class="form-control" id="sucursal-contrasena" placeholder="Ingresa la contraseña">
+								</div>
+								<span class="help-block text-muted" id="nueva"><small>Dejar en blanco para no cambiar</small></span>
+							</div>
+							<div class="form-group">
+								<label for="sucursal-mensaje">Pie de ticket</label>
+								<div class="input-group">
+									<div class="input-group-prepend">
+										<span class="input-group-text">
+											<i class="ti-ticket"></i>
+										</span>
+									</div>
+									<!-- <input type="text" class="form-control" id="sucursal-mensaje" placeholder="Ingresa el pie de ticket"> -->
+									<textarea type="text" class="form-control" rows="5" id="sucursal-mensaje" placeholder="Ingresa el pie de ticket"></textarea>
+								</div>
+							</div>
+							<div class="form-group status hide">
+								<label for="sucursal-status">Status</label>
+								<div class="input-group">
+									<div class="input-group-prepend">
+										<div class="col-md-12">
+										<div class="switch">
+											<label>Inactivo
+												<input type="checkbox" id="sucursal-status"><span class="lever"></span>Activo</label>
+										</div>
+									</div>
+									</div>
+								</div>
+							</div>
+							<input type="hidden" id="sucursal-id" value="0">
+						</form>
+					</div>
+					<div class="modal-footer d-flex justify-content-end">
+						<button type="submit" class="btn btn-inverse waves-effect waves-light m-r-20" data-dismiss="modal">Cancelar</button>
+						<?php if(in_array(MOD_SUCURSALES_ADD, $permisos) || in_array(MOD_SUCURSALES_EDIT, $permisos)) : ?>
+						<button type="submit" class="btn btn-success waves-effect waves-light" id="btnSaveSucursal">Guardar</button>
+					 	<?php endif; ?>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<?php include 'footer.phtml';?>
+	<script src="<?=URL_ROOT?>/assets/plugins/inputmask/dist/min/jquery.inputmask.bundle.min.js"></script>
+	<script src="<?=URL_ROOT?>/assets/js/mask.init.js"></script>
+	<script type="text/javascript">
+		$(function() {
+			$('#mnu-suc').addClass('active');
+			$apiUrl = '<?= URL_API ?>sucursal/';
+
+			getSucursales();
+			function getSucursales() { blockPage();
+				$('#tbl-sucursal tbody').empty();
+				$.get($apiUrl+'getAllBusca/', function(sucursales) {
+					if(sucursales.result.length > 0) { $.each(sucursales.result, function(index, sucursal) { addSucursalRow(sucursal); }); }
+					else { cleanSucursalesTable('tbl-sucursal'); createSucursalesTable('tbl-sucursal'); }
+					$.unblockUI();
+				});
+			}
+
+			function addSucursalRow(sucursal) {
+				cleanSucursalesTable('tbl-sucursal');
+
+				container = $('#tbl-sucursal tbody');
+				container.find('tr[data-id="'+sucursal.id+'"]').remove();
+
+				tr = $('<tr data-id="'+sucursal.id+'" data-status="'+(sucursal.empleado_id==null? 1: 2)+'"></tr>').appendTo(container);
+				tr.append('<td class="text-left"><small class="nombre">'+sucursal.nombre+'</small></td>');
+				tr.append('<td class="text-left"><small class="direccion">'+sucursal.direccion+'</small></td>');
+				tr.append('<td class="text-center"><small class="correo">'+sucursal.correo+'</small></td>');
+				tr.append('<td class="text-left"><small class="rfc">'+sucursal.rfc+'</small></td>');
+				tr.append('<td class="text-left"><small class="curp">'+sucursal.curp+'</small></td>');
+				tr.append('<td class="text-center"><small class="telefono">'+sucursal.telefono+'</small></td>');
+				// tr.append('<td class="text-center"><small class="mensaje">'+sucursal.mensaje+'</small></td>');
+
+				status = '<span class="status label label-'+(sucursal.empleado_id==null? 'success': 'warning')+'">'+(sucursal.empleado_id==null? 'Disponible': 'En uso')+'</span>';
+				if(sucursal.empleado_id!=null && <?= in_array(MOD_SUCURSALES_DESB, $permisos)? 'true': 'false' ?>) {
+					status += ' <a href="#" data-popup="tooltip" title="Desbloquear" class="btnDesbloquar text-warning pull-right"><i class="fa fa-unlock"></i></a>';
+				}
+				tr.append('<td class="text-center" data-id="'+sucursal.id+'"><div>'+status+'</div></td>');
+
+				tda = $('<td class="pull-right" data-id="'+sucursal.id+'"></td>').appendTo(tr);
+				acciones = $('<div class="acciones"></div>').appendTo(tda);
+				<?php if(in_array(MOD_SUCURSALES_DEL, $permisos)) : ?> acciones.append('<a href="#" data-popup="tooltip" title="Editar" class="btnEditSucursal"><i class="mdi mdi-pencil"></i></a> '); <?php endif; ?>
+				<?php if(in_array(MOD_SUCURSALES_DEL, $permisos)) : ?> acciones.append('<a href="#" data-popup="tooltip" title="Eliminar" class="btnDelSucursal"><i class="mdi mdi-delete" style="color:red;"></i></a>'); <?php endif; ?>
+
+				createSucursalesTable('tbl-sucursal');
+			}
+
+			<?php if(in_array(MOD_SUCURSALES_ADD, $permisos)) : ?>
+				$('#btnAddSucursal').click(function(e) { e.preventDefault(); clearSucursalesData();
+					$('#nueva').addClass('hide');
+					$('#frm-sucursal').modal('show');
+				});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_SUCURSALES_EDIT, $permisos)) : ?>
+				$('tbody').on('click', '.btnEditSucursal', function(event) { blockPage(); clearSucursalesData(); event.preventDefault();
+					$('#frm-sucursal .validation-error-label').remove();
+					id = $(this).parents('td').data('id');
+					
+					$.get($apiUrl+'get/'+id, function(sucursal) {
+						$.each(sucursal.result, function(index, val) {
+							$('#sucursal-'+index).val(val);
+						});
+						
+						if(sucursal.result.status == 1) {
+							$('#sucursal-status').prop('checked',true);
+						}else{
+							$('#sucursal-status').prop('checked', false);
+						}
+						$.unblockUI();
+						$('#nueva').removeClass('hide');
+						$('#frm-sucursal').modal('show');
+					});
+				});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_SUCURSALES_ADD, $permisos) || in_array(MOD_SUCURSALES_EDIT, $permisos)) : ?>
+				$('#frm-sucursal').on('shown.bs.modal', function () { $('#btnSaveSucursal').prop('disabled', false); $('#sucursal-nombre').focus(); });
+
+				$('#btnSaveSucursal').click(function() {
+					$('.invalid-tooltip').remove();
+					id = parseInt($('#sucursal-id').val());
+					data = {};
+					$.each($('#frm-sucursal input:visible'), function(index, elem) {
+						ide = $(elem).attr('id').replace('sucursal-','');
+						data[ide] = $.trim($(elem).val());
+					});
+					$.each($('#frm-sucursal textarea:visible'), function(index, elem) {
+						ide = $(elem).attr('id').replace('sucursal-','');
+						data[ide] = $.trim($(elem).val());
+					});
+					data.telefono = data.telefono.replace('(','').replace(')','').replace(' ','').replace('-','').replace(/_/g, '');
+
+					$errLabel = $('<div class="invalid-tooltip"></div>');
+					if(data.nombre == '') {
+						$errLabel.html('Debe ingresar el nombre');
+						$('#sucursal-nombre').after($errLabel).focus();
+						$errLabel.show();
+					}else if(data.telefono == '' || data.telefono.length != 10) {
+						$errLabel.html('Debe ingresar el telefono a 10 digitos');
+						$('#sucursal-telefono').after($errLabel).focus();
+						$errLabel.show();
+					} else if(data.contrasena == '' && id == 0) {
+						$errLabel.html('Debe ingresar la contraseña');
+						$('#sucursal-contrasena').after($errLabel).focus();
+						$errLabel.show();
+					}else{
+						blockPage();
+						if(id == 0) {
+							data.status = 1;
+							$.post($apiUrl+'add/', data, function(resp) {
+								if(resp.response) {
+									data.id = resp.result;
+									addSucursalRow(data);
+									$('#sucursal-id').val(0);
+									$('#frm-sucursal').modal('hide');
+									swal({ type: "success", title: "¡Listo!", text: "Se guardaron los datos correctamente.", timer: 4000 });
+								}else{ swal({ type: "warning", title: "Oops!", text: resp.message, timer: 4000 }); }
+								$.unblockUI();
+							},'json');
+						}else{
+							data.status = $('#sucursal-status').is(':checked') ? 1 : 0;
+							if(data.contrasena == '') { delete data.contrasena; }
+							updateSucursal(data, id);
+
+							$.unblockUI();
+						}
+					}
+				});
+
+				function updateSucursal(data, id) {
+					$.ajax({ url: $apiUrl+'edit/'+id, type: 'PUT', dataType: 'json', data: data, }).done(function(resp) {
+						if(resp.response) {
+							tr = $('#tbl-sucursal tr[data-id="'+id+'"]'); trInfo = getTrElement('tbl-sucursal', tr);
+							trInfo.find('.nombre').html(data.nombre); trInfo.find('.direccion').html(data.direccion); trInfo.find('.telefono').html(data.telefono); trInfo.find('.email').html(data.email);
+							if(data.contrasena != '') { trInfo.find('.status').removeClass('label-warning').addClass('label-success').html('Disponible').next('.btnDesbloquar').remove(); }
+							setTrData('tbl-sucursal', tr, trInfo);
+
+							$('#sucursal-id').val(0);
+							$('#frm-sucursal').modal('hide');
+							swal({ type: "success", title: "¡Listo!", text: "Se guardaron los datos correctamente.", timer: 4000 });
+						}else{ swal({ type: "warning", title: "Oops!", text: resp.message, timer: 4000 }); }
+					});
+				}
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_SUCURSALES_DEL, $permisos)) : ?>
+				$('tbody').on('click', '.btnDelSucursal', function(event) { blockPage(); event.preventDefault();
+					id = $(this).parents('td').data('id');
+					trp = $('#tbl-sucursal tr[data-id="'+id+'"]');
+					nom = getTrElement('tbl-sucursal', trp).find('.nombre').text();
+					swal({ title: "Eliminar sucursal", text: "No podrá restaurar la sucursal <strong>"+nom+"</strong>", type: "warning", html: true, showCancelButton: true, cancelButtonText: "Cancelar", confirmButtonColor: "#DD6B55", confirmButtonText: "Si, eliminar", closeOnConfirm: false }, 
+						function(response) {
+							if(response) {
+								$.ajax({ url: $apiUrl+'del/'+id, type: 'PUT', dataType: 'json', success:
+									function(resp) {
+										if(resp.response) {
+											cleanSucursalesTable('tbl-sucursal'); trp.remove(); createSucursalesTable('tbl-sucursal');
+											swal({ type: "success", title: "¡Listo!", text: "Se eliminó la sucursal", timer: 4000 });
+										}
+										$.unblockUI();
+									}
+								});
+							} else { $.unblockUI(); }
+					});
+				});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_SUCURSALES_DESB, $permisos)) : ?>
+				$('tbody').on('click', '.btnDesbloquar', function(event) { blockPage(); event.preventDefault();
+					trp = $(this).parents('tr'); trInfo = getTrElement('tbl-sucursal', trp);
+					id = trp.data('id');
+					nom = getTrElement('tbl-sucursal', trp).find('.nombre').text();
+					swal({ title: "Liberar sucursal", text: "Se liberará la sucursal <strong>"+nom+"</strong>", type: "warning", html: true, showCancelButton: true, cancelButtonText: "Cancelar", confirmButtonColor: "#DD6B55", confirmButtonText: "Si, liberar", closeOnConfirm: false }, 
+						function(response) {
+							if(response) {
+								$.ajax({ url: $apiUrl+'liberarSucursal/'+id, type: 'PUT', dataType: 'json', success:
+									function(resp) {
+										if(resp.response) {
+											getSucursales();
+											swal({ type: "success", title: "¡Listo!", text: "Se liberó la sucursal", timer: 4000 }, function(response) {
+												if(<?= !isset($_SESSION['sucursal'])? 'true': 'false' ?> || parseInt('<?= $_SESSION['sucursal'] ?>')==parseInt(id)) {
+													location.reload();
+												}
+											});
+										} else { swal({ type: "warning", title: "Oops!", text: resp.message, timer: 4000 }); }
+										$.unblockUI();
+									}
+								});
+							} else { $.unblockUI(); }
+						}
+					);
+				});
+			<?php endif; ?>
+
+			function clearSucursalesData() {
+				$('.invalid-tooltip').remove();
+				$('#frm-sucursal input').val('');
+				$('#frm-sucursal textarea').val('');
+				$('#sucursal-id').val(0);
+			}
+
+			function getTrElement(tblName, tr) {
+				container = $('<div></div>');
+				trInfo = $('#'+tblName).DataTable().row(tr).data();
+				$.each(trInfo, function(index, trInfoRow) {
+					container.append(trInfoRow);
+				});
+				
+				return container;
+			}
+
+			function setTrData(tblName, row, trElement) {
+				arrContent = [];
+				$.each(trElement.children(), function(index, element) { element = $(element);
+					tagName = element.prop('tagName').toLowerCase();
+					html = '<'+tagName;
+					$.each(element[0].attributes, function(index, attr) {
+						html += ' '+attr.name+'="'+attr.value+'"';
+					});
+					html += '>'+element.html()+'</'+tagName+'>';
+
+					arrContent.push(html);
+				});
+
+				$('#'+tblName).DataTable().row(row).data(arrContent);
+				swal({ type:"success", title:"¡Listo!", text:"Se guardaron los cambios correctamente.", timer:4000 });
+			}
+
+			function cleanSucursalesTable(tbl) {
+				if($.fn.dataTable.isDataTable('#'+tbl)) {
+					table = $('#'+tbl).DataTable();
+					table.destroy();
+				}
+				$("#nodata").remove();
+			}
+
+			function createSucursalesTable(tbl) {
+				container = $('<div class="form-inline pull-right" style="overflow: visible"></div>');
+				fColumnas = $('<select class="selectpicker" multiple data-selected-text-format="static" id="columns-'+tbl+'" title="Mostrar/Ocultar columnas" data-width="fit"></select>').appendTo(container);
+				fColumnas.append('<option class="form-control-sm" value="0">Nombre</option>');
+				fColumnas.append('<option class="form-control-sm" value="1">Dirección</option>');
+				fColumnas.append('<option class="form-control-sm" value="2">Email</option>');
+				fColumnas.append('<option class="form-control-sm" value="3">Teléfono</option>');
+				fColumnas.append('<option class="form-control-sm" value="4">Estado</option>');
+				fColumnas.append('<option class="form-control-sm" value="5">RFC</option>');
+				fColumnas.append('<option class="form-control-sm" value="6">Curp</option>');
+				// fColumnas.append('<option class="form-control-sm" value="7">Mensaje</option>');
+				fColumnas.selectpicker('val', ['0', '1', '2', '3', '4', '5', '6']);
+				fStatus = $('<select class="selectpicker" id="filter-status-'+tbl+'" title="Estado" data-width="fit"></select>').appendTo(container);
+				fStatus.append('<option class="form-control-sm" value="0">Todos</option>');
+				fStatus.append('<option class="form-control-sm" value="1">Disponibles</option>');
+				fStatus.append('<option class="form-control-sm" value="2">En uso</option>');
+				fStatus.selectpicker('val', 0);
+				searchContainer = $('<div class="input-group"></div>').appendTo(container);
+				search = $('<input type="text" id="bus" placeholder="Buscar por nombre, dirección, email, etc" class="form-control">').appendTo(searchContainer);
+				icon = $('<div class="input-group-append"></div>').appendTo(searchContainer);
+				icon.append('<button type="button" class="btn btn-secondary btn-sm" id="btn-bus"><i class="fa fa-search"></i></button>');
+
+				$('#'+tbl).dataTable({
+					scrollX: false,
+					paging: true,
+					pagingType: "full_numbers",
+					dom: 'Rl<"#toolbar-'+tbl+'">frtip',
+					"columnDefs": [
+						{"orderable": true, "targets": [0], "visible": true},
+						{"orderable": true, "targets": [1], "visible": true},
+						{"orderable": true, "targets": [2], "visible": true},
+						{"orderable": true, "targets": [3], "visible": true},
+						{"orderable": true, "targets": [4], "visible": true},
+						{"orderable": false, "targets": [5], 'visible': true},
+					],
+					'order': [0, 'asc']
+				});
+
+				$('#toolbar-'+tbl).html(container);
+				$('#toolbar-'+tbl+' #bus').keyup(function(e) { $("#"+tbl+"_filter label input").val($.trim($(this).val())).trigger('keyup'); });
+				$("#toolbar-"+tbl+" #bus").on("search", function(evt) { $("#"+tbl+"_filter label input").val(undefined).trigger('keyup'); });
+				$("#toolbar-"+tbl+" #btn-bus").click(function(evt) { evt.preventDefault(); $("#"+tbl+"_filter label input").val($.trim($('#bus').val())).trigger('keyup'); });
+				fColumnas.on('changed.bs.select', function(e, index) { blockPage();
+					column = $('#'+tbl).DataTable().column(index);
+					column.visible(!column.visible());
+					$.unblockUI();
+				});
+				fStatus.on('changed.bs.select', function(e, index) { blockPage();
+					$.fn.dataTable.ext.search.pop();
+					$('#'+tbl).DataTable().draw();
+
+					index--; if(index > 0) {
+						$.fn.dataTable.ext.search.push(
+							function(settings, data, dataIndex) {
+								if(settings.nTable.id === 'tbl-sucursal') {
+									return $($('#'+tbl).DataTable().row(dataIndex).node()).attr('data-status') == index;
+								}
+
+								return true;
+							}
+						);
+						$('#'+tbl).DataTable().draw();
+					}
+					$.unblockUI();
+				});
+
+				$("#"+tbl+"_filter label").hide();
+			}
+		});
+	</script>
+	<?php else: include 'footer.phtml'; endif; ?>

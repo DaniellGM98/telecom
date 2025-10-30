@@ -1,0 +1,846 @@
+<?php 
+	include 'header.phtml';
+
+	define('MOD_ACTION_FACT',			82);
+	define('MOD_ACTION_PAGO_ADD',		83);
+	define('MOD_ACTION_PAGO_VALID',		84);
+	define('MOD_ACTION_PAGO_CANCEL',	85);
+
+	if($_SESSION['usuario']->usuario_tipo_id == 3) {
+		header('Location: '.URL_ROOT.'/tienda');
+		exit;
+	}
+
+	if(isset($_SESSION['sucursal']) && (!isset($solicitudes) || count($solicitudes)==0)):
+?>
+	<link href="<?=URL_ROOT?>/assets/plugins/bootstrap-daterangepicker/daterangepicker.css" rel="stylesheet">
+	<link href="<?=URL_ROOT?>/assets/plugins/typeahead.js-master/dist/typehead-min.css" rel="stylesheet">
+	<link href="<?=URL_ROOT?>/assets/plugins/select2/dist/css/select2.min.css" rel="stylesheet" type="text/css" />
+	<link href="<?=URL_ROOT?>/assets/plugins/lightbox/css/lightbox.css" rel="stylesheet" type="text/css" />
+	<!--link href="<?=URL_ROOT?>/assets/plugins/bootstrap-datepicker/bootstrap-datepicker.min.css" rel="stylesheet" type="text/css" /-->
+	<style>
+		#tbl-pagos tr, #tbl-pagos td, #tbl-pagos textarea {
+			background-color: white;
+			border: none;
+		}
+	</style>
+
+	<div class="row page-titles">
+		<div class="col-md-5 align-self-center">
+			<h3 class="text-themecolor"><i class="fa fa-briefcase"></i> Reporte de Cobranza</h3>
+		</div>
+	</div>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-12">
+				<div class="card">
+					<div class="card-body">
+						<h4 class="card-title">Cobranza</h4>
+						<h6 class="card-subtitle">Reporte de Cobranza</h6>
+
+						<div class="row">
+							<div class="col-sm-3">
+								<div class="form-group mb-0">
+									<div class="input-group">
+										<div class="input-group-prepend">
+											<span class="input-group-text"><i class="fa fa-calendar"></i></span>
+										</div>
+										<input class="form-control input-daterange-datepicker" type="text" id="fechas" value="<?= date("d/m/Y",strtotime(date("01-m-Y"))) . ' - ' . date('d/m/Y') ?>" />
+									</div>
+								</div>
+							</div>
+							<div class="offset-sm-3 col-sm-3">
+								<div class="input-group sucursal">
+									<div class="input-group-prepend"><span class="input-group-text"><i class="fa fa-home"></i></span></div>
+									<select class="form-control" id="busSuc">
+										<option value="0">Todas</option>
+									</select>
+								</div>
+							</div>
+							<div class="col-sm-3">
+								<div class="input-group cliente" data-toggle="tooltip" title="Cliente">
+									<div class="input-group-prepend"><span class="input-group-text"><i class="mdi mdi-contacts"></i></span></div>
+									<select class="form-control" id="busCli">
+										<option value="0">Todos</option>
+									</select>
+								</div>
+							</div>
+						</div>
+						<hr>
+
+						<div class="table-responsive">
+							<table id="tbl-items" class="table table-hover table-striped">
+								<thead>
+									<tr>
+										<th clas="text-center">
+											Folio Venta
+											<a href="#" data-toggle="tooltip" title="Buscar por folio" class="pull-right text-primary" id="btnFolio">
+												<i class="mdi mdi-magnify"></i>
+											</a>
+										</th>
+										<th class="text-center">Fecha</th>
+										<th class="text-center">
+											Cliente
+											<a href="#" data-toggle="tooltip" title="Buscar por cliente" class="pull-right text-primary" id="btnCliente">
+												<i class="mdi mdi-magnify"></i>
+											</a>
+										</th>
+										<th class="text-center">CFDi</th>
+										<th class="text-right">Total</th>
+										<th class="text-right">Pagado</th>
+										<th class="text-right">Restante</th>
+										<th class="text-center">Fecha l&iacute;mite</th>
+									</tr>
+								</thead>
+								<tbody></tbody>
+							</table>
+						</div>
+						
+						<div class="row">
+							<div class="col-sm-6">
+								<div class="dataTables_length" id="editable-datatable_length">
+									<label>
+										<select name="editable-datatable_length" aria-controls="editable-datatable" class="form-control input-sm" id="cont">
+											<option value="10">Ver 10</option>
+											<option value="25">Ver 25</option>
+											<option value="50">Ver 50</option>
+											<option value="100">Ver 100</option>
+										</select>
+									</label>
+									<span id="reg" class="heading-text"></span>
+								</div>
+							</div>
+							<div class="col-sm-6">
+								<div class="card-body">
+									<nav aria-label="Page navigation example">
+										<ul id="pag" class="pagination pull-right"></ul>
+									</nav>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<?php if(in_array(MOD_ACTION_FACT, $permisos)) : ?>
+		<div id="frm-envio" class="modal" >
+			<div class="modal-dialog">
+				<div class="modal-content d-flex p-2">
+					<div class="modal-header">
+						<h3 class="modal-title">Enviar factura</h3>
+					</div>
+					<div class="modal-body">
+						<form action="">
+							<label for="envio-correo" class="col-form-label col-form-label-sm">Para</label>
+							<input type="text" class="form-control form-control-sm email-inputmask" id="envio-correo" placeholder="Correo electrónico" required>
+							<label for="envio-mensaje" class="col-form-label col-form-label-sm">Mensaje</label>
+							<textarea class="form-control form-control-sm" id="envio-mensaje" rows="5" placeholder="Mensaje para el correo"></textarea>
+							<input type="hidden" id="envio-cfdi" value="0">
+						</form>
+					</div>
+					<div class="modal-footer d-flex justify-content-end">
+						<button type="submit" class="btn btn-inverse waves-effect waves-light m-r-20" data-dismiss="modal">Cancelar</button>
+						<button type="submit" class="btn btn-success waves-effect waves-light" id="btnSendFact">Enviar</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<?php endif; ?>
+
+		<?php if(in_array(MOD_ACTION_PAGO_ADD, $permisos)) : ?>
+		<div id="frm-pago" class="modal fade col-10 offset-1">
+			<div class="modal-dialog modal-lg">
+				<div class="modal-content d-flex p-2">
+					<div class="modal-header">
+						<h3 class="modal-title" id="pago-title">Registrar Pago</h3>
+					</div>
+					<div class="modal-body">
+						<form action="">
+							<br>
+							<input type="hidden" id="venta-id">
+							<input type="hidden" id="apartado-id">
+							<input type="hidden" id="apartado-folio">
+							<input type="hidden" id="apartado-total">
+							<input type="hidden" id="pago-id">
+							<div class="form-group row">
+								<label for="pago-cantidad" class="col-3 col-sm-2 col-form-label col-form-label-sm text-left">Cantidad:</label>
+								<div class="col-12 col-sm-2 mb-3">
+									<input type="file" id="pago-file" class="hide" accept="image/*">
+									<input type="text" id="pago-cantidad" class="form-control form-control-sm text-right" placeholder="0.00" inputmode="numeric" maxlength="10">
+								</div>
+								<label for="pago-tipo_pago_id" class="col-6 col-form-label text-left col-sm-3 col-form-label-sm">Forma de pago</label>
+								<div class="col-10 col-sm-4">
+									<select class="form-control form-control-sm" id="pago-tipo_pago_id">
+										<!-- <option value="01">Efectivo</option>
+										<option value="02">Transferencia/Dep&oacute;sito</option>
+										<option value="03">Tarjeta</option> -->
+									</select>
+								</div>
+								<a href="#" id="btn-comprobante" class="btn btn-sm btn-secondary pull-right hide" data-toggle="tooltip" title="Subir Comprobante">
+									<i class="fa fa-upload"></i>
+								</a>
+							</div>
+							<div class="form-group row">
+								<div class="comprobante hide" style="max-height: 45vh; overflow-y: scroll;">
+									<img src="#" id="pago-comprobante" class="img-fluid img-thumbnail" alt="Comprobante de Pago" >
+								</div>
+							</div>
+						</form>
+					</div>
+					<div class="modal-footer d-flex justify-content-end">
+						<button type="submit" class="btn btn-inverse waves-effect waves-light m-r-20" id="btn-cancel-apart" data-dismiss="modal">Cancelar</button>
+						<button type="submit" class="btn btn-primary waves-effect waves-light m-r 20" id="btn-save-pago">Pagar</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<?php endif; ?>
+
+		<?php if(in_array(MOD_ACTION_PAGO_VALID, $permisos)) : ?>
+		<div id="frm-payment" class="modal">
+			<div class="modal-dialog modal-lg">
+				<div class="modal-content d-flex p-2">
+					<div class="modal-header">
+						<h3 class="modal-title" id="payment-title"></h3>
+					</div>
+					<div class="modal-body">
+						<form action="">
+							<br>
+							<input type="hidden" id="payment-id">
+							<div class="form-group row">
+								<div class="col-sm-12">
+									<textarea id="payment-comentario" class="form-control form-control-sm" placeholder="Observaciones" required rows="5"></textarea>
+								</div>
+							</div>
+						</form>
+					</div>
+					<div class="modal-footer d-flex justify-content-end">
+						<button type="submit" class="btn btn-inverse waves-effect waves-light m-r-20" data-dismiss="modal">Cancelar</button>
+						<button type="submit" class="btn btn-primary waves-effect waves-light m-r 20" id="btn-save-payment"></button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<?php endif; ?>
+	</div>
+	<?php include 'footer.phtml';?>
+	<script src="<?=URL_ROOT?>/assets/plugins/inputmask/dist/min/jquery.inputmask.bundle.min.js"></script>
+	<script src="<?=URL_ROOT?>/assets/js/mask.init.js"></script>
+	<script src="<?=URL_ROOT?>/assets/plugins/bootstrap-daterangepicker/daterangepicker.js"></script>
+	<script src="<?=URL_ROOT?>/assets/plugins/typeahead.js-master/dist/typeahead.bundle.min.js"></script>
+	<script src="<?=URL_ROOT?>/assets/plugins/select2/dist/js/select2.full.min.js" type="text/javascript"></script>
+	<script src="<?=URL_ROOT?>/assets/plugins/lightbox/js/lightbox.js"></script>
+	<script src="<?=URL_ROOT?>/assets/plugins/moment/min/moment.min.js"></script>
+	<!--script src="<?=URL_ROOT?>/assets/plugins/bootstrap-datepicker/bootstrap-datepicker.min.js"></script>
+	<script src="<?=URL_ROOT?>/assets/plugins/bootstrap-datepicker/bootstrap-datepicker.es.js"></script-->
+
+	<script type="text/javascript">
+		$(function(){
+			$apiUrl = '<?= URL_API ?>cobranza/';
+			$('.input-daterange-datepicker').daterangepicker({
+				buttonClasses: ['btn', 'btn-sm'],
+				applyClass: 'btn-primary',
+				cancelClass: 'btn-inverse',
+				maxDate: '<?= date('d/m/Y') ?>',
+				locale: $dateRangeLocale,
+				ranges: $dateRanges,
+				alwaysShowCalendars: true,
+				autoApply: true
+			}, function(start, end, label) {
+				getItems(0,10);
+			});
+
+			$('#frm-pago').on('shown.bs.modal', function() {  });
+			$('#frm-pago').on('hidden.bs.modal', function() { 
+				$(this).find('input').val('');
+				$(this).find('.comprobante').addClass('hide');
+				$('#pago-cantidad').val(undefined);
+				$('#pago-tipo_pago_id option').first().prop('selected', true).trigger('click');
+				$('#btn-comprobante').addClass('hide');
+				$('#pago-comprobante').removeAttr('src');
+			});
+
+			$("#pago-cantidad").inputmask({
+				alias: "numeric", groupSeparator: ',', digits: 2, digitsOptional: false, placeholder: '0'
+			});
+
+			$('#pago-tipo_pago_id').change(function() {
+				btnComprobante = $('#btn-comprobante');
+				if(!$(this).find('option:selected').data('comprobante')) {
+					btnComprobante.addClass('hide');
+					$('#pago-comprobante').removeAttr('src');
+					$('#frm-pago .comprobante').addClass('hide');
+				} else {
+					btnComprobante.removeClass('hide');
+				}
+			});
+			
+			$('#btn-comprobante').click(function() {
+				$('#pago-file').click();
+			});
+
+			$('#pago-file').change(function() {
+				if(this.files && this.files[0]) {
+					var reader = new FileReader();
+
+					reader.onload = function(e) {
+						$('#pago-comprobante').attr('src', e.target.result);
+					}
+					
+					reader.readAsDataURL(this.files[0]);
+					$('#frm-pago .comprobante').removeClass('hide');
+				}
+			});
+
+			$('#btn-save-pago').click(function() {
+				importe = $('#pago-cantidad').val();
+				image = $('#pago-comprobante').attr('src');
+				tipo_pago_id = $('#pago-tipo_pago_id').val();
+
+				if(importe == '' || !parseFloat(importe)>0) {
+					swal({
+						type: "warning",
+						title: "Datos insuficientes",
+						text: "Debe ingresar la cantidad pagada",   
+						timer: 4000
+					});
+				} else if(parseFloat(importe) > parseFloat($('#apartado-total').val())) {
+					swal({
+						type: "warning",
+						title: "Cantidad invalida",
+						text: "El importe no puede ser mayor que la cantidad restante",
+						timer: 4000
+					});
+				} else if($('#pago-tipo_pago_id option:selected').data('comprobante')==1 && (image==null || image==undefined || image=='#')) {
+					swal({
+						type: "warning",
+						title: "Datos insuficientes",
+						text: "Debe ingresar el comprobante de pago",   
+						timer: 4000
+					});
+				} else {
+					<?php date_default_timezone_set("America/Mexico_City"); ?>
+					date = '<?= date('Y-m-d H:i:s')?>'
+					data = new FormData();
+					data.append('venta_id', $('#venta-id').val());
+					data.append('fecha', date);
+					data.append('tipo_pago_id', tipo_pago_id);
+					data.append('importe', importe);
+					data.append('status', $('#pago-tipo_pago_id option:selected').data('automatico') == '0'? -1: 1);
+					if($('#pago-tipo_pago_id option:selected').data('comprobante') == '1') {
+						data.append('comprobante', $('#pago-file')[0].files[0]);
+					}
+					$.ajax({
+						url: $apiUrl.replace('cobranza', 'venta_pago')+'add/',
+						type: 'POST',
+						data: data,
+						contentType: false,
+						processData: false,
+						success: function(resp) {
+							if($('#pago-tipo_pago_id option:selected').data('automatico') == 1) {
+								swal({
+									type: "success",
+									title: "¡Listo!",   
+									text: "Pago registrado con exito",
+									timer: 4000
+								});
+
+								$('#frm-pago').modal('hide');
+								getItems(0, $('#cont').val());
+							} else {
+								// data = {
+								// 	url: "< ?= URL_ROOT ?>/ventas",
+								// 	titulo: 'Pago Venta Folio '+$('#apartado-folio').val(),
+								// 	cantidad: 1,
+								// 	external_reference: resp.result,
+								// 	precio: $('#pago-cantidad').val()
+								// };
+								// $.ajax({
+								// 	url: "< ?= URL_API ?>pago/mercadopago",
+								// 	type: 'POST',
+								// 	data: data,
+								// 	dataType: 'json',
+								// 	async: false,
+								// 	success: function(callback) {
+								// 		location.href = callback.result;
+								// 	}
+								// });
+							}
+						}
+					});
+				}
+			});
+
+			$.get($apiUrl.replace('cobranza', 'tipo_pago')+'getAll/', function(tipos) {
+				$('#pago-tipo_pago_id').empty();
+				$.each(tipos.result, function(idx, item) {
+					$('#pago-tipo_pago_id').append('<option value="'+item.id+'" data-comprobante="'+item.tiene_comprobante+'" data-automatico="'+item.es_automatico+'">'+item.nombre+'</option>');
+				});
+			}, 'json');
+			
+			$.get($apiUrl.replace('cobranza','sucursal')+'getAll/', function(data) {
+				$.each(data.result, function(index, item) {
+					$('#busSuc').append('<option value="'+item.id+'">'+item.nombre+'</option>');
+				});
+				if(data.result.length == 1) $('.sucursal').addClass('hide');
+
+				$.get($apiUrl.replace('cobranza','cliente')+'getAll/0/0', function(data) {
+					$.each(data.result, function(index, item) {
+						$('#busCli').append('<option value="'+item.id+'">'+item.nombre+' '+item.apellidos+'</option>');
+					});
+					if(data.result.length == 1) { $('.cliente').addClass('hide'); }
+					$('#item-cliente_id').select2();
+
+					getItems(0,10); 
+				},'json');
+			},'json');
+
+			$('#fechas, #busSuc, #busCli').change(function() {
+				getItems(0, $('#cont').val());
+			});
+
+			function getItems(pag, lim){
+				// blockPage();
+				$('#btnFolio').popover('hide');
+				$('#tbl-items tbody').empty();
+				suc = $('#busSuc').val();
+				cli = $('#busCli').val();
+				var fechas = $('#fechas').data('daterangepicker');
+				ini = fechas.startDate.format('YYYY-MM-DD');
+				fin = fechas.endDate.format('YYYY-MM-DD');
+				$.get($apiUrl.replace('cobranza', 'venta')+'rptCobranza/'+ini+'/'+fin+'/'+pag+'/'+lim+'/'+suc+'/'+cli, function(resp) {
+					$.unblockUI();
+					if(resp.total > 0){
+						$.each(resp.result, function(index, item) {
+							addRow(item);
+						});
+					} else { $('#tbl-items tbody').empty().append('<tr data-ent="0"><td colspan="8"><small>No existen deudas pendientes</small></td></tr>'); }
+
+					doPagination(resp.total, lim, pag);
+				});
+			}
+
+			function addRow(item){
+				$('#tbl-items tbody tr[data-ent="0"]').remove();
+				tr = $('<tr data-ent="'+item.id+'"></tr>');
+				if($('#tbl-items [data-id="'+item.id+'"]').length > 0){
+					tr = $('#tbl-items [data-id="'+item.id+'"]').parents('tr');
+					tr.empty();
+				}
+
+				tr.append('<td class="text-center" data-id="'+item.id+'">'+item.folio+'</td>');
+				tr.append('<td class="text-center">'+item.fecha+'</td>');
+				cli = $('#busCli option[value="'+item.cliente_id+'"]').text();
+				row = $('<td class="text-center">'+cli+'</td>').appendTo(tr);
+				actions = $('<div class="pull-right"></div>').appendTo(row);
+				<?php if(in_array(MOD_ACTION_PAGO_ADD, $permisos) || in_array(MOD_ACTION_PAGO_VALID, $permisos) || in_array(MOD_ACTION_PAGO_CANCEL, $permisos)) : ?>
+					actions.append('<a href="#" data-popup="tooltip" title="Ver Pagos" class="btnInfoPago"><i class="fa fa-balance-scale"></i></a>');
+					actions.append('&nbsp;|&nbsp;<a href="#" data-popup="tooltip" title="Pagar" class="btnPagar pull-right"><i class="fa fa-credit-card"></i></a>');
+					// row.append(btnPagos).append(btnPagar);
+				<?php endif; ?>
+
+				btnFact = '--';
+				<?php if(in_array(MOD_ACTION_FACT, $permisos)) : ?>
+				if(item.cfdi_id == 0){
+					btnFact = '<a href="#" data-popup="tooltip" title="Facturar" class="btnFact"><i class="mdi mdi-seal"></i> <small>Facturar</small></a> ';
+				}else{
+					btnFact = '<a href="<?= URL_ROOT ?>/venta/print/'+item.id+'?dl=1" target="_blank" data-popup="tooltip" title="PDF" class="btnPdf text-danger"><i class="mdi mdi-file-pdf"></i></a> ';
+					btnFact += '<a href="<?= URL_ROOT ?>/venta/getXML/'+item.cfdi_id+'" target="_blank" data-popup="tooltip" title="XML" class="btnXml text-muted"><i class="mdi mdi-file-xml"></i></a> ';
+					btnFact += '<a href="#" data-popup="tooltip" title="Enviar" class="btnSend"><i class="mdi mdi-send"></i></a>';
+				}
+				<?php endif; ?>
+				tr.append('<td class="text-center" data-mail="'+item.mail+'">'+btnFact+'</td>');
+				tr.append('<td class="text-right">$ '+item.total+'</td>');
+				tr.append('<td class="text-right">$ '+item.pagado+'</td>');
+				tr.append('<td class="text-right">$ '+item.restante+'</td>');
+				
+				fechaVenta = moment(item.fecha, 'YYYY-MM-DD');
+				fechaVencimiento = fechaVenta.add(item.cliente.credito_dias, 'days').format('YYYY-MM-DD')
+				diasRestantes = moment().diff(fechaVencimiento, 'days');
+				tr.append('<td class="text-center">'+fechaVencimiento+'</td>');
+					
+				tr.addClass(diasRestantes>0? 'table-danger': diasRestantes==0? 'table-warning': 'table-success');
+				$('#tbl-items tbody').append(tr);
+			}
+
+			$('#tbl-items').on('click', '.btnInfoPago', function() {
+				trParent = $(this).parents('tr');
+				tdParent = $(this).parents('td');
+				data_ent = trParent.data('ent');
+				next = $('tr[data-ent="'+data_ent+'"]').last();
+
+				$('.pago-info').remove();
+				if(!$(next).next().hasClass('pago-info')) {
+				// 	$('.pago-info').remove();
+				// } else {
+				// 	$('.pago-info').remove();
+					id = trParent.attr('data-ent');
+	
+					tr = $('<tr class="pago-info" data-ent="'+id+'"></tr>');
+					td = $('<td colspan="8"></td>').appendTo(tr);
+					td.append('<a href="#" id="btn-pago-cerrar" data-popup="tooltip" title="Cerrar" class="btn btn-cerrar-modal close" style="color:red;">&times;</a>');
+					table = $('<table id="tbl-pagos" class="table table-sm"><thead><tr><td class="text-center">Folio</td><td class="text-center">Fecha</td><td class="text-center">Importe</td><td class="text-center">Forma de Pago</td><td class="text-center">Comentarios</td><td class="text-center">Estatus</td></tr></thead><tbody></tbody></table>').appendTo(td);
+					$.get($apiUrl.replace('cobranza', 'venta_pago')+'getByVenta/'+id, function(resp) {
+						if(resp.result.length>0) {
+							$.each(resp.result, function(index, item) {
+								tr = $('<tr data-id="'+item.id+'"></tr>');
+
+								actions = $('<div class="pull-right"></div>');
+								td = $('<td class="text-center"></td>');
+								td.append($('<small>'+item.id+'</small>'));
+								<?php if(in_array(MOD_ACTION_PAGO_CANCEL, $permisos)) :?>
+								actions.append('<a href="#" data-popup="tooltip" title="Cancelar Pago" class="btn-pago-cancel"><i class="mdi mdi-close-circle" style="color:red;"></i></a>  ');
+								<?php endif; ?>
+								if(item.tiene_comprobante == 1) {
+									actions.append('<a href="<?= URL_ROOT ?>/data/comprobantes_pago/'+item.comprobante+'" data-popup="tooltip" title="Ver Comprobante" class="btn-pago-comprobante" data-lightbox="comprobante_'+item.id+'" data-title="Comprobante de Pago"><i class="fa fa-camera"></i></a>');
+								}
+								// actions.append('<a href="#" ><i class="fa fa-camera"></i></a>');
+								td.append(actions);
+								
+								tr.append(td);
+								tr.append('<td class="text-center"><small>'+item.fecha+'</small></td>');
+								tr.append('<td class="text-right"><small>'+item.importe+'</small></td>');
+								tr.append('<td class="text-center"><small>'+item.tipo_pago+(item.orden_id!=''? ' No. Orden: ('+item.orden_id+')': '')+'</small></td>');
+								tr.append('<td class="text-center"><textarea id="test" class="form-control text-center form-control-sm" disabled="disabled">'+item.comentario+'</textarea></td>');
+								
+								td = $('<td class="text-center"></td>');
+								estatus = item.status==1? 'RECIBIDO': item.status==2? 'RECHAZADO': item.status==3? 'INVALIDADO': 'PENDIENTE';
+								td.append($('<small>'+estatus+'</small>'));
+								<?php if(in_array(MOD_ACTION_PAGO_VALID, $permisos)) : ?>
+								if(item.es_automatico == 1) {
+									if(item.status == 1) {
+										td.append('<a href="#" data-popup="tooltip" title="MARCAR COMO INVALIDO" class="btn-pago-down pull-right"><i class="fa fa-thumbs-down" style="color: red;"></i></a>');
+									} else {
+										td.append('<a href="#" data-popup="tooltip" title="MARCAR COMO VALIDO" class="btn-pago-up pull-right"><i class="fa fa-thumbs-up"></i></a>');
+									}
+								}
+								<?php endif; ?>
+								tr.append(td);
+									
+								$('#tbl-pagos').append(tr);
+							});
+						} else {
+							tr = $('<tr><td colspan="5"><small>No se ha realizado ningun pago</small></td></tr>');
+							$('#tbl-pagos').append(tr);
+						}
+					});
+					if($('tr[data-ent="'+data_ent+'"]').first().find('td:eq(4)').hasClass('alert-success')) {
+						td.append('<button data-id="'+data_ent+'" class="btn btn-info btn-sm pull-right btn-convertir-venta">Convertir en Venta</button>');
+					}
+	
+					$(next).after(tr);
+				}
+			});
+
+			$('#cont').change(function() { cont = $(this).val(); getItems(0,cont); });
+			$('#busSuc').change(function() { getItems(0,$('#cont').val()); });
+			$('#busCli').change(function() { getItems(0,$('#cont').val()); });
+
+			$('#btnFolio').popover({
+				placement: 'top',
+				html:true,
+				sanitize: false, 
+				content:  '<div class="form"><div class="input-group"><input type="text" class="form-control form-control-sm" placeholder="Folio" id="buscafolioi"><div class="input-group-append"><button type="button" class="btn btn-secondary btn-sm" id="btn-busf"><i class="fa fa-search"></i></button></div></div></div>'
+			}).on('click', function(e){
+				e.preventDefault();
+				$('#buscafolioi').keyup(function(e) { if(e.keyCode == 13){ buscaFolio(); } });
+				$('#btn-busf').click(function(){ buscaFolio(); });
+			});
+			$('#btnFolio').on('shown.bs.popover', function () { $('#buscafolioi').val('').focus(); });
+
+			function buscaFolio(){
+				folio = $.trim($('#buscafolioi').val());
+				if(folio != ''){
+					$('#btnFolio').popover('hide');
+					blockPage();
+					$('#tbl-items tbody').empty();
+					$.get($apiUrl+'buscaFolio/'+folio, function(resp) {
+						$.unblockUI();
+						if(resp.total > 0){
+							$.each(resp.result, function(index, item) {
+								addRow(item);
+							});
+						}else{
+							$('#tbl-items tbody').append('<tr><td colspan="8"><small>No existen ventas con ese folio</small></td></tr>');
+						}
+						doPagination(resp.total, lim, pag);
+					});
+				}
+			}
+
+			$('#btnCliente').popover({
+				placement: 'top',
+				html:true,
+				sanitize: false, 
+				content:  '<div class="form"><div class="input-group"><input type="text" class="form-control form-control-sm" placeholder="Nombre, RFC o razón social.." id="buscaclientei"><div class="input-group-append"><button type="button" class="btn btn-secondary btn-sm" id="btn-busc"><i class="fa fa-search"></i></button></div></div></div>'
+			}).on('click', function(e){
+				e.preventDefault();
+				$('#buscaclientei').keyup(function(e) { if(e.keyCode == 13){ buscaCliente(); } });
+				$('#btn-busc').click(function(){ buscaCliente(); });
+			});
+			$('#btnCliente').on('shown.bs.popover', function () { $('#buscaclientei').val('').focus(); });
+
+			function buscaCliente(){
+				folio = $.trim($('#buscaclientei').val());
+				if(folio != ''){
+					$('#btnCliente').popover('hide');
+					blockPage();
+					$('#tbl-items tbody').empty();
+					$.get($apiUrl+'buscaVentaByCliente/'+folio, function(resp) {
+						$.unblockUI();
+						if(resp.total > 0){
+							$.each(resp.result, function(index, item) {
+								addRow(item);
+							});
+						}else{
+							$('#tbl-items tbody').append('<tr><td colspan="8"><small>No existen ventas para ese cliente</small></td></tr>');
+						}
+						doPagination(resp.total, lim, pag);
+					});
+				}
+			}
+
+			$("html").on("mouseup", function (e) {
+				var l = $(e.target);
+				if (l[0].className.indexOf("popover") == -1) {
+					$(".popover").each(function () {
+						$(this).popover("hide");
+					});
+				}
+			});
+
+			$('#tbl-items').on('click', '.btnPagar', function() {
+				$('#venta-id').val($(this).parents('tr').data('ent'));
+				$('#frm-pago').modal('show');
+			});
+
+			$('#tbl-items').on('click', '#btn-pago-cerrar', function() {
+				$('.pago-info').remove();
+			});
+
+			<?php if(in_array(MOD_ACTION_PAGO_CANCEL, $permisos)) : ?>
+				$('#tbl-items').on('click', '.btn-pago-cancel', function() {
+					id = $(this).parents('tr').data('id');
+					swal({
+						title: "Cancelar pago",
+						text: "Esta acción es irreversible, ¿Desea Continuar?. \n",
+						type: "warning",
+						html: true,
+						showCancelButton: true,   
+						cancelButtonText: "No",
+						confirmButtonColor: "#DD6B55",   
+						confirmButtonText: "Si, continuar",
+						closeOnConfirm: true 
+					}, function(){
+						$.ajax({
+							url: $apiUrl.replace('cobranza', 'venta_pago')+'del/'+id,
+							type: 'PUT',
+							dataType: 'json',
+							data: {usuario: '<?= $_SESSION['usuario']->nombre.' '.$_SESSION['usuario']->apellidos ?>'},
+							success: function(resp) {
+								getItems(0, $('#cont').val());
+								swal({
+									type: "success",
+									title: "¡Listo!",
+									text: "Se eliminó el pago",
+									timer: 4000
+								});
+							}
+						});
+					});
+				});
+			<?php endif; ?>
+
+			lightbox.option({
+				'fitImagesInViewport': true,
+				// 'wrapAround': true
+			})
+
+			$('#tbl-items').on('click', '.btn-pago-down, .btn-pago-up', function() {
+				text = $(this).hasClass('btn-pago-down')? 'Invalidar': 'Validar';
+				id = $(this).parents('tr').data('id');
+
+				$('#payment-id').val(id);
+				$('#frm-payment').modal('show');
+				$('#frm-item').modal('hide');
+				$('#payment-title').text(text+' Pago');
+				$('#btn-save-payment').text(text);
+			});
+
+			$('#btn-save-payment').click(function() {
+				text = $(this).text();
+				comentario = $('#payment-comentario').val();
+				if(comentario == '' || comentario == null || comentario == undefined) {
+					swal({
+						type: "warning",
+						title: "Datos insuficientes",
+						text: "Debe especificar el motivo de la acción",
+						timer: 4000
+					});
+				} else {
+					data = {comentario: comentario, status: (text=='Invalidar'? 3: 1)};
+					id = $('#payment-id').val();
+					$.ajax({
+						url: $apiUrl.replace('cobranza', 'venta_pago')+'edit/'+id,
+						type: 'PUT',
+						async: false,
+						dataType: 'json',
+						data: data,
+						success: function(resp) {
+							$('#frm-payment').modal('hide');
+							getItems(0, $('#cont').val());
+
+							swal({
+								type: "success",
+								title: "¡Listo!",
+								text: "Se "+(data.status==3? 'invalidó': 'validó')+" el pago",
+								timer: 4000
+							});
+						}
+					});
+				}
+			});
+
+			$('#frm-payment').on('shown.bs.modal', function() {
+				id = $('#payment-id').val();
+				$.get($apiUrl.replace('cobranza', 'venta_pago')+'get/'+id, function(resp) {
+					$('#payment-comentario').val(resp.result.comentario);
+				});
+			});
+
+			$('#frm-payment').on('hidden.bs.modal', function () { 
+				$('#payment-id').val(undefined);
+				$('#payment-comentario').val(undefined);
+				$('#frm-item').modal('show');
+			});
+
+			<?php if(in_array(MOD_ACTION_FACT, $permisos)) : ?>
+			$('#item-cliente_id').change(function() {
+				$('#chkFact').prop('checked', false);
+				$('.invalid-tooltip').remove();
+			});
+
+			$('#chkFact').change(function(event) {
+				if($(this).is(':checked')){
+					$('.invalid-tooltip').remove();
+					blockPage();
+					$.get($apiUrl.replace('venta','cliente')+'get/'+$('#item-cliente_id').val(), function(data) {
+						rfcReg = new RegExp('^[A-Z&Ñ]{3,4}[0-9]{2}(0[1-9]|1[012])(0[1-9]|[12][0-9]|3[01])[A-Z0-9]{2}[0-9A]$');
+						rfc = data.result.rfc;
+						//$errLabel = $('<div class="invalid-tooltip"></div>');
+						if(!rfcReg.test(rfc)){
+							/*$errLabel.html('El cliente no cuenta con un RFC válido');
+							$('#chkFact').after($errLabel);
+							$errLabel.show();
+							setTimeout(function(){ $errLabel.remove() }, 3000);*/
+							$('#chkFact').prop('checked', false);
+							swal({
+								type: "error",
+								title: "Oops!",
+								text: 'El cliente no tiene un RFC válido.<br><small>Debe modificar los datos en el catálogo de <a href="<?= URL_ROOT ?>/clientes" title="Clientes" target="_blank">clientes</a></small>',
+								html: true,
+								timer: 4000
+							});
+						}
+						if(data.timbres == 0){
+							$('#chkFact').prop('checked', false);
+							$('#chkFact').prop('disabled', true);
+							$('#chkFact').parents('.col-sm-4').find('small.text-muted').html('No cuenta con folios para facturar');
+						}else{
+							$('#chkFact').parents('.col-sm-4').find('small.text-muted').html(data.timbres+' folios disponibles');
+						}
+						$.unblockUI();
+					},'json');
+				}
+			});
+
+			$('tbody').on('click', '.btnFact', function(event) {
+				event.preventDefault();
+				id = $(this).parents('tr').data('ent');
+				trp = $('#tbl-items [data-id="'+id+'"]').parents('tr');
+				tdp = $(this).parents('td');
+				blockPage();
+				$.get($apiUrl+'facturaVenta/'+id, function(resp) {
+					if(!resp.error){
+						tdp.empty();
+						tdp.append('<a href="<?= URL_ROOT ?>/venta/print/'+id+'?dl=1" target="_blank" data-popup="tooltip" title="PDF" class="btnPdf text-danger"><i class="mdi mdi-file-pdf"></i></a> ');
+						tdp.append('<a href="<?= URL_ROOT ?>/venta/getXML/'+resp.cfdi_id+'" target="_blank" data-popup="tooltip" title="XML" class="btnXml text-muted"><i class="mdi mdi-file-xml"></i></a> ');
+						tdp.append('<a href="#" data-popup="tooltip" title="Enviar" class="btnSend"><i class="mdi mdi-send"></i></a>');
+
+						swal({
+							type: "success",
+							title: "¡Listo!",   
+							text: "Se generó correctamente la factura.",   
+							timer: 4000
+						});
+						window.open('<?= URL_ROOT ?>/venta/print/'+id+'?dl=1');
+					}else{
+						swal({
+							type: "error",
+							title: "Oops!",
+							text: resp.msg,
+							html: true
+							//timer: 5000
+						});
+					}
+
+					$.unblockUI();
+				}, 'json');
+			});
+
+			$('tbody').on('click', '.btnSend', function(event) {
+				event.preventDefault();
+				id = $(this).parents('tr').data('ent');
+				$('#envio-cfdi').val(id);
+				$('#envio-mensaje').val('');
+				mail = $(this).parent().data('mail');
+				$('#envio-correo').val(mail);
+				$('#frm-envio').modal('show');
+			});
+
+			$('#btnSendFact').click(function() {
+				$('.invalid-tooltip').remove();
+				data = {id: $('#envio-cfdi').val(), 
+						correo: $.trim($('#envio-correo').val()),
+						mensaje: $.trim($('#envio-mensaje').val()) };
+
+				$errLabel = $('<div class="invalid-tooltip"></div>');
+				if(data.correo == ''){
+					$errLabel.html('Debe ingresar el correo');
+					$('#envio-correo').after($errLabel);
+					$errLabel.show();
+				}else if(data.mensaje == ''){
+					$errLabel.html('Debe ingresar el mensaje');
+					$('#envio-mensaje').after($errLabel);
+					$errLabel.show();
+				}else{
+					blockPage();
+					$.post($apiUrl+'sendCfdi', data, function(resp) {
+						swal({
+							type: "success",
+							title: "¡Listo!",   
+							text: "Se envió correctamente la factura.",   
+							timer: 4000
+						});
+						$('#envio-cfdi').val(0);
+						$('#envio-correo').val('');
+						$('#envio-mensaje').val('');
+						$('#frm-envio').modal('hide');
+						$.unblockUI();
+					}, 'json');
+				}
+			});
+			<?php endif; ?>
+
+			$('body').on('click', '#pag li a', function(event) {
+				event.preventDefault();
+				pag = parseInt($(this).attr('href'));
+				cont = parseInt($('#cont').val());
+				if(!$(this).parent().hasClass('active') && !$(this).parent().hasClass('active'))
+					getItems(pag, cont);
+			});
+		});
+		
+	</script>
+<?php else: include 'footer.phtml'; endif; ?>

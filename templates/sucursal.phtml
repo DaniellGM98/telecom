@@ -1,0 +1,109 @@
+<?php if(!isset($_SESSION['sucursal'])): ?>
+	<div class="container-fluid">
+		<div id="frm-selecciona-sucursal" class="modal" data-backdrop="static" data-keyboard="false">
+			<div class="modal-dialog">
+				<div class="modal-content d-flex p-2">
+					<div class="modal-header">
+						<h3 class="modal-title">Sucursales</h3>
+					</div>
+					<div class="modal-body">
+						<form class="form p-t-20">
+							<div class="form-group">
+								<label for="selecciona-sucursal-sucursal_id">Nombre</label>
+								<div class="input-group">
+									<div class="input-group-prepend">
+										<span class="input-group-text">
+											<i class="ti-home"></i>
+										</span>
+									</div>
+									<select id="selecciona-sucursal-sucursal_id" class="form-control">
+										<option value="0" selected>Selecciona una sucursal</option>
+										<?php $sucursales = $todo->model->sucursal->getAll()->result; foreach($sucursales as $sucursal): ?><option value="<?= $sucursal->id ?>"><?= ucfirst(mb_strtolower($sucursal->nombre)) ?></option><?php endforeach; ?>
+									</select>
+								</div>
+							</div>
+							<div class="form-group hide" id="contrasena">
+								<label for="selecciona-sucursal-password">Contrase&ntilde;a</label>
+								<div class="input-group">
+									<div class="input-group-prepend">
+										<span class="input-group-text">
+											<i class="ti-lock"></i>
+										</span>
+									</div>
+									<input type="password" class="form-control" id="selecciona-sucursal-password" placeholder="Ingresa la contraseña">
+								</div>
+							</div>
+						</form>
+					</div>
+					<div class="modal-footer d-flex justify-content-end">
+						<button type="submit" class="btn btn-inverse waves-effect waves-light m-r-20" id="btnLogout" data-dismiss="modal">Cerrar Sesi&oacute;n</button>
+						<button type="submit" class="btn btn-success waves-effect waves-light" id="btnLoginSucursal">Continuar</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<script type="text/javascript">
+		// window.onload = function() {
+		//window.addEventListener('load', function() {
+			$(function () {
+				$('#frm-selecciona-sucursal').modal('show');
+
+				$('#selecciona-sucursal-sucursal_id').change(function() {
+					$('.invalid-tooltip').remove();
+					$('#selecciona-sucursal-password').val('');
+					
+					if($(this).val() > 0) {
+						$.get('<?= URL_ROOT ?>/sucursal/get/'+$('#selecciona-sucursal-sucursal_id').val(), function(sucursal) { sucursal = sucursal.result;
+							//if(sucursal.empleado_id==null || parseInt(sucursal.empleado_id)==parseInt('<?= $user->id; ?>')) {
+							if(sucursal.empleado_id==null) {
+								$('#contrasena').removeClass('hide');
+								$('#selecciona-sucursal-password').focus();
+							} else {
+								$('#contrasena').addClass('hide');
+								$errLabel = $('<div class="invalid-tooltip">La sucursal ya se encuentra en uso por alguién más</div>');
+								$('#selecciona-sucursal-sucursal_id').after($errLabel).focus();
+								$errLabel.show();
+							}
+						}, 'json');
+					} else { $('#contrasena').addClass('hide'); }
+				});
+
+				$('#btnLogout').click(function(e) {
+					e.preventDefault();
+					window.location.href = '<?= URL_ROOT ?>/usuario/logout/';
+				});
+
+				$('form').submit(function () { return false; });
+
+				$('#selecciona-sucursal-password').change(function() {
+					doLoginSucursal($.trim($(this).val()))
+				})
+
+				$('#btnLoginSucursal').click(function(e) {
+					e.preventDefault();
+					doLoginSucursal($.trim($('#selecciona-sucursal-password').val()));
+				});
+
+				function doLoginSucursal(password) {
+					$('.invalid-tooltip').remove();
+					if(password.length == 0) {
+						$errLabel = $('<div class="invalid-tooltip">Debe ingresar la contraseña de la sucursal</div>');
+						$('#selecciona-sucursal-password').after($errLabel).focus();
+						$errLabel.show();
+					} else {
+						$.post('<?= URL_ROOT ?>/sucursal/accedeSucursal/'+$('#selecciona-sucursal-sucursal_id').val(), {password: password}, function(sucursal) {
+							if(sucursal.response) { location.reload(); }
+							else {
+								$errLabel = $('<div class="invalid-tooltip">'+sucursal.message+'</div>');
+								$('#selecciona-sucursal-password').after($errLabel).focus();
+								$errLabel.show();
+							}
+						}, 'json');
+					}
+				}
+			});
+		//});
+		// }
+	</script>
+<?php endif; ?>

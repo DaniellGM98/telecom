@@ -1,0 +1,353 @@
+<?php 
+	include 'header.phtml';
+
+	define('MOD_MARCAS_ADD', 	53);
+	define('MOD_MARCAS_EDIT', 	54);
+	define('MOD_MARCAS_DEL', 	55);
+
+	if($_SESSION['usuario']->usuario_tipo_id == 3) {
+		header('Location: '.URL_ROOT.'/tienda');
+		exit;
+	}
+
+	if(isset($_SESSION['sucursal']) && (!isset($solicitudes) || count($solicitudes)==0)):
+?>
+	<div class="row page-titles">
+		<div class="col-md-5 align-self-center">
+			<h3 class="text-themecolor"><i class="fa fa-tags"></i> Marcas</h3>
+		</div>
+	</div>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-12">
+				<div class="card">
+					<div class="card-body">
+						<?php if(in_array(MOD_MARCAS_ADD, $permisos)) : ?>
+						<button class="btn btn-success pull-right" id="btnAdd"><i class="mdi mdi-plus"></i> Agregar</button>
+						<?php endif; ?>
+
+						<h4 class="card-title">Marcas</h4>
+						<h6 class="card-subtitle">Crea, edita y elimina marcas de productos</h6>
+
+						<div class="table-responsive">
+							<table id="tbl-marcas" class="table table-hover table-striped table-sm">
+								<thead>
+									<tr>
+										<th class="text-center">Nombre</th>
+										<th class="text-center">Descuento</th>
+										<th class="text-center">Compra Minima Requerida</th>
+										<th class="text-center">Acciones</th>
+									</tr>
+								</thead>
+								<tbody></tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<?php if(in_array(MOD_MARCAS_ADD, $permisos) || in_array(MOD_MARCAS_EDIT, $permisos)) : ?>
+		<div id="frm-marca" class="modal" >
+			<div class="modal-dialog">
+				<div class="modal-content d-flex p-2">
+					<div class="modal-header">
+						<h3 class="modal-title">Datos de la Marca</h3>
+					</div>
+					<div class="modal-body">
+						<form class="form p-t-20">
+							<div class="form-group">
+								<label for="marca-nombre">Nombre</label>
+								<div class="input-group">
+									<div class="input-group-prepend">
+										<span class="input-group-text" id="basic-addon1">
+											<i class="ti-home"></i>
+										</span>
+									</div>
+									<input type="text" class="form-control" id="marca-nombre" placeholder="Ingresa el Nombre" required>
+								</div>
+							</div>
+							<div class="form-group hide">
+								<label for="marca-descuento_tipo">Descuento</label>
+								<div class="input-group">
+									<div class="input-group-prepend">
+										<span class="input-group-text" id="basic-addon1">
+											<i class="ti-money"></i>
+										</span>
+									</div>
+									<select id="marca-descuento_tipo" class="form-control">
+										<option value="0" selected="descuento">No Aplicar Descuento</option>
+										<option value="1">Porcentaje</option>
+										<option value="2">Importe</option>
+									</select>
+								</div>
+							</div>
+							<div class="form-group hide">
+								<label for="marca-descuento"></label>
+								<div class="input-group">
+									<div class="input-group-prepend">
+										<span class="input-group-text" id="basic-addon1">
+											<i class="ti-money"></i>
+										</span>
+									</div>
+									<input type="text" class="form-control descuento" id="marca-descuento" placeholder="Descuento">
+									<div class="input-group-append">
+										<span class="input-group-text" id="basic-addon1">
+											<i>%</i>
+										</span>
+									</div>
+								</div>
+							</div>
+							<div class="form-group hide">
+								<label for="marca-descuento_compra_min">Compra M&iacute;nima</label>
+								<div class="input-group">
+									<div class="input-group-prepend">
+										<span class="input-group-text" id="basic-addon1">
+											<i class="ti-money"></i>
+										</span>
+									</div>
+									<input type="text" class="form-control compra-minima" id="marca-descuento_compra_min" placeholder="Compra M&iacute;nima">
+								</div>
+							</div>
+							<input type="hidden" id="marca-id" value="0">
+						</form>
+					</div>
+					<div class="modal-footer d-flex justify-content-end">
+						<button type="submit" class="btn btn-inverse waves-effect waves-light m-r-20" data-dismiss="modal">Cancelar</button>
+						<button type="submit" class="btn btn-success waves-effect waves-light" id="btnSave">Guardar</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<?php endif; ?>
+	</div>
+	<?php include 'footer.phtml';?>
+	<script type="text/javascript">
+		$(function() {
+			$apiUrl = '<?= URL_API ?>marca/';
+			$('#mnu-prod').addClass('active');
+
+			getMarcas();
+			function getMarcas() { blockPage();
+				selectedColumns = $('#columns-tbl-marcas').val(); cleanTable('tbl-marcas'); $('#tbl-marcas tbody').empty();
+				$.get($apiUrl+'getAll/', function(marcas) { 
+					if(marcas.total > 0) { $.each(marcas.result, function(index, item) { addMarcaRow(item); }); }
+					createTable('tbl-marcas', true, selectedColumns); $.unblockUI();
+				});
+			}
+
+			function addMarcaRow(item) {
+				$('#tbl-marcas [data-id="'+item.id+'"]').remove();
+				tr = $('<tr data-id="'+item.id+'"></tr>').appendTo($('#tbl-marcas tbody'));
+
+				tr.append('<td>'+item.nombre.toUpperCase()+'</td>');
+				if(item.descuento == 0) { tr.append('<td class="text-right">No aplica</td>'); } 
+				else { tr.append('<td class="text-right">'+(item.descuento_tipo==2? '$ '+parseFloat(item.descuento).toFixed(2): parseInt(item.descuento)+' %')+'</td>'); }
+
+				if(item.descuento_compra_min == 0) { tr.append('<td class="text-right">Sin compra m&iacute;nima requerida</td>'); } 
+				else { tr.append('<td class="text-right">$ '+parseFloat(item.descuento_compra_min).toFixed(2)+'</td>'); }
+
+				tda = $('<td class="text-center"></td>').appendTo(tr);
+				<?php if(in_array(MOD_MARCAS_EDIT, $permisos)) : ?> tda.append('<a href="#" data-popup="tooltip" title="Editar" class="btnEdit"><i class="mdi mdi-pencil"></i></a> ');  <?php endif; ?>
+				<?php if(in_array(MOD_MARCAS_DEL, $permisos)) : ?> tda.append('<a href="#" data-popup="tooltip" title="Eliminar" class="btnDel"><i class="mdi mdi-delete" style="color:red;"></i></a>'); <?php endif; ?>
+			}
+
+			<?php if(in_array(MOD_MARCAS_ADD, $permisos)) : ?>
+			$('#btnAdd').click(function(e) { e.preventDefault();
+				clearData();
+				$('#frm-marca').modal('show');
+			});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_MARCAS_EDIT, $permisos)) : ?>
+			$('tbody').on('click', '.btnEdit', function(event) { event.preventDefault(); blockPage();
+				clearData();
+				$('#frm-marca .validation-error-label').remove();
+				id = $(this).parents('tr').data('id');
+				
+				$.get($apiUrl+'get/'+id, function(marca) { marca = marca.result
+					$.each(marca, function(index, val) { $('#marca-'+index).val(val).trigger('change'); });
+					if(marca.status == 1) { $('#marca-status').prop('checked',true); }
+					else{ $('#marca-status').prop('checked', false); }
+
+					$('#frm-marca').modal('show');
+					$.unblockUI();
+				});
+			});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_MARCAS_DEL, $permisos)) : ?>
+			$('tbody').on('click', '.btnDel', function(event) { event.preventDefault(); blockPage();
+				id = $(this).parents('tr').data('id');
+				trp = $('#tbl-marcas tr[data-id="'+id+'"]');
+				console.log(trp);
+				console.log('#tbl-marcas tr[data-id="'+id+'"]');
+				nom = trp.find('td:eq(0)').text();
+				swal({ title:"Eliminar marca", text:"No podrá restaurar la marca <strong>"+nom+"</strong>", type:"warning", html:true, showCancelButton:true, cancelButtonText:"Cancelar", confirmButtonColor:"#DD6B55", confirmButtonText:"Si, eliminar", closeOnConfirm:false  }, 
+					function(resp) {
+						if(resp) {
+							$('#tbl-marcas tbody').empty();
+							$.ajax({ url:$apiUrl+'del/'+id, type:'PUT', dataType:'json',
+								success: function(resp) {
+									if(resp.response) {
+										getMarcas();
+										swal({ type:"success", title:"¡Listo!", text:"Se eliminó la marca", timer:4000 });
+									} else { swal({ type:"warning", title:"Oops!", text:resp.message, timer:4000 });  }
+								}
+							});
+						} else { $.unblockUI(); }
+					}
+				);
+			});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_MARCAS_ADD, $permisos) || in_array(MOD_MARCAS_EDIT, $permisos)) : ?>
+			$('#frm-marca').on('shown.bs.modal', function () { $('#marca-nombre').focus(); });
+			$('#frm-marca').on('hidden.bs.modal', function () { $('#marca-descuento_tipo').val(0).trigger('change'); });
+			$(".compra-minima, .descuento").inputmask({ alias: "numeric", groupSeparator: ',', digits: 2, digitsOptional: false, placeholder: '0' });
+
+			$('#marca-nombre').change(function() {
+				$('.invalid-tooltip').remove();
+				$.get($apiUrl+'getByNombreMD5/'+$.md5($.trim($(this).val().toLowerCase())), function(marca) { if(marca.result.length > 0) { marca = marca.result;
+					if(marca.length>1 || marca[0].id!=parseInt($('#marca-id').val())) {
+						$errLabel = $('<div class="row invalid-tooltip">Ya existe una marca con el mismo nombre</div>');
+						$('#marca-nombre').after($errLabel);
+						$errLabel.show();
+						// setTimeout(() => { $('.invalid-tooltip').remove(); }, 4000);
+					}
+				}}, 'json');
+			});
+
+			$('#marca-descuento_tipo').change(function() {
+				value = $(this).find('option:selected').val();
+				text = $(this).find('option:selected').text();
+				if(value != 0) {
+					$('label[for="marca-descuento"]').html(text);
+					$('#marca-descuento').parents('.form-group').removeClass('hide');
+					$('#marca-descuento_compra_min').parents('.form-group').removeClass('hide');
+					if(value == 1) {
+						$('#marca-descuento').prev('.input-group-prepend').addClass('hide');
+						$('#marca-descuento').next('.input-group-append').removeClass('hide');
+					} else if(value = 2) {
+						$('#marca-descuento').prev('.input-group-prepend').removeClass('hide');
+						$('#marca-descuento').next('.input-group-append').addClass('hide');
+					}
+				} else {
+					$('#marca-descuento').val(0).parents('.form-group').addClass('hide');
+					$('#marca-descuento_compra_min').val(0).parents('.form-group').addClass('hide');
+				}
+			});
+
+			$('#btnSave').click(function() {
+				$('.invalid-tooltip').remove();
+				id = parseInt($('#marca-id').val());
+				data = {};
+
+				$.each($('#frm-marca').find('input, select'), function(index, elem) {
+					ide = $(elem).attr('id').replace('marca-','');
+					data[ide] = $.trim($(elem).val());
+				});
+
+				if(data.descuento=='') { data.descuento = 0; }
+				if(data.descuento_compra_min=='') { data.descuento_compra_min = 0; }
+				$errLabel = $('<div class="invalid-tooltip"></div>');
+				if(data.nombre == '') {
+					$errLabel.html('Debe ingresar el nombre');
+					$('#marca-nombre').focus().after($errLabel);
+					$errLabel.show();
+				} else if($('#marca-descuento_tipo').val() != 0 && $('#marca-descuento').val()==0) {
+					$errLabel.html('El descuento debe de ser mayor a 0');
+					$('#marca-descuento').focus().after($errLabel);
+					$errLabel.show();
+				} else {
+					blockPage();
+					if(id == 0) {
+						data.status = 1;
+						if(data.descuento == '') { data.descuento = 0; }
+						if(data.descuento_compra_min == '') { data.descuento_compra_min = 0; }
+						$.post($apiUrl+'add/', data, 
+							function(resp) {
+								if(resp.response) {
+									data.id = resp.result;
+									getMarcas();
+									$('#marca-id').val(0);
+									$('#frm-marca').modal('hide');
+									swal({ type: "success", title: "¡Listo!", text: "Se guardaron los datos correctamente.", timer: 4000 });
+								}else{
+									swal({ type: "warning", title: "Oops!", text: resp.message, timer: 4000 });
+								}
+								$.unblockUI();
+						},'json');
+					} else {
+						$.ajax({ url:$apiUrl+'edit/'+id, type:'PUT', dataType:'json', data:data, }).done(
+							function(resp) {
+								if(resp.response) {
+									getMarcas();
+									$('#marca-id').val(0);
+									$('#frm-marca').modal('hide');
+									swal({ type: "success", title: "¡Listo!", text: "Se guardaron los datos correctamente.", timer: 4000 });
+								} else { swal({ type: "warning", title: "Oops!", text: resp.message, timer: 4000 }); }
+								$.unblockUI();
+							}
+						);
+					}
+				}
+			});
+
+			function clearData() {
+				$('.invalid-tooltip').remove();
+				$('#frm-marca input').val('');
+				$('#marca-id').val(0);
+			}
+			<?php endif; ?>
+
+			function cleanTable(tbl) {
+				if($.fn.dataTable.isDataTable('#'+tbl)) {
+					table = $('#'+tbl).DataTable();
+					table.destroy();
+				}
+				$("#nodata").remove();
+			}
+
+			function createTable(tbl, paging, arrColumns=null) {
+				container = $('<div class="form-inline pull-right" style="overflow: visible"></div>');
+				select = $('<select class="selectpicker" multiple data-selected-text-format="static" id="columns-'+tbl+'" title="Mostrar/Ocultar columnas" data-width="fit"></select>').appendTo(container);
+				select.append('<option class="form-control-sm" value="0">Nombre</option>');
+				select.append('<option class="form-control-sm" value="1">Descuento</option>');
+				select.append('<option class="form-control-sm" value="2">Compra mínima</option>');
+				select.selectpicker('val', arrColumns!=null? arrColumns: ['0', '1', '2']);
+				searchContainer = $('<div class="input-group"></div>').appendTo(container);
+				search = $('<input type="text" id="bus" placeholder="Buscar por nombre" class="form-control">').appendTo(searchContainer);
+				icon = $('<div class="input-group-append"></div>').appendTo(searchContainer);
+				icon.append('<button type="button" class="btn btn-secondary btn-sm" id="btn-bus"><i class="fa fa-search"></i></button>');
+
+				$('#'+tbl).dataTable({
+					// scrollY: false,
+					scrollX: false,
+					paging: paging,
+					pagingType: "full_numbers",
+					dom: 'Rl<"#toolbar-'+tbl+'">frtip',
+					"columnDefs": [
+						{"orderable": true, "targets": [0], "visible": ($.inArray("0", select.val())>=0)},
+						{"orderable": true, "targets": [1], "visible": ($.inArray("1", select.val())>=0)},
+						{"orderable": true, "targets": [2], "visible": ($.inArray("2", select.val())>=0)},
+						{"orderable": false, "targets": [3]},
+					],
+					'order': [0, 'asc']
+				});
+
+				$('#toolbar-'+tbl).html(container);
+				$('#toolbar-'+tbl+' #bus').keyup(function(e) { $("#"+tbl+"_filter label input").val($.trim($(this).val())).trigger('keyup'); });
+				$("#toolbar-"+tbl+" #bus").on("search", function(evt) { $("#"+tbl+"_filter label input").val(undefined).trigger('keyup'); });
+				$("#toolbar-"+tbl+" #btn-bus").click(function(evt) { evt.preventDefault(); $("#"+tbl+"_filter label input").val($.trim($('#bus').val())).trigger('keyup'); });
+				select.on('changed.bs.select', function(e, index) { blockPage();
+					column = $('#'+tbl).DataTable().column(index);
+					column.visible(!column.visible());
+					$.unblockUI();
+				});
+
+				$("#"+tbl+"_filter label").hide();
+			}
+		});
+		
+	</script>
+<?php else: include 'footer.phtml'; endif; ?>

@@ -1,0 +1,981 @@
+<?php 
+	include 'header.phtml';
+
+	define('MOD_ACTION_ADD', 	17);
+	define('MOD_ACTION_EDIT', 	18);
+	define('MOD_ACTION_DEL', 	19);
+	define('MOD_ACTION_PRECIO', 20);
+	define('MOD_TRASPASOS_ADD', 87);
+
+	if($_SESSION['usuario']->usuario_tipo_id == 3) {
+		header('Location: '.URL_ROOT.'/tienda');
+		exit;
+	}
+
+	if(isset($_SESSION['sucursal']) && (!isset($solicitudes) || count($solicitudes)==0)):
+?>
+	<div class="row page-titles">
+		<div class="col-md-5 align-self-center">
+			<h3 class="text-themecolor"><i class="fa fa-cubes"></i> Productos <small>Inventarios y Precios</small></h3>
+		</div>
+	</div>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-12">
+				<div class="card">
+					<div class="card-body">
+						<?php if(in_array(MOD_ACTION_ADD, $permisos)) : ?>
+						<button class="btn btn-success pull-right" id="btnAddProducto"><i class="mdi mdi-plus"></i> Agregar</button>
+						<?php endif; ?>
+						<div class="col-sm-3 pull-right form">
+							<div class="input-group">
+								<input type="text" id="bus" placeholder="Buscar por nombre, modelo o SKU" class="form-control">
+								<div class="input-group-append">									
+									<button type="button" class="btn btn-secondary btn-sm" id="btn-bus"><i class="fa fa-search"></i></button>
+								</div>
+							</div>
+						</div>
+
+						<h4 class="card-title">Productos <small>Inventarios y Precios</small></h4>
+						<h6 class="card-subtitle">Crea, edita y elimina productos. Seleccione una sucursal para ver el stock y una lista de precios.</h6>
+						
+						<div id="tbl-toolbar"></div>
+						<div class="table-responsive">
+							<table id="tbl-producto" class="table table-hover table-striped table-sm m-t-0"></table>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<?php if(in_array(MOD_ACTION_ADD, $permisos) || in_array(MOD_ACTION_EDIT, $permisos)) : ?>
+		<div id="frm-producto" class="modal" >
+			<div class="modal-dialog modal-xl">
+				<div class="modal-content d-flex p-2">
+					<div class="modal-header">
+						<h3 class="modal-title"><i class="fa fa-cube"></i> Datos del producto</h3>
+					</div>
+					<div class="modal-body">
+						<div class="row">
+							<div class="col-sm-8">
+								<form class="form form-horizontal">
+									<div class="row">
+										<div class="col-sm-12">
+											<div class="form-group row">
+												<label for="producto-prod_categoria_id" class="col-form-label text-right col-sm-2 categoria">Categor&iacute;a</label>
+												<div class="col-sm-4 categoria">
+													<select class="form-control" id="producto-prod_categoria_id">
+														<option value="0" selected="selected">Seleccione</option>
+													</select>
+												</div>
+												<label for="producto-prod_subcategoria_id" class="col-form-label text-right col-sm-2 subcategoria">Subcategor&iacute;a</label>
+												<div class="col-sm-4 subcategoria">
+													<select class="form-control" id="producto-prod_subcategoria_id">
+														<option value="0" selected="selected" data-categoria="0">Seleccione</option>
+													</select>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="row">
+										<div class="col-sm-12">
+											<div class="form-group row">
+												<label for="producto-marca_id" class="col-form-label text-right col-sm-2">Marca</label>
+												<div class="col-sm-4">
+													<select class="form-control" id="producto-marca_id"></select>
+												</div>
+												<label for="producto-modelo" class="col-form-label text-right col-sm-2 hide">Modelo</label>
+												<div class="col-sm-4 hide">
+													<input type="text" class="form-control" id="producto-modelo" placeholder="Ingresa el Modelo" required>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="row">
+										<div class="col-sm-12">
+											<div class="form-group row">
+												<label for="producto-nombre" class="col-form-label text-right col-sm-2">Nombre</label>
+												<div class="col-sm-10">
+													<input type="text" class="form-control" id="producto-nombre" placeholder="Nombre del producto" required>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="row">
+										<div class="col-sm-12">
+											<div class="form-group row">
+												<label for="producto-descripcion" class="col-form-label text-right col-sm-2">Descripción</label>
+												<div class="col-sm-10">
+													<input type="text" class="form-control" id="producto-descripcion" placeholder="Descripción del producto (Opcional)">
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="row">
+										<div class="col-sm-12">
+											<div class="form-group row">
+												<label for="producto-sku" class="col-form-label text-right col-sm-2">C&oacute;digo de barras</label>
+												<div class="col-sm-6">
+													<div class="input-group">
+														<div class="input-group-prepend">
+															<span class="input-group-text" id="basic-addon1">
+																<i class="fa fa-barcode"></i>
+															</span>
+														</div>
+														<input type="text" class="form-control" id="producto-sku" placeholder="Código de barras (Opcional)" required maxlength="15">
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="row hide">
+										<div class="col-sm-12">
+											<div class="form-group row">
+												<label for="producto-minimo" class="col-form-label text-right col-sm-2">M&iacute;nimo</label>
+												<div class="col-sm-4">
+													<input type="text" class="form-control" id="producto-minimo" placeholder="Stock M&iacute;nimo (Opcional)" required maxlength="4">
+												</div>
+												<label for="producto-maximo" class="col-form-label text-right col-sm-2">M&aacute;ximo</label>
+												<div class="col-sm-4">
+													<input type="text" class="form-control" id="producto-maximo" placeholder="Stock M&aacute;ximo (Opcional)" required maxlength="4">
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="row hide">
+										<div class="col-sm-12">
+											<div class="form-group row">
+												<label for="producto-tamano" class="col-form-label text-right col-sm-2">Tama&ntilde;o</label>
+												<div class="col-sm-4">
+													<input type="text" class="form-control" id="producto-tamano" placeholder="Tama&ntilde;o" required>
+												</div>
+												<label for="producto-utilidad" class="col-form-label text-right col-sm-2">Utilidad</label>
+												<div class="col-sm-4">
+													<input type="text" class="form-control" id="producto-utilidad" placeholder="Utilidad" required>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="row hide">
+										<div class="col-sm-12">
+											<div class="form-group row mb-0">
+												<label for="producto-clave_sat" class="col-form-label text-right col-sm-2">Clave SAT</label>
+												<div class="col-sm-4">
+													<input type="text" class="form-control" id="producto-clave_sat" placeholder="Clave SAT" required maxlength="8">
+												</div>
+												<label for="producto-unidad_sat" class="col-form-label text-right col-sm-2">Unidad SAT</label>
+												<div class="col-sm-4">
+													<input type="text" class="form-control" id="producto-unidad_sat" placeholder="Unidad SAT" required maxlength="4">
+												</div>
+											</div>
+										</div>
+									</div>
+									<!-- <div class="row">
+										<div class="col-sm-12 d-flex justify-content-end">
+											<div class="form-group">
+												<label class="form-check-label" for="producto-regalo">Permitir dar como regalo</label>
+												<div class="form-check form-check-inline">
+													<input class="form-check-input" type="radio" name="producto-regalo" id="producto-regalo-0" value="0" checked>
+													<label class="form-check-label" for="producto-regalo-0">No</label>
+												</div>
+												<div class="form-check form-check-inline">
+													<input class="form-check-input" type="radio" name="producto-regalo" id="producto-regalo-1" value="1">
+													<label class="form-check-label" for="producto-regalo-1">Si</label>
+												</div>
+											</div>
+										</div>
+									</div> -->
+									<input type="hidden" id="producto-id" value="0">
+								</form>
+							</div>
+							<div class="col-sm-4">
+								<table class="table table-hover table-striped table-sm" id="tbl-precios">
+									<thead>
+										<tr><th colspan="2">Listas de Precios</th></tr>
+									</thead>
+									<tbody></tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+					<div class="modal-footer d-flex justify-content-end">
+						<button type="submit" class="btn btn-inverse waves-effect waves-light m-r-20" data-dismiss="modal">Cancelar</button>
+						<button type="submit" class="btn btn-success waves-effect waves-light" id="btnSaveProducto">Guardar</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<?php endif; ?>
+		<?php if(in_array(MOD_TRASPASOS_ADD, $permisos)) : ?>
+		<div id="frm-traspaso" class="modal" >
+			<div class="modal-dialog modal-lg">
+				<div class="modal-content d-flex p-2">
+					<div class="modal-header">
+						<div class="row">
+							<h3 class="modal-title"><i class="fa fa-exchange"></i> Registrar traspaso</h3>
+						</div>
+					</div>
+					<div class="modal-body">
+						<form class="form form-horizontal">
+							<div class="form-group row">
+								<div class="col-sm-12">
+									<div class="row">
+										<label for="traspaso-producto" class="col-form-label text-right col-sm-2">Producto</label>
+										<div class="col-sm-10">
+											<div class="input-group">
+												<div class="input-group-prepend">
+													<span class="input-group-text">
+														<i class="fa fa-cube"></i>
+													</span>
+												</div>
+												<input type="text" id="traspaso-producto" class="form-control" readonly>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="form-group row">
+								<div class="col-sm-12">
+									<div class="row">
+										<label for="traspaso-origen" class="col-form-label text-right col-sm-2">Origen</label>
+										<div class="col-sm-5">
+											<div class="input-group">
+												<div class="input-group-prepend">
+													<span class="input-group-text">
+														<i class="fa fa-home"></i>
+													</span>
+												</div>
+												<select class="form-control" id="traspaso-origen"></select>
+											</div>
+										</div>
+										<label for="traspaso-folio" class="col-form-label text-right col-sm-2 traspaso-folio hide">Folio</label>
+										<div class="col-sm-3 traspaso-folio hide">
+											<input type="text" id="traspaso-folio" class="form-control" readonly>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="form-group row hide" id="destino">
+								<div class="col-sm-12">
+									<div class="row">
+									<label for="traspaso-destino" class="col-form-label text-right col-sm-2">Destino</label>
+										<div class="col-sm-5">
+											<div class="input-group">
+												<div class="input-group-prepend">
+													<span class="input-group-text">
+														<i class="fa fa-home"></i>
+													</span>
+												</div>
+												<select class="form-control" id="traspaso-destino" disabled></select>
+											</div>
+										</div>
+										<label for="traspaso-existencias" class="col-form-label text-right col-sm-2">Existencias</label>
+										<div class="col-sm-3">
+											<input type="text" id="traspaso-existencias" class="form-control" disabled>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="form-group row hide" id="cantidad">
+								<div class="col-sm-12">
+									<div class="row">
+										<label for="traspaso-cantidad" class="col-form-label text-right offset-sm-7 col-sm-2">Cantidad</label>
+										<div class="col-sm-3">
+											<input type="text" id="traspaso-cantidad" class="form-control" disabled>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="form-group row hide" id="sku">
+								<div class="col-sm-12">
+									<div class="row">
+										<label for="traspaso-sku" class="col-form-label text-right col-sm-2"></label>
+										<div class="col-sm-10">
+											<select id="traspaso-sku" class="form-control" multiple size="3"></select>
+										</div>
+									</div>
+								</div>
+							</div>
+							<input type="hidden" id="traspaso-producto_id" value="0">
+							<input type="hidden" id="traspaso-categoria_sku" value="0">
+						</form>
+					</div>
+					<div class="modal-footer d-flex justify-content-end">
+						<button type="submit" class="btn btn-inverse waves-effect waves-light m-r-20" data-dismiss="modal">Cancelar</button>
+						<button type="submit" class="btn btn-success waves-effect waves-light" id="btnSaveTraspaso">Guardar</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<?php endif; ?>
+		<div id="frm-existencias" class="modal" >
+			<div class="modal-dialog modal-lg">
+				<div class="modal-content d-flex p-2">
+					<div class="modal-header">
+						<h3 class="modal-title"></h3>
+					</div>
+					<div class="modal-body">
+						<form class="form p-t-20">
+							<div class="row">
+								<div class="col-sm-12">
+									<table class="table table-hover table-striped table-sm" id="tbl-existencias">
+										<thead>
+											<tr>
+												<?php if(intval($user->usuario_tipo_id) == 1): ?> <th class="sucursal">Sucursal</th> <?php endif; ?>
+												<th class="skuname"></th>
+												<th class="fechaentrada">Fecha alta</th>
+												<th class="fechaalta">Entrada Suc.</th>
+											</tr>
+										</thead>
+										<tbody></tbody>
+									</table>
+								</div>
+							</div>
+						</form>
+					</div>
+					<div class="modal-footer d-flex justify-content-end">
+						<button type="submit" class="btn btn-inverse waves-effect waves-light m-r-20" data-dismiss="modal">Cerrar</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<?php include 'footer.phtml';?>
+	<script type="text/javascript">
+		$(function() {
+			$apiUrl = '<?= URL_API ?>producto/';
+			$('#mnu-prod').addClass('active');
+
+			getProductos();
+			function getProductos() { blockPage();
+				cleanTable('tbl-producto'); $('#tbl-producto tbody').empty();
+				createTable('tbl-producto');
+				$.unblockUI();
+			}
+
+			$('#bus').keyup(function(e) { $("#tbl-producto_filter label input").val($.trim($(this).val())).trigger('keyup'); });
+			$("#bus").on("search", function(evt) { $("#tbl-producto_filter label input").val(undefined).trigger('keyup'); });
+			$("#btn-bus").click(function(evt) { evt.preventDefault(); $("#tbl-producto_filter label input").val($.trim($('#bus').val())).trigger('keyup'); });
+
+			arrSucE = [];
+			$('#tbl-producto').on('click', '.btnSku', function(e) {
+				e.preventDefault();
+				title = $(this).attr('title').replace('Ver ', '');
+				skuname = title.split(' ')[0];
+				infoProducto = getTrElement('tbl-producto', $(this).parents('tr')).find('.producto');
+				prodname = infoProducto.text();
+				prodid = infoProducto.data('id');
+				$('#frm-existencias .modal-title').html(title+' <strong>'+prodname+'</strong>');
+				$('#tbl-existencias thead tr th.skuname').html(skuname);
+
+				container = $('#tbl-existencias tbody'); cleanTable('tbl-existencias'); container.empty();
+				suc = $('#sucursal-tbl-producto').val();
+				$.get($apiUrl.replace('producto', 'prod_entrada_detalle')+'getListaSkuDisp/'+prodid+'/<?= $_SESSION['sucursal'] ?>', function(existencias) {
+					arrSucE = [];
+					$.each(existencias.result, function(index, item) {
+						tr = $('<tr data-sku="'+item.sku+'"></tr>').appendTo(container);
+						<?php if(intval($user->usuario_tipo_id) == 1): ?> tr.append('<td><small class="sucursal" data-id="'+item.sucursal_id+'">'+item.sucursal+'</small></td>'); <?php endif; ?>
+						tr.append('<td><small class="skuname">'+item.sku+'</small></td>');
+						// tr.append('<td><small class="fechaalta">'+moment(item.fecha).format('DD/MM/YYYY hh:mm:ss')+'</small></td>');
+						tr.append('<td><small class="fechaentrada">'+item.fechaEntrada+'</small></td>');
+						tr.append('<td><small class="fechaalta">'+item.fecha+'</small></td>');
+						if(arrSucE.filter(function(e) { return e.id === item.sucursal_id; }).length == 0){ arrSucE.push({id: item.sucursal_id, nombre: item.sucursal})};
+					});
+					createTable('tbl-existencias');
+				});
+
+				$('#frm-existencias').modal('show');
+			});
+
+			<?php if(in_array(MOD_ACTION_ADD, $permisos)) : ?>
+				$('#btnAddProducto').click(function(e) { e.preventDefault(); blockPage();
+					clearData(); $('#producto-clave_sat').val('56101508'); $('#producto-unidad_sat').val('H87');
+					$('#producto-categoria_id, #producto-marca_id').val(0).trigger('change');
+					$('#producto-minimo').val('1');
+					$('#producto-maximo').val('1');
+					$('#producto-prod_categoria_id option').first().prop('selected', true).trigger('change');
+					$('#btnSaveProducto').addClass('add').removeClass('update');
+					$('#frm-producto').modal('show');
+					$.unblockUI();
+				});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_ACTION_ADD, $permisos) || in_array(MOD_ACTION_EDIT, $permisos)) : ?>
+				$('#frm-producto').on('shown.bs.modal', function () { $('#producto-nombre').focus(); });
+
+				/*$('#producto-nombre').change(function() { element = $(this);
+					campo = element.attr('id').replace('producto-', '');
+					$('.invalid-tooltip.'+campo).remove();
+					$.get($apiUrl+'getByMD5/'+$.md5($.trim(element.val().toLowerCase()))+'/'+campo, function(producto) { if(producto.result.length > 0) { producto = producto.result;
+						if(producto.length>1 || producto[0].id!=parseInt($('#producto-id').val())) {
+							$errLabel = $('<div class="row invalid-tooltip '+campo+'">Ya existe un producto con el mismo '+campo+'</div>');
+							$('#producto-'+campo).after($errLabel);
+							$errLabel.show();
+						}
+					}}, 'json');
+				});*/
+
+				container = $('#producto-prod_subcategoria_id'); container.empty();
+				<?php foreach($subcategorias as $subcategoria): ?>container.append('<option value="<?= $subcategoria->id ?>" data-categoria="<?= $subcategoria->prod_categoria_id ?>"><?= ucfirst(mb_strtolower($subcategoria->nombre)) ?></option>');<?php endforeach; ?>
+				container.prepend('<option value="0" data-categoria="0" selected="selected">Seleccione</option>');
+				container = $('#producto-prod_categoria_id'); container.empty();
+				<?php foreach($categorias as $categoria): ?>container.append('<option value="<?= $categoria->id ?>"><?= ucfirst(mb_strtolower($categoria->nombre)) ?></option>');<?php endforeach; ?>
+				<?php if(count($categorias) == 1): ?>container.addClass('hide');<?php else: ?>container.prepend('<option value="0" selected="selected">Seleccione</option>');<?php endif; ?>
+				container.trigger('change');
+				container = $('#producto-marca_id'); container.empty();
+				<?php foreach($marcas as $marca): ?>container.append('<option value="<?= $marca->id ?>"><?= ucfirst(mb_strtolower($marca->nombre)) ?></option>');<?php endforeach; ?>
+				<?php if(count($marcas) == 1): ?>container.addClass('hide');<?php else: ?>container.prepend('<option value="0" selected="selected">Seleccione</option>');<?php endif; ?>
+
+				$('#producto-prod_categoria_id').change(function() {
+					container = $('#producto-prod_subcategoria_id');
+					container.val(0).find('option').removeClass('hide');
+					container.find('option:not([data-categoria="'+$(this).val()+'"]):not([data-categoria="0"])').addClass('hide');
+					if(container.find('option:not(.hide):not([data-categoria="0"])').length == 0) {
+						$('label[for="'+container.attr('id')+'"]').addClass('hide');
+						container.parent().addClass('hide');
+					} else {
+						$('label[for="'+container.attr('id')+'"]').removeClass('hide');
+						container.parent().removeClass('hide');
+					}
+				});
+
+				$("#producto-minimo, #producto-maximo").inputmask({ alias: "numeric", rightAlign: false});
+				// $("#producto-clave_sat").inputmask({ alias: "numeric", rightAlign: false});
+				$("#producto-utilidad").inputmask({ alias: "numeric", groupSeparator: ',', digits: 0, digitsOptional: false, mask: 99});
+
+				<?php foreach($listas_precio as $lista):  if($lista->status==1 && $lista->origen==0 && in_array(intval($_SESSION['sucursal']), [0, intval($lista->sucursal_id)]) ): ?>$('#tbl-precios tbody').append('<tr><td><?= $lista->nombre ?><small>(<?= $lista->sucursal ?>)</small></td><td data-idp="<?= $lista->id ?>"><div class="input-group input-group-sm"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" class="form-control form-control-sm precio" <?= !in_array(MOD_ACTION_PRECIO, $permisos)? 'readonly="readonly"': '' ?> placeholder="0.00" inputmode="numeric" maxlength="10"></div></td></tr>');<?php endif; endforeach; ?>
+				$(".precio").inputmask({alias: "numeric", groupSeparator: ',', digits: 2, digitsOptional: false, placeholder: '0'});
+				$('#tbl-precios tbody').on('change', '.precio:first', function() { if(parseInt($('#producto-id').val()) == 0) $('.precio:not(:first)').val($(this).val()); });
+
+				$('#btnSaveProducto').click(function() {
+					$('.invalid-tooltip').remove();
+					id = parseInt($('#producto-id').val());
+					
+					data = {};
+					$.each($('#frm-producto').find('input:not(.precio, [type="radio"]), select'), function(index, elem) {
+						ide = $(elem).attr('id').replace('producto-','');
+						if(!$(elem).parent().hasClass('hide')) { data[ide] = $.trim($(elem).val()); }
+					});
+					// data.regalo = $('#producto-regalo-1').prop('checked')? 1: 0;
+
+					data.precios = []; precioError = false; preciotbl = '';
+					$.each($('#frm-producto .precio'), function(index, elem) {
+						lista = $(elem).parents('td').data('idp');
+						precio = $.trim($(elem).val());
+						data.precios.push({fk_lista_precio: lista, precio: precio});
+						<?php if(in_array(MOD_ACTION_PRECIO, $permisos)) : ?>
+						if(precio == '0.00' || precio == '') precioError = true;
+						<?php endif; ?>
+						if($('#lst-pre').val() == lista) preciotbl = precio;
+					});
+
+					$errLabel = $('<div class="invalid-tooltip"></div>');
+					if(data.nombre == '') {
+						$errLabel.html('Debe ingresar el nombre');
+						$('#producto-nombre').after($errLabel).focus();
+						$errLabel.show();
+					} else if(parseInt(data.prod_categoria_id) == 0) {
+						$errLabel.html('Debe seleccionar la categoría');
+						$('#producto-prod_categoria_id').after($errLabel);
+						$errLabel.show();
+					} else if(precioError) {
+						$errLabel.html('Debe llenar todos los precios');
+						$('#tbl-precios').after($errLabel);
+						$errLabel.show();
+					} else {
+						blockPage();
+						if(data.prod_categoria_id == '0') { delete data.prod_categoria_id; }
+						if(data.prod_subcategoria_id == '0') { delete data.prod_subcategoria_id; }
+						if(data.marca_id == '0') { delete data.marca_id; }
+						if(data.utilidad == '') { delete data.utilidad; }
+						if(id == 0) {
+							data.stock = 0;
+							$.post($apiUrl+'add/', data, function(resp) { if(resp.response) {
+									// clearData();
+									$('#producto-id').val(resp.result);
+									// $('#imagenes-tab').click();
+									// $('#frm-producto .modal-header').css('padding-bottom', 0);
+									// $('#frm-producto .modal-header').find('.row').last().removeClass('hide');
+									// $('#frm-producto').modal('hide');
+									reloadTable();
+									$('#frm-producto').modal('hide');
+									swal({ type:"success", title:"¡Listo!", text:"Se guardaron los datos correctamente.", timer:4000 });
+								} else { swal({ type:"warning", title:"Oops!", text:resp.message, timer:4000 }); }
+
+								$.unblockUI();
+							},'json');
+						}else{
+							delete data.precios;
+							$.ajax({ url:$apiUrl+'edit/'+id, type:'PUT', dataType:'json', data:data, }).done(
+								function(resp) {
+									if(resp.response) {
+										clearData();
+										$('#frm-producto').modal('hide');
+										reloadTable();
+										swal({ type:"success", title:"¡Listo!", text:"Se guardaron los datos correctamente.", timer:4000 });
+									} else { swal({ type:"warning", title:"Oops!", text:resp.message, timer:4000 }); }
+
+									$.unblockUI();
+								}
+							);
+						}
+					}
+				});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_ACTION_EDIT, $permisos)) : ?>
+				$('tbody').on('click', '.btnEditProducto', function(event) { event.preventDefault(); blockPage();
+					clearData();
+					$('#frm-producto .validation-error-label').remove();
+					id = $(this).parents('tr').data('id');
+
+					$.get($apiUrl+'get/'+id, function(producto) { if(producto.response) { producto = producto.result;
+							$.each(producto, function(index, val) {
+								if(val != null) { 
+									$('#producto-'+index).val(val);
+								} else if($('#producto-'+index).length>0 && $('#producto-'+index)[0].nodeName=='SELECT') {
+									$('#producto-'+index).val(0).trigger('change'); 
+								} 
+							});
+							// $('#producto-regalo-'+producto.regalo).prop('checked', true);
+							$('#producto-prod_categoria_id').trigger('change');
+							if(producto.prod_subcategoria_id != null) { $('#producto-prod_subcategoria_id').val(producto.prod_subcategoria_id); }
+							$.each(producto.precios, function(index, item) { $('[data-idp="'+item.lista_precio_id+'"] .precio').val(item.precio); });
+						}
+
+						$('#btnSaveProducto').addClass('update').removeClass('add');
+						$('#frm-producto').modal('show');
+						$.unblockUI();
+					}, 'json');
+				});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_ACTION_DEL, $permisos)) : ?>
+				$('tbody').on('click', '.btnDelProducto', function(event) { event.preventDefault();
+					tr = $(this).parents('tr');
+					id = tr.data('id');
+					producto = getTrElement('tbl-producto', tr).find('.producto').text();
+					swal({ title:"Eliminar producto", text:"No podrá restaurar el producto <strong>'"+producto+"'</strong>", type:"warning", html:true, showCancelButton:true, cancelButtonText:"Cancelar", confirmButtonColor:"#DD6B55", confirmButtonText:"Si, eliminar", closeOnConfirm:false},
+						function() {
+							$.ajax({ url:$apiUrl+'del/'+id, type:'PUT', dataType:'json', success:
+								function(resp) {
+									if(resp.response) {
+										reloadTable();
+										swal({ type:"success", title:"¡Listo!", text:"Se eliminó el producto", timer:4000 });
+									} else { swal({ type:"warning", title:"Oops!", text:resp.message, timer:4000 }); }
+
+									$.unblockUI();
+								}
+							});
+						}
+					);
+				});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_ACTION_PRECIO, $permisos)) : ?>
+				$('tbody').on('change', '.precio', function(event) { event.preventDefault();
+					element = $(this);
+					precio = $.trim(element.val());
+					lista = element.parents('td').data('idp');
+					prod = $('#producto-id').val();
+
+					if(prod != 0) {
+						blockPage();
+						$.ajax({ url:$apiUrl.replace('producto','prod_precio')+'editProdLista/'+prod+'/'+lista+'/'+precio, type:'PUT', dataType:'json', }).done(
+							function(resp) {
+								$('#tbl-producto tr[data-id="'+prod+'"]').find('td:eq(4)').html("$ "+$.number(precio, 2));
+
+								swal({ type:"success", title:"¡Listo!", text:"Se guardaron los datos correctamente.", timer:4000 });
+								$.unblockUI();
+						});
+					}
+				});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_TRASPASOS_ADD, $permisos)) : ?>
+				$('#frm-traspaso').on('show.bs.modal', function() {
+					$('.invalid-tooltip').remove();
+					// $('#traspaso-folio').focus();
+					$('#traspaso-origen').val('<?= $_SESSION['sucursal'] ?>').trigger('change');
+				});
+
+				$('#frm-traspaso').on('hidden.bs.modal', function() {
+					$('#traspaso-producto_id, #traspaso-categoria_sku').val(0);
+					$('#traspaso-producto, #traspaso-folio').val(undefined);
+					$('#traspaso-origen option:first').prop('selected', true);
+				});
+
+				$('tbody').on('click', '.btnAddTraspaso', function(event) { event.preventDefault();
+					tr = $(this).parents('tr');
+					trInfo = getTrElement('tbl-producto', tr);
+					$('#traspaso-producto_id').val(tr.data('id'));
+					$('#traspaso-producto').val(trInfo.find('.producto').text());
+					$('#traspaso-categoria_sku').val(trInfo.find('.categoria').attr('data-sku')!=undefined? trInfo.find('.categoria').attr('data-sku'): '0');
+					$('#frm-traspaso').modal('show');
+					// sigFolio();
+				});
+
+				function sigFolio() {
+					$.get('<?= URL_API?>traspaso/sigFolio/'+$('#traspaso-origen').val(), function(folio) {
+						$('#traspaso-folio').val(folio)
+					}, 'json');
+				}
+
+				$('#traspaso-origen, #traspaso-destino').empty();
+				<?php if(intval($_SESSION['sucursal']) == 0): ?>$('#traspaso-origen').append('<option value="0">Seleccione una opción</option>');<?php endif; ?>
+				$('#traspaso-destino').append('<option value="0">Seleccione una opción</option>');
+				<?php foreach($sucursales as $sucursal): if(in_array(intval($_SESSION['sucursal']), [0, intval($sucursal->id)])): ?>
+				$('#traspaso-origen').append('<option value="<?= $sucursal->id ?>"<?= intval($_SESSION['sucursal'])==intval($sucursal->id)? ' selected="selected"': '' ?>><?= ucfirst(mb_strtolower($sucursal->nombre)) ?></option>');
+				<?php endif; ?>
+				$('#traspaso-destino').append('<option value="<?= $sucursal->id ?>"<?= intval($_SESSION['sucursal'])==intval($sucursal->id)? ' class="hide"': '' ?>><?= ucfirst(mb_strtolower($sucursal->nombre)) ?></option>');
+				<?php endforeach; ?>
+				$('#traspaso-origen').change(function() { blockPage();
+					$('.invalid-tooltip').remove();
+					value = parseInt($(this).val());
+					$('#traspaso-destino').val(0);
+					$('#traspaso-destino option').removeClass('hide');
+					if(value == 0) {
+						$('.traspaso-folio, #destino, #cantidad, #sku').addClass('hide');
+						$('#traspaso-folio').val('');
+						
+						$('#traspaso-destino option:not([value="0"])').addClass('hide');
+						$('#traspaso-destino').val(0).prop('disabled', true);
+						$('#traspaso-existencias, #traspaso-cantidad').val(undefined).prop('disabled', 'true')
+						$.unblockUI();
+					} else {
+						$.get($apiUrl.replace('producto', 'prod_kardex')+'getStockSuc/'+value+'/'+$('#traspaso-producto_id').val(), function(stock) {
+							if(stock.result.final > 0) {
+								$('.traspaso-folio, #destino').removeClass('hide');
+								if($('#traspaso-categoria_sku').val() != '0') {
+									$('label[for="traspaso-sku"]').html($('#traspaso-categoria_sku').val());
+									$('#sku').removeClass('hide');
+									$('#traspaso-sku').empty();
+									$('#cantidad').addClass('hide');
+									if(stock.skuDisponibles.length > 0) {
+										$.each(stock.skuDisponibles, function(index, sku) {
+											$('#traspaso-sku').append('<option value="'+sku+'">'+sku+'</option>');
+										});
+									} else {
+										$errLabel = $('<div class="invalid-tooltip">El producto no tiene existencias</div>');
+										$('#traspaso-sku').after($errLabel).focus();
+										$errLabel.show();
+									}
+								} else {
+									$('#sku').addClass('hide');
+									$('#cantidad').removeClass('hide');
+								}
+								sigFolio();
+
+								$('#traspaso-destino option[value="'+value+'"]').addClass('hide');
+								$('#traspaso-destino').prop('disabled', false);
+								$('#traspaso-existencias').val(stock.result.final);
+								$('#traspaso-cantidad').prop('disabled', false).focus();
+							} else { 
+								$errLabel = $('<div class="invalid-tooltip">Debe agregar productos al traspaso</div>');
+								$('#traspaso-origen').val(0).trigger('change').after($errLabel);
+								$errLabel.show();
+							}
+							$.unblockUI();
+						}, 'json');
+					}
+				});
+
+				$('#traspaso-destino').change(function() {
+					if($('#traspaso-categoria_sku').val() != '0') {
+						$('#traspaso-cantidad').focus();
+					}
+				});
+
+				$("#traspaso-existencias, #traspaso-cantidad").inputmask({ alias: "numeric"});
+				$("#traspaso-cantidad").change(function() {
+					$('.invalid-tooltip').remove();
+					$errLabel = $('<div class="invalid-tooltip"></div>');
+					if(parseInt($(this).val()) > parseInt($('#traspaso-existencias').val())) {
+						$errLabel.html('Stock insuficiente');
+						$('#traspaso-cantidad').after($errLabel).val(0).focus();
+						$errLabel.show();
+					}
+				});
+
+				$("#traspaso-cantidad").keyup(function(event) { if(event.keyCode == 13) saveTraspaso(); });
+				$('#btnSaveTraspaso').click(function() { saveTraspaso(); });
+
+				function saveTraspaso() {
+					$('.invalid-tooltip').remove();
+					data = { folio: $.trim($('#traspaso-folio').val()), origen: $('#traspaso-origen').val(), destino: $('#traspaso-destino').val(), };
+					if($('#sku').is(':visible')) { 
+						data.detalles = [{
+							producto_id: $('#traspaso-producto_id').val(), 
+							arrSku: $('#traspaso-sku').val(), 
+							cantidad: $('#traspaso-sku').val().length
+						}];
+					} else { 
+						data.detalles = [{
+							producto_id: $('#traspaso-producto_id').val(), 
+							cantidad: $('#traspaso-cantidad').val()
+						}]; 
+					}
+
+					$errLabel = $('<div class="invalid-tooltip"></div>');
+					if(data.origen == 0) {
+						$errLabel.html('Debe seleccionar el origen');
+						$('#traspaso-origen').after($errLabel).focus();
+						$errLabel.show();
+					} else if(data.destino == 0) {
+						$errLabel.html('Debe seleccionar el destino');
+						$('#traspaso-destino').after($errLabel).focus();
+						$errLabel.show();
+					} else if(data.folio == '') {
+						$errLabel.html('Debe ingresar el folio');
+						$('#traspaso-folio').after($errLabel).focus();
+						$errLabel.show();
+					} else if(!$('#sku').is(':visible') && (parseInt(data.detalles[0].cantidad)==0 || data.detalles[0].cantidad.length==0)) {
+						$errLabel.html('Debe ingresar la cantidad');
+						$('#traspaso-cantidad').after($errLabel);
+						$errLabel.show();
+					} else if($('#sku').is(':visible') && $('#traspaso-sku').val().length==0) {
+						$errLabel.html('Debe seleccionar los '+$('#traspaso-categoria_sku').val()+' de la lista');
+						$('#traspaso-sku').after($errLabel);
+						$errLabel.show();
+					} else {
+						blockPage();
+						url = '2/' + data.origen + '/' + data.detalles[0].producto_id;
+						if($('#sku').is(':visible')) { url += '/' + data.detalles[0].arrSku; }
+						$.get('<?= URL_API ?>traspaso/getAll/'+url, function(traspasos) {
+							if(traspasos.result.length==0 || (!$('#sku').is(':visible') && parseInt(traspasos.suma)+parseInt(data.detalles[0].cantidad)<=parseInt(traspasos.stock))) {
+								$.post('<?= URL_API ?>traspaso/solicitarTraspaso/', data, function(traspaso) {
+									if(traspaso.response) {
+										getProductos();
+										$('#frm-traspaso').modal('hide');
+										swal({ type:"success", title:"¡Listo!", text:"Se guardaron los datos correctamente.", timer:4000 });
+									} else { swal({ type:"warning", title:"Oops!", text:traspaso.message, timer:4000 }); }
+
+									$.unblockUI();
+								}, 'json');
+							} else {
+								swal({ type:"warning", title:"Oops!", text:'El producto seleccionado cuenta con traspasos pendientes<br>Confirma o cancela dichas solicitudes e intentalo una vez más', html: true, timer:4000 }); 
+								$.unblockUI();
+							}
+						}, 'json');
+					}
+				}
+			<?php endif; ?>
+
+
+			function clearData() {
+				$('.invalid-tooltip').remove();
+				$('#frm-producto input').val('');
+				// $('#producto-regalo-0').prop('checked', true);
+				$('#producto-id').val(0);
+			}
+
+			function getTrElement(tblName, tr) {
+				container = $('<div></div>');
+				trInfo = $('#'+tblName).DataTable().row(tr).data();
+				$.each(trInfo, function(index, trInfoRow) {
+					container.append(trInfoRow);
+				});
+				
+				return container;
+			}
+
+			function reloadTable() {
+				arrColumnas=$('#columnas-tbl-producto').val(); arrCategorias=$('#categorias-tbl-producto').val(); arrSubcategorias=$('#subcategorias-tbl-producto').val(); arrMarcas=$('#marcas-tbl-producto').val(); arrSucursal=$('#sucursal-tbl-producto').val(); arrListaPrecio=$('#lista_precios-tbl-producto').val(); busqueda=$.trim($('#bus').val()).length>0? $.trim($('#bus').val()): '_';
+				cleanTable('tbl-producto'); createTable('tbl-producto', arrColumnas, arrCategorias, arrSubcategorias, arrMarcas, arrSucursal, arrListaPrecio, busqueda);
+			}
+
+			function cleanTable(tbl) {
+				if($.fn.dataTable.isDataTable('#'+tbl)) {
+					table = $('#'+tbl).DataTable();
+					table.destroy();
+				}
+				$("#nodata").remove();
+			}
+
+			//$('#toolbar-tbl-producto').on('changed.bs.select', '.selectpicker:not(#columnas-tbl-producto)', function() { blockPage();
+			$('body').on('changed.bs.select', '.selectpicker:not(#columnas-tbl-producto)', function() { blockPage();
+				if($(this).val().length > 0){
+					if($(this).attr('id')=='filter-sucursal-tbl-existencias'){
+						sucId = parseInt($(this).val());
+						if(sucId == 0){
+							$('#tbl-existencias tbody tr').css('display', '');
+						}else{
+							$.each($('#tbl-existencias tbody tr'), function (indexInArray, elem) { 
+								if($(elem).find('.sucursal').data('id') != sucId) $(elem).css('display', 'none');
+								else $(elem).css('display', '');
+							});
+						}
+					}else{
+						arrColumnas = fColumnas.val();
+						arrCategorias = fCategorias.val();
+						arrSubcategorias = fSubcategorias.val();
+						arrMarcas = fMarcas.val();
+						arrSucursal = fSucursal.val();
+						arrListaPrecio = $(this).attr('id')=='sucursal-tbl-producto'? null: fListaPrecio.val();
+						busqueda = $.trim($('#bus').val()).length>0? $.trim($('#bus').val()): '_';
+						cleanTable('tbl-producto'); createTable('tbl-producto', arrColumnas, arrCategorias, arrSubcategorias, arrMarcas, arrSucursal, arrListaPrecio, busqueda);
+					}
+				}
+				$.unblockUI();
+			});
+
+			function createTable(tbl, arrColumnas=null, arrCategorias=null, arrSubcategorias=null, arrMarcas=null, arrSucursal=null, arrListaPrecio=null, busqueda='_') {
+				container = $('<div class="form-inline pull-right" style="overflow: visible"></div>');
+				if(tbl == 'tbl-producto') {
+					listColumnas = [
+						{'name':'producto',				'text':'Producto',			'align':'left',		'visible':true,},
+						{'name':'categoria',			'text':'Categoría',			'align':'center',	'visible':true,},
+						{'name':'subcategoria',			'text':'Subcategoría',		'align':'center',	'visible':false,},
+						{'name':'marca',				'text':'Marca',				'align':'center',	'visible':true,},
+						{'name':'stock',				'text':'Stock',				'align':'center',	'visible':true,},
+						{'name':'stock_sucursal',		'text':'Stock Sucursal',	'align':'center',	'visible':true,},
+						{'name':'precio_lista_precio',	'text':'Precio',			'align':'right',	'visible':true,},
+						{'name':'estatus',				'text':'Estatus',			'align':'center',	'visible':false,},
+						{'name':'sku',					'text':'SKU',				'align':'center',	'visible':false,},
+					];
+					<?php if(intval($user->usuario_tipo_id) != 1): ?> listColumnas.splice(4, 1); <?php endif; ?>
+					columnDefs = [];
+					fColumnas = $('<select class="selectpicker" multiple data-selected-text-format="static" id="columnas-'+tbl+'" title="Mostrar/Ocultar columnas" data-width="fit"></select>').appendTo(container);
+					$.each(listColumnas, function(index, columna) {
+						fColumnas.append('<option class="form-control-sm" value="'+index+'">'+columna.text+'</option>');
+						columnDefs.push({'data': columna.name, 'className': 'text-'+columna.align, 'title': columna.text, 'visible': columna.visible, 'orderable': true, 'targets': [index]});
+					});
+					columnDefs.push({'data': 'acciones', 'className': 'text-center', 'title': 'ACCIONES', 'visible': true, 'orderable': false, 'targets': listColumnas.length});
+					fColumnas.selectpicker('val', arrColumnas==null? <?php if(intval($user->usuario_tipo_id) == 1): ?>['0', '1', '2', '3', '4', '5', '6']<?php else: ?>['0', '1', '2', '3', '4', '5']<?php endif; ?>: arrColumnas);
+					fColumnas.on('changed.bs.select', function(e, index) { blockPage();
+						column = $('#'+tbl).DataTable().column(index);
+						column.visible(!column.visible());
+						$.unblockUI();
+					});
+
+					categorias = [];
+					fCategorias = $('<select class="selectpicker" multiple data-actions-box="true" data-selected-text-format="static" id="categorias-'+tbl+'" title="Categorías" data-width="fit"></select>').appendTo(container);
+					<?php foreach($categorias as $categoria): ?>
+					fCategorias.append('<option value="<?= $categoria->id ?>"><?= $categoria->nombre ?></option>');
+					categorias.push('<?= $categoria->id ?>');
+					<?php endforeach; ?>
+					fCategorias.selectpicker('val', arrCategorias==null? categorias: arrCategorias)
+
+					subcategorias = [];
+					fSubcategorias = $('<select class="selectpicker" multiple data-actions-box="true" data-selected-text-format="static" id="subcategorias-'+tbl+'" title="Subcategorías" data-width="fit"></select>');//.appendTo(container);
+					<?php foreach($subcategorias as $subcategoria): ?>
+					if(fCategorias.val().includes('<?= $subcategoria->prod_categoria_id ?>')) {
+						fSubcategorias.append('<option value="<?= $subcategoria->id ?>"><?= $subcategoria->nombre ?></option>');
+						subcategorias.push('<?= $subcategoria->id ?>');
+					}
+					<?php endforeach; ?>
+					fSubcategorias.selectpicker('val', arrSubcategorias==null? subcategorias: arrSubcategorias)
+
+					marcas = [];
+					fMarcas = $('<select class="selectpicker" multiple data-actions-box="true" data-selected-text-format="static" id="marcas-'+tbl+'" title="Marcas" data-width="fit"></select>').appendTo(container);
+					<?php foreach($marcas as $marca): ?>
+					fMarcas.append('<option value="<?= $marca->id ?>"><?= $marca->nombre ?></option>');
+					marcas.push('<?= $marca->id ?>');
+					<?php endforeach; ?>
+					fMarcas.selectpicker('val', arrMarcas==null? marcas: arrMarcas);
+
+					contenedor = $('<div <?= $_SESSION['sucursal']!=0? 'class="hide"': '' ?>></div>').appendTo(container);
+					fSucursal = $('<select class="selectpicker" id="sucursal-'+tbl+'" title="Sucursal" data-width="fit"></select>').appendTo(contenedor);
+					<?php foreach($sucursales as $sucursal): if(in_array(intval($_SESSION['sucursal']), [0, intval($sucursal->id)])): ?>
+					fSucursal.append('<option value="<?= $sucursal->id ?>" data-id="<?= $sucursal->id ?>"><?= ucfirst(mb_strtolower($sucursal->nombre)) ?></option>');
+					<?php endif; endforeach; ?>
+					<?php if(intval($_SESSION['sucursal']) != 0): ?>
+					// fSucursal.parents('contenedor').addClass('hide');
+					fSucursal.selectpicker('val', '<?= $_SESSION['sucursal'] ?>');
+					<?php else: ?>
+					if(arrSucursal!=null) { fSucursal.selectpicker('val', arrSucursal); }
+					else if(fSucursal.find('option:not(.bs-title-option)').length > 0) { fSucursal.selectpicker('val', fSucursal.find('option:not(.bs-title-option):first').val()); }
+					<?php endif; ?>
+
+					fListaPrecio = $('<select class="selectpicker" data-selected-text-format="static" id="lista_precios-'+tbl+'" title="Listas Precios" data-width="fit"></select>');//.appendTo(container);
+					<?php foreach($listas_precio as $lista): ?>
+					if(fSucursal.val() == '<?= $lista->sucursal_id ?>') {
+						fListaPrecio.append('<option value="<?= $lista->id ?>" data-id="<?= $lista->id ?>"><?= $lista->nombre ?></option>');
+					}
+					<?php endforeach; ?>
+					if(arrListaPrecio!=null) { fListaPrecio.selectpicker('val', arrListaPrecio); }
+					else if(fListaPrecio.find('option:not(.bs-title-option)').length > 0) { fListaPrecio.selectpicker('val', fListaPrecio.find('option:not(.bs-title-option):first').val()); }
+
+					$('#tbl-producto_length').remove();
+					$('#'+tbl).dataTable({
+						scrollX: false,
+						paging: true,
+						pagingType: "full_numbers",
+						dom: 'Rl<"#toolbar-'+tbl+'">frtip',
+						"columnDefs": columnDefs,
+						'order': [0, 'asc'],
+						'processing': true,
+						'serverSide': true,
+						'ajax': {
+							url: $apiUrl+'getAllBuscaTemplate/0/0/'
+								+(fCategorias.find('option:not(:selected)').length==0? 0: fCategorias.val())+'/'
+								+(fSubcategorias.find('option:not(:selected)').length==0? 0: fSubcategorias.val())+'/'
+								+(fMarcas.find('option:not(:selected)').length==0? 0: fMarcas.val())+'/'
+								+fSucursal.val()+'/'
+								+fListaPrecio.val()+'/'
+								+busqueda,
+							type: 'GET',
+						},
+						createdRow: function(row, data, dataIndex) {
+							$(row).attr('data-id', data.data_id).addClass(data.class);
+						}
+					});
+
+					
+				} else if(tbl == 'tbl-existencias') {
+					order = [];
+					<?php if(intval($user->usuario_tipo_id) == 1): ?>
+						fSucursalE = $('<select class="selectpicker" id="filter-sucursal-'+tbl+'" title="Sucursal" data-width="fit"></select>').appendTo(container);
+						fSucursalE.append('<option class="form-control-sm" value="0">Todas</option>');
+						$.each(arrSucE, function (index, item) { 
+							fSucursalE.append('<option class="form-control-sm" value="'+item.id+'">'+item.nombre+'</option>');
+						});
+						fSucursalE.selectpicker('val', '0');
+						/*fSucursalE.on('changed.bs.select', function(e, index) { blockPage();
+							$.fn.dataTable.ext.search.pop();
+							$('#'+tbl).DataTable().draw();
+
+							index--; if(index > 0) {
+								$.fn.dataTable.ext.search.push(
+									function(settings, data, dataIndex) {
+										if(settings.nTable.id === 'tbl-existencias') {
+											return $($('#'+tbl).DataTable().row(dataIndex).node()).attr('data-sucursal') == index;
+										}
+		
+										return true;
+									}
+								);
+								$('#'+tbl).DataTable().draw();
+							}
+							$.unblockUI();
+						});*/
+
+						order = [1, 'ASC']
+					<?php endif; ?>
+
+					searchContainer = $('<div class="input-group"></div>').appendTo(container);
+					search = $('<input type="text" id="busqueda" placeholder="Buscar por nombre" class="form-control">').appendTo(searchContainer);
+					icon = $('<div class="input-group-append"></div>').appendTo(searchContainer);
+					icon.append('<button type="button" class="btn btn-secondary btn-sm" id="btn-busqueda"><i class="fa fa-search"></i></button>');
+					$('#toolbar-'+tbl).html(container);
+					$('#toolbar-'+tbl+' #busqueda').keyup(function(e) { $("#"+tbl+"_filter label input").val($.trim($(this).val())).trigger('keyup'); });
+					$("#toolbar-"+tbl+" #busqueda").on("search", function(evt) { $("#"+tbl+"_filter label input").val(undefined).trigger('keyup'); });
+					$("#toolbar-"+tbl+" #btn-busqueda").click(function(evt) { evt.preventDefault(); $("#"+tbl+"_filter label input").val($.trim($('#busqueda').val())).trigger('keyup'); });
+
+					$('#'+tbl).dataTable({
+						scrollX: false,
+						paging: false,
+						pagingType: "full_numbers",
+						dom: 'R<"#toolbar-'+tbl+'">ft',
+						order: order,
+					});
+				}
+
+				$('#toolbar-'+tbl).html(container);
+				$('#toolbar-tbl-producto').appendTo('#tbl-toolbar');
+				$('#tbl-producto_length').appendTo('#tbl-toolbar');
+				$('#tbl-producto_filter').appendTo('#tbl-toolbar');
+				$("#"+tbl+"_filter label").hide();
+			}
+		});
+	</script>
+	<?php else: include 'footer.phtml'; endif; ?>

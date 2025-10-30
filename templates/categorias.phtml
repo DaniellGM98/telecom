@@ -1,0 +1,709 @@
+<?php 
+	include 'header.phtml';
+
+	define('MOD_CAT_ADD', 	    57);
+	define('MOD_CAT_EDIT', 	    58);
+	define('MOD_CAT_DEL', 	    59);
+	define('MOD_SUBCAT_ADD', 	60);
+	define('MOD_SUBCAT_EDIT', 	61);
+	define('MOD_SUBCAT_DEL', 	62);
+
+	if($_SESSION['usuario']->usuario_tipo_id == 3) {
+		header('Location: '.URL_ROOT.'/tienda');
+		exit;
+	}
+
+	if(isset($_SESSION['sucursal']) && (!isset($solicitudes) || count($solicitudes)==0)):
+?>
+	<div class="row page-titles">
+		<div class="col-md-5 align-self-center">
+			<h3 class="text-themecolor"><i class="fa fa-tags"></i> Categor&iacute;as</h3>
+		</div>
+	</div>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-12">
+				<div class="card">
+					<div class="card-body">
+						<?php if(in_array(MOD_CAT_ADD, $permisos)) : ?>
+						<button class="btn btn-success pull-right" id="btnAddCategoria"><i class="mdi mdi-plus"></i> Agregar</button>
+						<?php endif; ?>
+
+						<h4 class="card-title">Categor&iacute;as</h4>
+						<h6 class="card-subtitle">Crea, edita y elimina categor&iacute;as de productos</h6>
+
+						<div class="table-responsive">
+							<table id="tbl-categoria" class="table table-hover table-striped table-sm">
+								<thead>
+									<tr>
+										<th class="text-center">Clave</th>
+										<th class="text-center">Nombre</th>
+										<th class="text-center">Subcategor&iacute;as</th>
+										<th class="text-center">Productos</th>
+										<th class="text-center">Acciones</th>
+									</tr>
+								</thead>
+								<tbody></tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<?php if(in_array(MOD_CAT_ADD, $permisos) || in_array(MOD_CAT_EDIT, $permisos)) : ?>
+		<div id="frm-categoria" class="modal" >
+			<div class="modal-dialog modal-lg">
+				<div class="modal-content d-flex p-2">
+					<div class="modal-header">
+						<div class="col-sm-12">
+							<div class="row">
+								<h3 class="modal-title">Datos de la Categor&iacute;a</h3>
+							</div>
+							<div class="row hide" style="margin-top: 10px;">
+								<ul class="nav nav-tabs" id="myTab" role="tablist" style="border-bottom: 0px; margin-bottom: 0px;">
+									<li class="nav-item">
+										<a class="nav-link active" id="home-tab" data-toggle="tab" href="#home" role="tab" aria-controls="home" aria-selected="true">Categor&iacute;a</a>
+									</li>
+									<li class="nav-item">
+										<a class="nav-link" id="subcategories-tab" data-toggle="tab" href="#subcategories" role="tab" aria-controls="subcategories" aria-selected="false">Subcategor&iacute;as</a>
+									</li>
+								</ul>
+							</div>
+						</div>
+					</div>
+					<div class="modal-body">
+						<div class="tab-content" id="myTabContent">
+							<div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
+								<form class="form p-t-20">
+									<div class="row">
+										<div class="col-sm-6">
+											<div class="form-group">
+												<label for="categoria-nombre">Nombre</label>
+												<input type="text" class="form-control" id="categoria-nombre" placeholder="Ingresa el Nombre" required>
+											</div>
+										</div>
+										<div class="col-sm-6">
+											<div class="form-group">
+												<label for="categoria-clave">Clave</label>
+												<input type="text" class="form-control" id="categoria-clave" placeholder="Ingresa la Clave" required>
+											</div>
+										</div>
+									</div>
+									<div class="row">
+										<div class="col-sm-6">
+											<div class="form-group">
+												<label class="form-check-label" for="categoria-tiene_sku">Capturar registro por registro</label>
+												<div class="form-check">
+													<input class="form-check-input" type="radio" name="categoria-sku" id="categoria-tiene_sku-0" value="0" checked>
+													<label class="form-check-label" for="categoria-tiene_sku-0">No</label>
+												</div>
+												<div class="form-check">
+													<input class="form-check-input" type="radio" name="categoria-sku" id="categoria-tiene_sku-1" value="1">
+													<label class="form-check-label" for="categoria-tiene_sku-1">Si</label>
+												</div>
+											</div>
+										</div>
+										<div class="col-sm-6 hide" id="sku_nombre">
+											<div class="form-group">
+												<label for="categoria-sku_nombre">Nombre</label>
+												<input type="text" class="form-control" id="categoria-sku_nombre" placeholder="Ingresa el nombre del campo" required>
+											</div>
+										</div>
+										<div class="col-sm-6">
+											<div class="form-group">
+												<label class="form-check-label" for="categoria-regalo">Permitir dar como regalo</label>
+												<div class="form-check">
+													<input class="form-check-input" type="radio" name="categoria-regalo" id="categoria-regalo-0" value="0" checked>
+													<label class="form-check-label" for="categoria-regalo-0">No</label>
+												</div>
+												<div class="form-check">
+													<input class="form-check-input" type="radio" name="categoria-regalo" id="categoria-regalo-1" value="1">
+													<label class="form-check-label" for="categoria-regalo-1">Si</label>
+												</div>
+											</div>
+										</div>
+										<div class="col-sm-6">
+											<label for="btnImagen">Imagen</label>
+											<div class="input-group">
+												<div class="input-group-prepend">
+													<span class="input-group-text">
+														<i class="fa fa-file-image-o"></i>
+													</span>
+												</div>
+												<input type="file" id="categoria-imagen" class="hide" accept="image/*">
+												<a href="#" id="btnImagen" class="btn btn-secondary pull-right" data-toggle="tooltip" title="Subir Imagen">Subir Imagen</a>
+											</div>
+										</div>
+									</div>
+									<div class="form-group">
+										<div class="cat-imagen hide" style="max-height: 45vh; overflow-y: scroll;">
+											<img src="#" id="img-categoria" class="img-fluid img-thumbnail" alt="Categor&iacute;a" >
+										</div>
+									</div>
+									<input type="hidden" id="categoria-id" value="0">
+								</form>
+							</div>
+							<div class="tab-pane fade" id="subcategories" role="tabpanel" aria-labelledby="subcategories-tab">
+								<button class="btn btn-success pull-right" id="btnAddSubcategoria"><i class="mdi mdi-plus"></i> Agregar</button>
+								<div class="table-responsive">
+									<table id="tbl-subcategoria" class="table table-hover table-striped">
+										<thead>
+											<tr>
+												<th class="text-center">Clave</th>
+												<th class="text-center">Nombre</th>
+												<th class="text-center">Acciones</th>
+											</tr>
+										</thead>
+										<tbody></tbody>
+									</table>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="modal-footer d-flex justify-content-end">
+						<button type="submit" class="btn btn-inverse waves-effect waves-light m-r-20" data-dismiss="modal">Cancelar</button>
+						<button type="submit" class="btn btn-success waves-effect waves-light" id="btnSaveCategoria">Guardar</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<?php endif; ?>
+		<?php if(in_array(MOD_SUBCAT_ADD, $permisos) || in_array(MOD_SUBCAT_EDIT, $permisos)) : ?>
+		<div id="frm-subcategoria" class="modal" >
+			<div class="modal-dialog modal-lg">
+				<div class="modal-content d-flex p-2">
+					<div class="modal-header">
+						<div class="col-sm-12">
+							<div class="row">
+								<h3 class="modal-title">Datos de la Subcategor&iacute;a</h3>
+							</div>
+						</div>
+					</div>
+					<div class="modal-body">
+						<form class="form p-t-20">
+							<div class="form-group">
+								<label for="subcategoria-nombre">Nombre</label>
+								<!-- <div class="input-group">
+									<div class="input-group-prepend">
+										<span class="input-group-text">
+											<i class="ti-home"></i>
+										</span>
+									</div> -->
+									<input type="text" class="form-control" id="subcategoria-nombre" placeholder="Ingresa el Nombre" required>
+								<!-- </div> -->
+							</div>
+							<div class="form-group">
+								<label for="subcategoria-clave">Clave</label>
+								<!-- <div class="input-group">
+									<div class="input-group-prepend">
+										<span class="input-group-text">
+											<i class="ti-money"></i>
+										</span>
+									</div> -->
+									<input type="text" class="form-control" id="subcategoria-clave" placeholder="Ingresa la Clave" required>
+								<!-- </div> -->
+							</div>
+							<input type="hidden" id="subcategoria-id" value="0">
+						</form>
+					</div>
+					<div class="modal-footer d-flex justify-content-end">
+						<button type="submit" class="btn btn-inverse waves-effect waves-light m-r-20" data-dismiss="modal">Cancelar</button>
+						<button type="submit" class="btn btn-success waves-effect waves-light" id="btnSaveSubcategoria">Guardar</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<?php endif; ?>
+		<div id="frm-productos" class="modal" >
+			<div class="modal-dialog modal-lg">
+				<div class="modal-content d-flex p-2">
+					<div class="modal-header">
+						<div class="col-sm-12">
+							<div class="row">
+								<h3 class="modal-title">Productos registrados en la categor&iacute;a</h3>
+							</div>
+						</div>
+					</div>
+					<div class="modal-body">
+						<input type="hidden" id="id-categoria">
+						<div class="table-responsive">
+							<table id="tbl-productos" class="table table-hover table-striped">
+								<thead>
+									<tr>
+										<th class="text-center">Marca</th>
+										<th class="text-center">Producto</th>
+										<th class="text-center">Subcategoria</th>
+										<!-- <th></th> -->
+									</tr>
+								</thead>
+								<tbody></tbody>
+							</table>
+						</div>
+					</div>
+					<div class="modal-footer d-flex justify-content-end">
+						<button type="submit" class="btn btn-inverse waves-effect waves-light m-r-20" data-dismiss="modal">Cerrar</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<?php include 'footer.phtml';?>
+	<script type="text/javascript">
+		$(function() {
+			$apiUrl = '<?= URL_API ?>prod_categoria/';
+			$('#mnu-prod').addClass('active');
+
+			getCategorias();
+			function getCategorias(filtro) { blockPage();
+				cleanTable('tbl-categoria'); $('#tbl-categoria tbody').empty();
+				$.get($apiUrl+'getAll/', function(categorias) {
+					$.each(categorias.result, function(index, categoria) { addRowCategoria(categoria); });
+					createTable('tbl-categoria', true, filtro); $.unblockUI();
+				});
+			}
+
+			function addRowCategoria(categoria) {
+				container = $('#tbl-categoria tbody');
+				container.find('tr[data-id="'+categoria.id+'"]').remove();
+				tr = $('<tr data-id="'+categoria.id+'"></tr>').appendTo(container);
+
+				tr.append('<td class="text-center">'+categoria.clave.toUpperCase()+'</td>');
+				tr.append('<td>'+categoria.nombre.toUpperCase()+'</td>');
+				tr.append('<td class="text-center">'+categoria.subcategorias.length+'</td>');
+				tr.append('<td class="text-center">'+categoria.productos.length+'</td>');
+
+				tda = $('<td class="text-center" data-id="'+categoria.id+'"></td>');
+				tda.append('<a href="#" data-popup="tooltip" title="Ver Productos" class="btnProducts"><i class="mdi mdi-eye" style="color: grey"></i></a> ');
+				<?php if(in_array(MOD_CAT_EDIT, $permisos)) : ?>
+				if(categoria.id > 12) tda.append('<a href="#" data-popup="tooltip" title="Editar" class="btnEditCategoria"><i class="mdi mdi-pencil"></i></a> ');
+				<?php endif; ?>
+				<?php if(in_array(MOD_CAT_DEL, $permisos)) : ?>
+				if(categoria.id > 12) tda.append('<a href="#" data-popup="tooltip" title="Eliminar" class="btnDelCategoria"><i class="mdi mdi-delete" style="color:red;"></i></a>');
+				<?php endif; ?>
+				tr.append(tda);
+
+				$('#tbl-categoria tbody').append(tr);
+			}
+
+			$('tbody').on('click', '.btnProducts', function(e) { e.preventDefault();
+				$('#id-categoria').val($(this).parents('tr').data('id'));
+				$.get($apiUrl.replace('prod_categoria', 'prod_subcategoria')+'getAll/0/0/_/'+$('#id-categoria').val(), function(subcategorias) {
+					arrSubcategorias = [];
+					$.each(subcategorias.result, function(index, subcategoria) {
+						arrSubcategorias.push({id: subcategoria.id, nombre: subcategoria.nombre});
+					});
+
+					getProductos();
+				}, 'json');
+				$('#frm-productos').modal('show');
+			});
+
+			function getProductos() {
+				cleanTable('tbl-productos');
+				table = $('#tbl-productos tbody');
+				$.get($apiUrl.replace('prod_categoria', 'producto')+'getAllBusca/0/0/'+$('#id-categoria').val(), function(resp) {
+					table.empty();
+					$.each(resp.result, function(index, producto) {
+						tr = $('<tr data-id="'+producto.id+'" data-subcategoria="'+producto.prod_subcategoria_id+'"></tr>');
+						//tr.append($('<td class="text-center"><small><a href="<?= URL_ROOT ?>/productos/'+producto.id+'">'+producto.sku+'</a></small></td>'));
+						tr.append($('<td class="text-center"><small>'+producto.marca+'</small></td>'));
+						tr.append($('<td class="text-justfied"><small>'+producto.nombre+' '+producto.modelo+'</small></td>'));
+						tr.append($('<td class="text-center"><small>'+(producto.subcategoria!=null?producto.subcategoria:'-')+'</small></td>'));
+
+						table.append(tr);
+					});
+					createTable('tbl-productos', true, null, arrSubcategorias);
+				}, 'json');
+			}
+
+			<?php if(in_array(MOD_CAT_ADD, $permisos)) : ?>
+			$('#btnAddCategoria').click(function(e) { e.preventDefault(); blockPage();
+				clearData();
+				$('#btnSaveCategoria').addClass('add').removeClass('update');
+				$('#frm-categoria').modal('show');
+				$('#home-tab').click();
+				$('#categoria-id').val(0);
+				$.unblockUI();
+			});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_CAT_EDIT, $permisos)) : ?>
+			$('tbody').on('click', '.btnEditCategoria', function(event) { event.preventDefault(); blockPage();
+				clearData();
+				$('#frm-categoria .validation-error-label').remove();
+				id = $(this).parents('td').data('id');
+
+				$.get($apiUrl+'get/'+id, function(data) {
+					$('#categoria-id').val(data.result.id).trigger('change');
+					$('#categoria-clave').val(data.result.clave).trigger('change');
+					$('#categoria-nombre').val(data.result.nombre).trigger('change');
+					$('#categoria-tiene_sku-1').prop('checked', parseInt(data.result.tiene_sku)==1).trigger('change');
+					$('#categoria-regalo-'+data.result.regalo).prop('checked', true);
+					$('#categoria-sku_nombre').val(data.result.sku_nombre).trigger('change');
+					if(data.result.imagen!='' && data.result.imagen!=null && data.result.imagen!=undefined) {
+						$('#img-categoria').attr('src', '<?= URL_ROOT ?>/assets/image/categorias/'+data.result.imagen).parents('.cat-imagen').removeClass('hide');
+					}
+					addRowSubcategoria(data.result.subcategorias);
+
+					$.unblockUI();
+					$('#btnSaveCategoria').addClass('update');
+					$('#frm-categoria').modal('show');
+					$('#home-tab').click();
+				});
+			});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_CAT_ADD, $permisos) || in_array(MOD_CAT_EDIT, $permisos)) : ?>
+			$('#frm-categoria').on('shown.bs.modal', function () { 
+				header = $(this).find('.modal-header');
+				if($('#btnSaveCategoria').hasClass('add')) {
+					header.css('padding-bottom', '');
+					header.find('.row').last().addClass('hide');
+				} else if($('#btnSaveCategoria').hasClass('update')) {
+					header.css('padding-bottom', 0);
+					header.find('.row').last().removeClass('hide');
+				}
+				$('#categoria-nombre').focus(); 
+			});
+
+			$('#frm-categoria').on('hidden.bs.modal', function () { 
+				$('#btnSaveCategoria').removeClass('add').removeClass('update');
+				$('#img-categoria').attr('src', '#').parents('.cat-imagen').addClass('hide');
+			});
+
+			$('#frm-categoria').on('hide.bs.modal', function () { 
+				$('#home-tab').click();
+			});
+
+			$('#categoria-nombre').change(function() {
+				$('.invalid-tooltip').remove();
+				$.get($apiUrl+'getByNombreMD5/'+$.md5($.trim($(this).val().toLowerCase())), function(categoria) { if(categoria.result.length > 0) { categoria = categoria.result;
+					if(categoria.length>1 || categoria[0].id!=parseInt($('#categoria-id').val())) {
+						$errLabel = $('<div class="row invalid-tooltip">Ya existe una categoria con el mismo nombre</div>');
+						$('#categoria-nombre').after($errLabel);
+						$errLabel.show();
+						// setTimeout(() => { $('.invalid-tooltip').remove(); }, 4000);
+					}
+				}}, 'json');
+			});
+
+			$('#categoria-tiene_sku-0, #categoria-tiene_sku-1').change(function() {
+				if($('#categoria-tiene_sku-1').is(':checked')) { $('#sku_nombre').removeClass('hide'); }
+				else { $('#sku_nombre').addClass('hide'); $('#categoria-sku_nombre').val('') }
+			});
+			
+			$('#btnImagen').click(function(e) { e.preventDefault(); $('#categoria-imagen').click(); });
+			$('#categoria-imagen').change(function() {
+				if(this.files && this.files[0]) {
+					var reader = new FileReader();
+
+					reader.onload = function(e) {
+						$('#img-categoria').attr('src', e.target.result);
+					}
+					
+					reader.readAsDataURL(this.files[0]);
+					$('#img-categoria').parents('.cat-imagen').removeClass('hide');
+				}
+			});
+
+			$('#btnSaveCategoria').click(function() {
+				$('.invalid-tooltip').remove();
+				id = parseInt($('#categoria-id').val());
+				var data = new FormData();
+				data.append('nombre', $.trim($('#categoria-nombre').val()));
+				data.append('clave', $.trim($('#categoria-clave').val()));
+				data.append('tiene_sku', $('#categoria-tiene_sku-1').is(':checked')? 1: 0);
+				data.append('sku_nombre', $.trim($('#categoria-sku_nombre').val()));
+				data.append('regalo', $('#categoria-regalo-1').prop('checked')? 1: 0);
+				if($('#img-categoria').parents('.cat-imagen').is(':visible')) {
+					data.append('imagen', $('#categoria-imagen')[0].files[0]);
+				}
+
+				$errLabel = $('<div class="invalid-tooltip"></div>');
+				if(data.get('nombre') == '') {
+					$errLabel.html('Debe ingresar el nombre');
+					$('#categoria-nombre').focus().after($errLabel);
+					$errLabel.show();
+				} else { blockPage();
+					if(id == 0) {
+						data.append('status', 1);
+						$.ajax({ url:$apiUrl+'add/', type:'POST', data:data, contentType:false, processData:false, success:
+							function(resp) {
+								if(resp.response) {
+									data.append('id', resp.result);
+									getCategorias();
+									$('#categoria-id').val(data.get('id'));
+									$('#btnSaveCategoria').removeClass('add').addClass('update');
+									$('#subcategories-tab').click();
+									$('#frm-categoria .modal-header').css('padding-bottom', 0);
+									$('#frm-categoria .modal-header').find('.row').last().removeClass('hide');
+									cleanTable('tbl-subcategoria'); createTable('tbl-subcategoria');
+
+									swal({ type:"success", title:"¡Listo!", text:"Se guardaron los datos correctamente.", timer:4000 });
+								}else{ swal({ type:"warning", title:"Oops!", text:resp.message, timer:4000 }); }
+
+								$.unblockUI();
+							}
+						});
+					} else {
+						$.ajax({ url:$apiUrl+'edit/'+id, type:'POST', dataType:'json', data:data,  contentType:false, processData:false, }).done(function(resp) {
+							if(resp.response) {
+								getCategorias();
+								$('#categoria-id').val(0);
+								$('#frm-categoria').modal('hide');
+								swal({ type:"success", title:"¡Listo!", text:"Se guardaron los datos correctamente.", timer:4000 });
+							}else{ swal({ type:"warning", title:"Oops!", text:resp.message, timer:4000 }); }
+
+							$.unblockUI();
+						});
+					}
+				}
+			});
+
+			function addRowSubcategoria(data) {
+				container = $('#tbl-subcategoria tbody');
+				cleanTable('tbl-subcategoria'); container.empty();
+				if(data.length > 0) {
+					$.each(data, function(index, item) {
+						tr = $('<tr data-id="'+item.id+'"></tr>');
+						
+						tr.append('<td class="text-center">'+item.clave+'</td>');
+						tr.append('<td>'+item.nombre+'</td>');
+
+						tda = $('<td class="text-center" data-id="'+item.id+'"></td>').appendTo(tr);
+						<?php if(in_array(MOD_SUBCAT_EDIT, $permisos)) : ?>
+						tda.append('<a href="#" data-popup="tooltip" title="Editar" class="btnEditSub"><i class="mdi mdi-pencil"></i></a> ');
+						<?php endif; ?>
+						<?php if(in_array(MOD_SUBCAT_DEL, $permisos)) : ?>
+						tda.append('<a href="#" data-popup="tooltip" title="Eliminar" class="btnDelSubcategoria"><i class="mdi mdi-delete" style="color:red;"></i></a>');
+						<?php endif; ?>
+
+						container.append(tr);
+					});
+
+				}
+				createTable('tbl-subcategoria', true);
+			}
+
+			function clearData() {
+				$('.invalid-tooltip').remove();
+				$('#frm-categoria input').not('[type="hidden"], [type="radio"]').val('');
+				$('#categoria-tiene_sku-0').prop('checked', true);
+				$('#categoria-regalo-0').prop('checked', true);
+				cleanTable('tbl-subcategoria'); $('#tbl-subcategoria tbody').empty(); createTable('tbl-subcategoria', false);
+				// $('#categoria-id').val(0);
+			}
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_CAT_DEL, $permisos)) : ?>
+			$('tbody').on('click', '.btnDelCategoria', function(event) { event.preventDefault();
+				id = $(this).parents('td').data('id');
+				trp = $('#tbl-categoria [data-id="'+id+'"]').parents('tr');
+				nom = trp.find('td:eq(0)').text();
+				swal({ title:"Eliminar categoría", text:"No podrá restaurar la categoría <strong>"+nom+"</strong>", type:"warning", html:true, showCancelButton:true, cancelButtonText:"Cancelar", confirmButtonColor:"#DD6B55", confirmButtonText:"Si, eliminar", closeOnConfirm:false  }, 
+					function() { blockPage();
+						$.ajax({ url:$apiUrl+'del/'+id, type:'PUT', dataType:'json', success:
+							function(resp) {
+								if(resp.response) {
+									getCategorias();
+									swal({ type:"success", title:"¡Listo!", text:"Se eliminó la categoría", timer:4000 });
+								} else { swal({ type:"warning", title:"Oops!", text:resp.message, timer:4000 }); }
+								$.unblockUI();
+							}
+						});
+					}
+				);
+			});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_SUBCAT_ADD, $permisos)) : ?>
+			$('#btnAddSubcategoria').click(function() {
+				$('#frm-subcategoria').modal('show');
+				$('#frm-categoria').modal('hide');
+				$('#btnSaveSubcategoria').addClass('add');
+			});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_SUBCAT_EDIT, $permisos)) : ?>
+			$('tbody').on('click', '.btnEditSub', function(e) { e.preventDefault();
+				$.get($apiUrl.replace('prod_categoria', 'prod_subcategoria')+'get/'+$(this).parents('tr').data('id'), function(resp) {
+					$.each(resp.result, function(index, item) { $('#subcategoria-'+index).val(item); });
+
+					$('#frm-categoria').modal('hide');
+					$('#btnSaveSubcategoria').addClass('update').removeClass('add');
+					$('#frm-subcategoria').modal('show');
+				}, 'json');
+			});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_SUBCAT_ADD, $permisos) || in_array(MOD_SUBCAT_EDIT, $permisos)) : ?>
+			$('#frm-subcategoria').on('shown.bs.modal', function() { 
+				$('#subcategoria-clave').focus();
+			});
+
+			$('#frm-subcategoria').on('hidden.bs.modal', function() { 
+				$(this).find('input').val('');
+				$('#frm-categoria').modal('show'); 
+				$('#btnSaveCategoria').addClass('update'); 
+				$('#btnSaveSubcategoria').removeClass('add').removeClass('update'); 
+			});
+
+			$('#subcategoria-nombre').change(function() {
+				$('.invalid-tooltip').remove();
+				$.get($apiUrl.replace('prod_categoria', 'prod_subcategoria')+'getByNombreMD5/'+$.md5($.trim($(this).val().toLowerCase()))+'/'+$('#categoria-id').val(), function(subcategoria) { if(subcategoria.result.length > 0) { subcategoria = subcategoria.result;
+					if(subcategoria.length>1 || subcategoria[0].id!=parseInt($('#subcategoria-id').val())) {
+						$errLabel = $('<div class="row invalid-tooltip">Ya existe una subcategoria con el mismo nombre en la categoría</div>');
+						$('#subcategoria-nombre').after($errLabel);
+						$errLabel.show();
+						// setTimeout(() => { $('.invalid-tooltip').remove(); }, 4000);
+					}
+				}}, 'json');
+			});
+
+			$('#btnSaveSubcategoria').click(function(e) { e.preventDefault(); blockPage();
+				data = { 'prod_categoria_id':$('#categoria-id').val(), 'nombre':$.trim($('#subcategoria-nombre').val()), 'clave':$.trim($('#subcategoria-clave').val()), };
+				if($(this).hasClass('add')) {
+					$.post($apiUrl.replace('prod_categoria', 'prod_subcategoria')+'add/', data, function(resp) {
+						if(resp.response) {
+							$.get($apiUrl.replace('prod_categoria', 'prod_subcategoria')+'getByCategoria/'+data.prod_categoria_id, function(resp) {
+								addRowSubcategoria(resp.result);
+								$('#frm-subcategoria').modal('hide');
+								
+								swal({ type:"success", title:"¡Listo!", text:"Se guardó exitosamente la subcategoría", timer:4000 });
+							}, 'json');
+						} else { swal({ type:"warning", title:"Oops!", text:resp.message, timer:4000 }); }
+
+						$.unblockUI();
+					}, 'json');
+				} else if($(this).hasClass('update')) {
+					$.ajax({ url:$apiUrl.replace('prod_categoria', 'prod_subcategoria')+'edit/'+$('#subcategoria-id').val(), type:'PUT', dataType:'json', data:data, success:
+						function(resp) {
+							if(resp.response) {
+								$.get($apiUrl.replace('prod_categoria', 'prod_subcategoria')+'getByCategoria/'+data.prod_categoria_id, function(resp) {
+									addRowSubcategoria(resp.result);
+									$('#frm-subcategoria').modal('hide');
+									
+									swal({ type:"success", title:"¡Listo!", text:"Se modificó la categoría", timer:4000 });
+								}, 'json');
+							} else { swal({ type:"warning", title:"Oops!", text:resp.message, timer:4000 }); }
+
+							$.unblockUI();
+						}
+					});
+				}
+			});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_SUBCAT_DEL, $permisos)) : ?>
+			$('tbody').on('click', '.btnDelSubcategoria', function(e) { e.preventDefault();
+				id = $(this).parents('tr').data('id');
+				swal({ title:"Eliminar subcategoría", text:"No podrá restaurar la subcategoría <strong>"+$(this).parents('tr').find('td:eq(1)').text()+"</strong>", type:"warning", html:true, showCancelButton:true, cancelButtonText:"Cancelar", confirmButtonColor:"#DD6B55", confirmButtonText:"Si, eliminar", closeOnConfirm:false }, 
+					function() { blockPage();
+						$.ajax({ url:$apiUrl.replace('prod_categoria', 'prod_subcategoria')+'del/'+id, type:'PUT', dataType:'json', success:
+							function(resp) {
+								if(resp.response) {
+									$.get($apiUrl.replace('prod_categoria', 'prod_subcategoria')+'getByCategoria/'+$('#categoria-id').val(), function(resp) {
+										addRowSubcategoria(resp.result);
+										$('#frm-subcategoria').modal('hide');
+
+										swal({ type:"success", title:"¡Listo!", text:"Se eliminó la subcategoría", timer:4000 });
+									}, 'json');
+								}
+								$.unblockUI();
+							}
+						});
+					}
+				);
+			});
+			<?php endif; ?>
+
+			function cleanTable(tbl) {
+				if($.fn.dataTable.isDataTable('#'+tbl)) {
+					table = $('#'+tbl).DataTable();
+					table.destroy();
+				}
+				$("#nodata").remove();
+			}
+
+			function createTable(tbl, paging, filter=null, arrSubcategorias=null) {
+				container = $('<div class="form-inline pull-right" style="overflow: visible"></div>');
+				if(tbl == 'tbl-categoria') {
+					select = $('<select class="selectpicker" multiple data-selected-text-format="static" id="columns-'+tbl+'" title="Mostrar/Ocultar columnas" data-width="fit"></select>').appendTo(container);
+					select.append('<option class="form-control-sm" value="0">Clave</option>');
+					select.append('<option class="form-control-sm" value="1">Nombre</option>');
+					select.append('<option class="form-control-sm" value="2">Subcategorías</option>');
+					select.append('<option class="form-control-sm" value="3">Productos</option>');
+					select.selectpicker('val', filter!=null? filter: ['0', '1', '2', '3']);
+					select.on('changed.bs.select', function(e, index) { blockPage();
+						column = $('#'+tbl).DataTable().column(index);
+						column.visible(!column.visible());
+						$.unblockUI();
+					});
+					columnDefs = [
+						{"orderable": true, "targets": [0], "visible": ($.inArray("0", select.val())>=0)},
+						{"orderable": true, "targets": [1], "visible": ($.inArray("1", select.val())>=0)},
+						{"orderable": true, "targets": [2], "visible": ($.inArray("2", select.val())>=0)},
+						{"orderable": true, "targets": [3], "visible": ($.inArray("3", select.val())>=0)},
+						{"orderable": false, "targets": [4]}
+					];
+					order = [1, 'asc'];
+				} else if(tbl == 'tbl-subcategoria') {
+					columnDefs = [ {"orderable": true, "targets": [0, 1]}, {"orderable": false, "targets": [2]} ];
+					order = [0, 'asc'];
+				} else if(tbl == 'tbl-productos') {
+					subcategoria = $('<select class="selectpicker" data-container="#frm-productos" multiple data-selected-text-format="static" id="filter-subcategoria-'+tbl+'" title="subcategorias" data-width="fit"></select>').appendTo(container);
+					if(arrSubcategorias != null) {
+						selected = [];
+						$.each(arrSubcategorias, function(index, item) {
+							subcategoria.append('<option class="form-control-sm" value="'+index+'" data-id="'+item.id+'">'+item.nombre+'</option>');
+							selected.push(index+'');
+						});
+						subcategoria.selectpicker('val', selected);
+					}
+					subcategoria.on('changed.bs.select', function(e, index) { blockPage();
+						$.fn.dataTable.ext.search.pop();
+						$.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+							arrCategorias = [];
+							$.each(subcategoria.val(), function(index, item) {
+								arrCategorias.push(subcategoria.find('[value="'+item+'"]').data('id').toString());
+							});
+							if(settings.nTable.id === 'tbl-productos') {
+								return arrCategorias.includes($($('#'+tbl).DataTable().row(dataIndex).node()).attr('data-subcategoria')+'');
+							}
+
+							return true;
+						});
+
+						$('#'+tbl).DataTable().draw();
+						$.unblockUI();
+					});
+
+					columnDefs = [ {"orderable": true, "targets": [0, 1, 2]} ];
+					order = [0, 'asc', 1, 'asc'];
+				}
+
+				searchContainer = $('<div class="input-group"></div>').appendTo(container);
+				search = $('<input type="text" id="bus" placeholder="Buscar por nombre" class="form-control">').appendTo(searchContainer);
+				icon = $('<div class="input-group-append"></div>').appendTo(searchContainer);
+				icon.append('<button type="button" class="btn btn-secondary btn-sm" id="btn-bus"><i class="fa fa-search"></i></button>');
+
+				$('#'+tbl).dataTable({
+					// scrollY: false,
+					scrollX: false,
+					paging: paging,
+					pagingType: "full_numbers",
+					dom: 'Rl<"#toolbar-'+tbl+'">frtip',
+					"columnDefs": columnDefs,
+					'order': order
+				});
+
+				$('#toolbar-'+tbl).html(container);
+				$('#toolbar-'+tbl+' #bus').keyup(function(e) { $("#"+tbl+"_filter label input").val($.trim($(this).val())).trigger('keyup'); });
+				$("#toolbar-"+tbl+" #bus").on("search", function(evt) { $("#"+tbl+"_filter label input").val(undefined).trigger('keyup'); });
+				$("#toolbar-"+tbl+" #btn-bus").click(function(evt) { evt.preventDefault(); $("#"+tbl+"_filter label input").val($.trim($('#bus').val())).trigger('keyup'); });
+
+				$("#"+tbl+"_filter label").hide();
+			}
+		});
+	</script>
+<?php else: include 'footer.phtml'; endif; ?>

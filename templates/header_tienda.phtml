@@ -1,0 +1,323 @@
+<?php require_once './core/defines.php'; ?>
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<title><?= str_replace('-', ' ', $vista).' | '.SITE_NAME ?> </title>
+		<meta charset="utf-8">
+		<meta name="keywords" content="casa perez, muebles, cocinas, salas, comedores" />
+		<meta name="author" content="DDS.media">
+		<meta name="robots" content="index, follow" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+		<!-- <link rel="shortcut icon" type="image/png" href="ico/favicon-16x16.png"/> -->
+
+		<link href="<?= URL_ROOT ?>/assets/plugins/bootstrap/css/bootstrap.min.2.css" rel="stylesheet">
+		<link href="<?= URL_ROOT ?>/assets/plugins/font-awesome/css/font-awesome.min.css" rel="stylesheet">
+		<link href="<?= URL_ROOT ?>/assets/plugins/datetimepicker/css/bootstrap-datetimepicker.min.css" rel="stylesheet">
+		<link href="<?= URL_ROOT ?>/assets/plugins/owl-carousel/css/owl.carousel.css" rel="stylesheet">
+		<link href="<?= URL_ROOT ?>/assets/plugins/lightslider/css/lightslider.css" rel="stylesheet">
+		<link href="<?= URL_ROOT ?>/assets/plugins/theme/css/lib.css" rel="stylesheet">
+		<link href="<?= URL_ROOT ?>/assets/plugins/jquery-ui/css/jquery-ui.min.css" rel="stylesheet">
+		<link href="<?= URL_ROOT ?>/assets/plugins/minicolors/css/miniColors.css" rel="stylesheet">
+		<link href="<?= URL_ROOT ?>/assets/plugins/slick-slider/css/slick.css" rel="stylesheet">
+  		<link href="<?= URL_ROOT ?>/assets/css/quickview/magnific-popup.css" rel="stylesheet">
+		<link href="<?= URL_ROOT ?>/assets/plugins/theme/css/so_sociallogin.css" rel="stylesheet">
+		<link href="<?= URL_ROOT ?>/assets/plugins/theme/css/so_searchpro.css" rel="stylesheet">
+		<link href="<?= URL_ROOT ?>/assets/plugins/theme/css/so_megamenu.css" rel="stylesheet">
+		<link href="<?= URL_ROOT ?>/assets/plugins/theme/css/so_onepagecheckout.css" rel="stylesheet">
+		<link href="<?= URL_ROOT ?>/assets/plugins/theme/css/so-categories.css" rel="stylesheet">
+		<link href="<?= URL_ROOT ?>/assets/plugins/theme/css/so-listing-tabs.css" rel="stylesheet">
+		<link href="<?= URL_ROOT ?>/assets/plugins/theme/css/so-category-slider.css" rel="stylesheet">
+		<link href="<?= URL_ROOT ?>/assets/plugins/theme/css/so-newletter-popup.css" rel="stylesheet">
+		<link href="<?= URL_ROOT ?>/assets/plugins/sweetalert/css/sweetalert.css" rel="stylesheet">
+		<link href="<?= URL_ROOT ?>/assets/plugins/confirm/css/jquery-confirm.min.css" rel="stylesheet">
+		<link href="<?= URL_ROOT ?>/assets/css/footer/footer.css" rel="stylesheet">
+		<!-- <link href="<?= URL_ROOT ?>/assets/css/header/header.css" rel="stylesheet"> -->
+		<!-- <link href="<?= URL_ROOT ?>/assets/css/theme.css" rel="stylesheet" id="color_scheme"> -->
+		<link href="<?= URL_ROOT ?>/assets/css/home.css" rel="stylesheet" id="color_scheme">
+		<link href="<?= URL_ROOT ?>/assets/css/quickview/quickview.css" rel="stylesheet">
+		<link href="<?= URL_ROOT ?>/assets/css/responsive.css" rel="stylesheet">
+		<link href="<?= URL_ROOT ?>/assets/plugins/floatwhats/floatwhats/floating-wpp.min.css" rel="stylesheet">
+		<link href="https://fonts.googleapis.com/css?family=Poppins:300,400,600,700&display=swap" rel="stylesheet">
+		<link href="https://fonts.googleapis.com/css?family=Lobster&display=swap" rel="stylesheet">
+		<link href="https://fonts.googleapis.com/css?family=Open+Sans&display=swap" rel="stylesheet">
+		<style type="text/css">
+			body{
+				font-family: 'Poppins', sans-serif;
+				background-color: #eeeeee;
+			}
+
+			/*.active {
+				color: #215793;
+			}*/
+		</style>
+		<!-- Start of Async Drift Code -->
+		<script>
+			"use strict";
+
+			!function() {
+				var t = window.driftt = window.drift = window.driftt || [];
+				if (!t.init) {
+					if (t.invoked) return void (window.console && console.error && console.error("Drift snippet included twice."));
+					t.invoked = !0, t.methods = [ "identify", "config", "track", "reset", "debug", "show", "ping", "page", "hide", "off", "on" ], 
+					t.factory = function(e) {
+					return function() {
+						var n = Array.prototype.slice.call(arguments);
+						return n.unshift(e), t.push(n), t;
+					};
+					}, t.methods.forEach(function(e) {
+					t[e] = t.factory(e);
+					}), t.load = function(t) {
+					var e = 3e5, n = Math.ceil(new Date() / e) * e, o = document.createElement("script");
+					o.type = "text/javascript", o.async = !0, o.crossorigin = "anonymous", o.src = "https://js.driftt.com/include/" + n + "/" + t + ".js";
+					var i = document.getElementsByTagName("script")[0];
+					i.parentNode.insertBefore(o, i);
+					};
+				}
+			}();
+			drift.SNIPPET_VERSION = '0.3.1';
+			drift.load('i2dzrgue98s3');
+		</script>
+		<!-- End of Async Drift Code -->
+	</head>
+	<body class="commpn-here res layout-2">
+		<div id="wrapper" class="wrapper-fluid banner-effect-3">
+			<header class="typeheader-2">
+				<div class="header-box" <?= $_SERVER['REQUEST_URI'] != '/' ? 'style="position:relative; background-color:rgba(0, 0, 0, 0.58)"' : '' ?>>
+					<div class="container">
+						<div class="block-header">
+							<div class="logo wow fadeInLeft">
+								<a href="<?= URL_ROOT ?>" class="smooth">
+									<img src="<?= URL_ROOT ?>/assets/image/logo.png" class="img-responsive" alt="">
+								</a>
+							</div>
+							<div class="header-center wow fadeInDown">
+								<div class="header-top">
+									<div class="header-user">
+										<ul>
+											<?php if(isset($_SESSION['usuario'])): ?>
+												<li class="dropdown">
+													<?php if($_SESSION['usuario']->usuario_tipo_id==3): ?>
+														<a href="<?= URL_ROOT ?>/cuenta" id="dropdownCuenta" class="smooth dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+															<i class="fa fa-user" aria-hidden="true"></i>
+															Mi Cuenta
+															<i class="fa fa-caret-down" aria-hidden="true"></i>
+														</a>
+														<ul class="dropdown-menu" aria-labelledby="dropdownCuenta" style="background: #444444;">
+															<li><a href="#">Informaci&oacute;n Personal</a></li>
+															<li><a href="#">Direcciones de Env&iacute;o</a></li>
+															<li><a href="#">Cambiar Contrasen&ntilde;a</a></li>
+															<li><a href="#">Mis Pedidos</a></li>
+															<li><a href="<?= URL_ROOT ?>/usuario/logout/">Cerrar Sesi&oacute;n</a></li>
+														</ul>
+													<?php else: ?>
+														<a href="<?= URL_ROOT ?>/ventas" id="dropdownSistema" class="smooth dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+															<i class="fa fa-user" aria-hidden="true"></i>
+															Sistema
+														</a>
+														<ul class="dropdown-menu" aria-labelledby="dropdownSistema" style="background: #444444;">
+															<li><a href="<?= URL_ROOT ?>/ventas">Sistema</a></li>
+															<li><a href="<?= URL_ROOT ?>/usuario/logout/">Cerrar Sesi&oacute;n</a></li>
+														</ul>
+													<?php endif; ?>
+												</li>
+												<li>
+													<a href="<?= URL_ROOT ?>/lista_deseos" class="smooth">
+														<i class="fa fa-heart"></i> Lista de deseos
+													</a>
+												</li>
+											<?php else: ?>
+												<li>
+													<a href="<?= URL_ROOT ?>/login" class="smooth">
+														<i class="fa fa-user" aria-hidden="true"></i>
+														Iniciar Sesi&oacute;n
+													</a>
+												</li>
+												<li>
+													<a href="<?= URL_ROOT ?>/client-register" class="smooth">
+														<i class="fa fa-sign-in" aria-hidden="true"></i>
+														Registrarme
+													</a>
+												</li>
+											<?php endif; ?>
+											<?php if(isset($_SESSION['cart']['items']) && count($_SESSION['cart']['items'])>0): ?>
+												<li>
+													<a href="<?= URL_ROOT ?>/checkout" id="to-checkout" class="smooth">
+														<i class="fa fa-check-square-o"></i> Pagar Ahora
+													</a>
+												</li>
+											<?php endif; ?>
+										</ul>
+									</div>
+									<div class="header-language">
+										<ul>
+											<li class="search-form-box pull-right">
+												<fieldset class="search-form-header">
+													<input type="text" placeholder="Buscar por nombre, marca, modelo..." class="form-control" id="prod_filter">
+													<button type="button" id="btn_search">
+														<i class="fa fa-search" aria-hidden="true"></i>
+													</button>
+												</fieldset>
+											</li>
+										</ul>
+									</div>
+								</div>
+								<div class="header-bottom">
+									<div class="header-menu">
+										<div class="megamenu-style-dev megamenu-dev">
+											<div class="responsive">
+												<nav class="navbar-default">
+													<div class="container-megamenu-horizontal">
+														<div class="nav-bar-header">
+															<button type="button" id="show-megamenu" data-toggle="collapse" class="navbar-toggle smooth">
+																<i class="fa fa-bars" aria-hidden="true"></i>
+															</button>
+														</div>
+														<div class="megamenu-wrapper">
+															<span id="remove-megamenu"><i class="fa fa-times" aria-hidden="true"></i></span>
+															<div class="megamenu-pattern">
+																<div class="container1">
+																	<ul class="megamenu clearfix" data-transition="fade" data-animationtime="500">
+																		<li class="full-width menu-<?= strtoupper($vista) == 'INICIO'? 'home': 'contact' ?>">
+																			<a href="<?= URL_ROOT ?>" class="smooth cleafix">
+																				INICIO
+																			</a>
+																		</li>
+																		<li class="full-width menu-dinning with-sub-menu hover">
+																			<p class="close-menu"></p>
+																			<a href="#" class="smooth cleafix">
+																				CATEGOR&Iacute;AS
+																				<b class="caret"></b>
+																			</a>
+																			<div class="sub-menu">
+																				<div class="content">
+																					<div class="row">
+																						<div class="col-sm-12">
+																							<div class="html">
+																								<div class="row">
+																									<?php foreach ($categories as $category) : if(isset($category->nombre)): 
+																										$categorySlug = str_replace(' ','_',trim($category->nombre));
+																									?>
+																									<div class="col-md-3">
+																										<div class="column mnuCategory" data-value="<?= $category->id_prod_categoria ?>">
+																											<a href="<?= URL_ROOT."/cat/$categorySlug" ?>" class="imgCategory">
+																												<div class="static-menu-image">
+																													<img src="<?= $category->imagen ?>">
+																												</div>
+																											</a>
+																											<a href="<?= URL_ROOT."/cat/$categorySlug" ?>" class="smooth title-submenu"><?= $category->nombre ?></a>
+																											<div>
+																												<ul class="row-list subcategories">
+																													<?php foreach ($category->subcategorias as $subcategory) : 
+																														$subcategorySlug = str_replace(' ','_',trim($subcategory->nombre));
+																													?>
+																														<li><a href="<?= URL_ROOT."/cat/$categorySlug/$subcategorySlug" ?>" class="smooth"><?= $subcategory->nombre ?></a></li>
+																													<?php endforeach; ?>
+																												</ul>
+																											</div>
+																										</div>
+																									</div>
+																									<?php endif; endforeach; ?>
+																								</div>
+																							</div>
+																						</div>
+																					</div>
+																				</div>
+																			</div>
+																		</li>
+																		<li class="full-width menu-contact with-sub-menu hover">
+																			<p class="close-menu"></p>
+																			<a href="#" class="smooth cleafix">
+																				SUCURSALES
+																				<b class="caret"></b>
+																			</a>
+																			<div class="sub-menu">
+																				<div class="content">
+																					<div class="row">
+																						<div class="col-sm-12">
+																							<ul>
+																								<li><a href="<?= URL_ROOT."/sucursales/actopan" ?>" class="smooth" title="Actopan">Actopan</a></li>
+																								<li><a href="<?= URL_ROOT."/sucursales/ixmiquilpan" ?>" class="smooth" title="Ixmiquilpan">Ixmiquilpan</a></li>
+																								<li><a href="<?= URL_ROOT."/sucursales/zapotlan" ?>" class="smooth" title="Zapotl&aacute;n de Ju&aacute;rez">Zapotl&aacute;n de Ju&aacute;rez</a></li>
+																							</ul>
+																						</div>
+																					</div>
+																				</div>
+																			</div>
+																		</li>
+																		<li class="full-width menu-contact">
+																			<a href="<?= URL_ROOT ?>#promociones" class="smooth cleafix">
+																				PROMOCIONES
+																			</a>
+																		</li>
+																		<li class="full-width menu-<?= strtoupper($vista) == 'ENVÍOS GRATIS'? 'home': 'contact' ?>">
+																			<a href="<?= URL_ROOT ?>/envios" class="smooth cleafix">
+																				ENV&Iacute;OS GRATIS
+																			</a>
+																		</li>
+																	</ul>
+																</div>
+															</div>
+														</div>
+													</div>
+												</nav>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<button type="button" class="search-form-btn">
+								<i class="fa fa-search" aria-hidden="true"></i>
+							</button>
+							<?php include 'carrito-header.phtml' ?>
+						</div>
+					</div>
+				</div>
+				<?php if($_SERVER['REQUEST_URI'] == '/') : ?>
+				<div class="home-slider yt-content-slider" data-autoplay="yes" data-delay="4" data-speed="0.6" data-margin="0" data-items_column00="1" data-items_column0="1" data-items_column1="1" data-items_column2="1" data-items_column3="1" data-items_column4="1" data-arrows="no" data-pagination="yes" data-lazyload="yes" data-loop="yes" data-hoverpause="yes">
+					<div class="item-slider">
+						<a href="#" class="">
+							<img src="<?= URL_ROOT ?>/assets/image/slider/home-slider-1.png" alt="">
+						</a>
+						<div class="slider-info wow fadeInUpBig">
+							<div class="container">
+								<div class="slider-info-box">
+									<!-- <h3 class="small-title">COMEDORES</h3> -->
+									<!-- <h2 class="big-title" style="padding-right: 90%; padding-top: 45%;">COMEDORES</h2> -->
+									<!-- <h4 class="small-desc">GIFT YOURSELF A BEAUTY LIVING</h4> -->
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="item-slider">
+						<a href="#" class="">
+							<img src="<?= URL_ROOT ?>/assets/image/slider/home-slider-2.png" alt="">
+						</a>
+						<div class="slider-info wow fadeInUpBig">
+							<div class="container">
+								<div class="slider-info-box">
+									<!-- <h3 class="small-title">RECAMARAS</h3> -->
+									<!-- <h2 class="big-title" style="padding-right: 90%; padding-top: 45%;">RECAMARAS</h2> -->
+									<!-- <h4 class="small-desc">GIFT YOURSELF A BEAUTY LIVING</h4> -->
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="item-slider">
+						<a href="#" class="">
+							<img src="<?= URL_ROOT ?>/assets/image/slider/home-slider-3.png" alt="">
+						</a>
+						<div class="slider-info wow fadeInUpBig">
+							<div class="container">
+								<div class="slider-info-box">
+									<!-- <h3 class="small-title">SALAS</h3> -->
+									<!-- <h2 class="big-title" style="padding-right: 90%; padding-top: 45%;">SALAS</h2> -->
+									<!-- <h4 class="small-desc">GIFT YOURSELF A BEAUTY LIVING</h4> -->
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<?php endif; ?>
+			</header>
+	

@@ -1,0 +1,170 @@
+<?php
+    include 'core/defines.php';
+    require '../vendor/autoload.php';
+    
+    use PhpOffice\PhpSpreadsheet\Spreadsheet;
+    use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+    use PhpOffice\PhpSpreadsheet\Style\Alignment;
+    use PhpOffice\PhpSpreadsheet\Style\Fill;
+    
+    define('MOD_ACTION_REPORTS', 4);
+
+    if(isset($_SESSION['usuario'])) {
+        $user = $_SESSION['usuario'];
+    } else {
+        header('Location: '.URL_ROOT.'/login');
+        exit();
+    }
+
+    if(in_array(MOD_ACTION_REPORTS, $permisos)):
+        $start_month = intval(explode('-', $start)[0]);
+        $start_year = intval(explode('-', $start)[1]);
+        $end_month = intval(explode('-', $end)[0]);
+        $end_year = intval(explode('-', $end)[1]);
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        // $sheet->setCellValue('A1', 'Hello World !');
+
+        /**
+         * Side Name, Reference, Spaces Number, Side Background, Side Foreground, Is Side Bold, Side Alignment, Text Background, Has Percentage
+         */
+        $layout = [
+            ['',                            '',                         0, '538DD5', '000000', true,  \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,'538DD5', true],
+            ['INGRESOS',                    null,                       0, 'D9D9D9', '000000', true,  \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', false],
+            ['Ventas Brutas',               'ing_ventas_brutas',        0, 'FFFFFF', '000000', false, \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', false],
+            ['Devoluciones',                'ing_devoluciones',         0, 'FFFFFF', '000000', false, \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', false],
+            ['Descuentos',                  'ing_descuentos',           0, 'FFFFFF', '000000', false, \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', false],
+            ['Ventas Netas',                'ventas_netas',             1, '538DD5', 'FFFFFF', true,  \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,'538DD5', false],
+            ['Costo de Ventas',             'ing_costo_ventas',         0, 'FFFFFF', '000000', false, \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', false],
+            ['Costo de Ventas',             'ing_costo_ventas',         1, '538DD5', 'FFFFFF', true,  \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,'538DD5', true],
+            ['UTILIDAD BRUTA',              'util_bruta',               1, '538DD5', '000000', true,  \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  '538DD5', true],
+            ['GASTOS OPERATIVOS',           null,                       0, 'D9D9D9', '000000', true,  \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', false],
+            ['Gastos de Venta',             'gto_op_ventas',            0, 'FFFFFF', '000000', false, \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', false],
+            ['Sueldos y Salarios',          'gto_op_sueldos',           0, 'FFFFFF', '000000', false, \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', false],
+            ['Comisiones de Venta',         'gto_op_comisiones',        0, 'FFFFFF', '000000', false, \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', false],
+            ['Gastos de Entrega / Fletes',  'gto_op_entrega',           0, 'FFFFFF', '000000', false, \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', false],
+            ['Gastos de Mercadotecnia',     'gto_op_mercadotecnia',     0, 'FFFFFF', '000000', false, \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', false],
+            ['Viajes',                      'gto_op_viajes',            0, 'FFFFFF', '000000', false, \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', false],
+            ['Viaticos',                    'gto_op_viaticos',          0, 'FFFFFF', '000000', false, \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', false],
+            ['Otros Gastos de Venta',       'gto_op_otros',             0, 'FFFFFF', '000000', false, \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', false],
+            ['Total Gastos de Venta',       'sum_operativos',           1, '538DD5', 'FFFFFF', true,  \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,'538DD5', true],
+            ['GASTOS ADMINISTRATIVOS',      null,                       0, 'D9D9D9', '000000', true,  \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', false],
+            ['Sueldos y Salarios',          'gto_admin_salarios',       0, 'FFFFFF', '000000', false, \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', false],
+            ['Beneficios y Compensaciones', 'gto_admin_compensaciones', 0, 'FFFFFF', '000000', false, \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', false],
+            ['Impuestos Sobre Nomina',      'gto_admin_isn',            0, 'FFFFFF', '000000', false, \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', false],
+            ['Seguros',                     'gto_admin_seguros',        0, 'FFFFFF', '000000', false, \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', false],
+            ['Renta',                       'gto_admin_renta',          0, 'FFFFFF', '000000', false, \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', false],
+            ['Eléctricidad',                'gto_admin_electricidad',   0, 'FFFFFF', '000000', false, \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', false],
+            ['Teléfono',                    'gto_admin_telefono',       0, 'FFFFFF', '000000', false, \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', false],
+            ['Agua',                        'gto_admin_agua',           0, 'FFFFFF', '000000', false, \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', false],
+            ['Telefonía Celular',           'gto_admin_celular',        0, 'FFFFFF', '000000', false, \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', false],
+            ['Artítuclos de Papelería',     'gto_admin_papeleria',      0, 'FFFFFF', '000000', false, \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', false],
+            ['Mensajería',                  'gto_admin_mensajeria',     0, 'FFFFFF', '000000', false, \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', false],
+            ['Mantenimiento de Equipo',     'gto_admin_soporte',        0, 'FFFFFF', '000000', false, \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', false],
+            ['Membresías',                  'gto_admin_membresias',     0, 'FFFFFF', '000000', false, \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', false],
+            ['Muebles y Equipo de Oficina', 'gto_admin_mobiliario',     0, 'FFFFFF', '000000', false, \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', false],
+            ['Total Gastos Administrativos','sum_administrativos',      1, '538DD5', 'FFFFFF', true,  \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,'538DD5', true],
+            ['TOTAL GASTOS OPERATIVOS',     'gastos_operativos',        1, 'D9D9D9', '000000', true,  \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'D9D9D9', true],
+            ['UTILIDAD OPERATIVA',          'utilidad_operativa',       1, '538DD5', '000000', true,  \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  '538DD5', true],
+            ['Gastos Financieros',          null,                       0, 'D9D9D9', '000000', true,  \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', false],
+            ['Gastos Financieros',          'gto_finan_financieros',    0, 'FFFFFF', '000000', false, \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', false],
+            ['Total Gastos Financieros',    'sum_financieros',          1, '538DD5', 'FFFFFF', true,  \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,'538DD5', true],
+            ['UTILIDAD ANTES DE IMPUESTOS', 'uti_antes_impuestos',      1, 'D9D9D9', '000000', true,  \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'D9D9D9', true],
+            ['Impuestos Sobre el Ingreso',  'uti_isr_descuento',        0, 'FFFFFF', '000000', false, \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'FFFFFF', true],
+            ['Total Impuestos',             'uti_isr_descuento',        1, '538DD5', 'FFFFFF', true,  \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,'538DD5', true],
+            ['UTILIDAD NETA',               'utilidad_neta',            1, 'D9D9D9', '000000', true,  \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,  'D9D9D9', true],
+        ];
+
+        $months = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+        $drawing = new \PhpOffice\PhpSpreadsheet\Worksheet\Drawing();
+        $drawing->setName('Logo');
+        $drawing->setDescription('Logo');
+        $drawing->setPath('assets/images/asesoria_contable_global_service.PNG');
+        $drawing->setHeight(140);
+        $drawing->setOffsetX(50);
+        $drawing->setOffsetY(10);
+        $drawing->setCoordinates('A1');
+        $drawing->setWorksheet($sheet);
+        
+        $row = 5;
+        $headers = ['Viama Comercializadora S.A. de C.V.', 'Estado de Resultados', "Del 01 de $months[$start_month] de $start_year al ".date("d", mktime(0, 0, 0, $end_month+1, 0, $end_year))." de $months[$end_month] de $end_year"];
+        foreach($headers as $header) {
+            $sheet->mergeCells("B$row:N$row");
+            createCell($sheet, 'B', $row, $header, 'D9D9D9', '000000', true, \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+            
+            $row++;
+        }
+        $row++;
+        
+        foreach($layout as $data) {
+            createCell($sheet, 'A', $row, $data[0], $data[3], $data[4], $data[5], $data[6]);
+
+            $temp_start_month = $start_month;
+            $temp_start_year = $start_year;
+            $column = 66;
+            $temp = $data[1];
+            do {
+                $ref = str_pad($temp_start_month, 2, '0', STR_PAD_LEFT)."/$temp_start_year";
+                if($temp===null) {
+                    createCell($sheet, chr($column), $row);
+                    createCell($sheet, chr($column+1), $row);
+                } else if($temp==='') {
+                    createCell($sheet, chr($column), $row, $months[$temp_start_month], $data[7], $data[4], $data[5], $data[6]);
+                    createCell($sheet, chr($column+1), $row, '%', $data[7], $data[4], $data[5], $data[6]);
+                } else if(isset($resultados[$ref])) {
+                    $obj = $resultados[$ref];
+                    createCell($sheet, chr($column), $row, number_format($obj->$temp, 2), $data[7], $data[4], $data[5]);
+                    createCell($sheet, chr($column+1), $row, $data[8]? (floor($obj->$temp/$obj->ventas_netas*10000)/100)."%": '', $data[7], $data[4], $data[5]);
+                } else {
+                    createCell($sheet, chr($column), $row, '0.00', $data[7], $data[4], $data[5]);
+                    createCell($sheet, chr($column+1), $row, $data[8]? '0.00': '', $data[7], $data[4], $data[5]);
+                }
+
+                $temp_start = date('F Y', mktime(0, 0, 0, $temp_start_month, 1, $temp_start_year));
+                $temp_end = date('F Y', mktime(0, 0, 0, $end_month, date('d', mktime(0, 0, 0, ($end_month+1), 0, $end_year)), $end_year));
+                $temp_start_month = ($temp_start_month==12)? 1: $temp_start_month+1;
+                $temp_start_year += ($temp_start_month==1)? 1: 0;
+                $column += 2;
+            } while($temp_start != $temp_end);
+
+            if($temp===null) {
+                createCell($sheet, chr($column), $row);
+                createCell($sheet, chr($column+1), $row);
+            } else if($temp==='') {
+                createCell($sheet, chr($column), $row, 'Acumulado', $data[7], $data[4], $data[5], $data[6]);
+                createCell($sheet, chr($column+1), $row, '%', $data[7], $data[4], $data[5], $data[6]);
+            } else if(isset($acumulado->$temp)) {
+                createCell($sheet, chr($column), $row, number_format($acumulado->$temp, 2), $data[7], $data[4], $data[5]);
+                createCell($sheet, chr($column+1), $row, $data[8]? (floor($acumulado->$temp/$acumulado->ventas_netas*10000)/100)."%": '', $data[7], $data[4], $data[5]);
+            } else {
+                createCell($sheet, chr($column), $row, '0.00', $data[7], $data[4], $data[5]);
+                createCell($sheet, chr($column+1), $row, $data[8]? '0.00': '', $data[7], $data[4], $data[5]);
+            }
+            
+            $row += $data[2] + 1;
+        }
+        
+        $date_start_formated = date('F Y', mktime(0, 0, 0, $start_month, 1, $start_year));
+        $date_end_formated = date('F Y', mktime(0, 0, 0, $end_month, date('d', mktime(0, 0, 0, (intval($end_month)+1), 0, $end_year)), $end_year));
+        $date_formated = ($date_start_formated == $date_end_formated)? $date_start_formated: "$date_start_formated - $date_end_formated";
+        $writer = new Xlsx($spreadsheet);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header("Content-Disposition: attachment; filename=\"Estado de Resultados [$date_formated].xlsx\"");
+        $writer->save('php://output');
+
+    else:
+        header('Location: '.URL_ROOT.'/');
+        exit();
+    endif;
+
+    function createCell($sheet, $column, $row, $text="", $background="FFFFFF", $foreground="000000", $is_bold=false, $alignment=\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT) {
+        $sheet->setCellValue("$column$row", $text);
+        $sheet->getStyle("$column$row")->getFill()->setFillType(Fill::FILL_SOLID);
+        $sheet->getStyle("$column$row")->getFill()->getStartColor()->setRGB($background);
+        $sheet->getStyle("$column$row")->getFont()->getColor()->setARGB($foreground);
+        $sheet->getStyle("$column$row")->getFont()->setBold($is_bold);
+        $sheet->getStyle("$column$row")->getAlignment()->setHorizontal($alignment);
+        $sheet->getColumnDimension($column)->setAutoSize(true);
+    }
+?>

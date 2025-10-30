@@ -1,0 +1,447 @@
+<?php 
+	include 'header.phtml';
+
+	define('MOD_ACTION_ADD',		28);
+	define('MOD_ACTION_DEL',		29);
+	define('MOD_ACTION_CLI',		30);
+	define('MOD_ACTION_FACT',		31);
+	define('MOD_ACTION_PAGO_ADD', 		79);
+	define('MOD_ACTION_PAGO_VALID', 	80);
+	define('MOD_ACTION_PAGO_CANCEL', 	81);
+
+	if($_SESSION['usuario']->usuario_tipo_id == 3) {
+		header('Location: '.URL_ROOT.'/tienda');
+		exit;
+	}
+
+	$admin = $_SESSION['sucursal'] == 0 ? true : false;
+
+	if(isset($_SESSION['sucursal']) && (!isset($solicitudes) || count($solicitudes)==0)):
+?>
+	<style>
+		.dataTables_length, .dataTables_filter, .dt-buttons{
+			margin-bottom: 0!important;
+		}
+		.dt-buttons{
+			margin-left: 10px;
+		}
+	</style>
+	<div class="row page-titles">
+		<div class="col-md-5 align-self-center">
+			<h3 class="text-themecolor"><i class="fa fa-shopping-cart"></i> Venta de producto</h3>
+		</div>
+		<div class="col-md-7 align-self-center">
+			<?php if(in_array(MOD_ACTION_ADD, $permisos) && $_SESSION['sucursal'] > 0) : ?>
+			<button class="btn btn-success pull-right" id="btnAddVenta"><i class="mdi mdi-plus"></i> Registrar venta</button>
+			<?php endif; ?>
+		</div>
+	</div>
+	<div class="container-fluid">
+		<div class="card">
+			<div class="card-header">
+				<h4 class="card-title">
+					<div class="pull-right form-inline">
+						<div class="form-group form-group-sm mb-0 <?= $_SESSION['usuario']->usuario_tipo_id == 1 ? '' : 'hide' ?>">
+							<div class="input-group">
+								<div class="input-group-prepend">
+									<span class="input-group-text"><i class="fa fa-calendar"></i></span>
+								</div>
+								<input class="form-control form-control-sm input-daterange-datepicker" type="text" id="fechas" value="<?= date('d/m/Y') . ' - ' . date('d/m/Y') ?>" />
+							</div>
+						</div>
+						<div class="input-group input-group-sm m-l-10 sucursal <?= $_SESSION['usuario']->usuario_tipo_id == 1 ? '' : 'hide' ?>">
+							<div class="input-group-prepend"><span class="input-group-text"><i class="fa fa-home"></i></span></div>
+							<select class="form-control form-control-sm" id="busSuc">
+								<option value="-1">Sucursal</option>
+								<option value="0">Todas</option>
+							</select>
+						</div>
+					</div>
+					<i class="mdi mdi-cart"></i> Resumen de Ventas 
+				</h4>
+			</div>
+			<div class="card-body p-t-0">
+				<div class="table-responsive">
+					<table id="tbl-items" class="table table-hover table-striped m-b-0">
+						<thead>
+							<tr>
+								<th>
+									Folio 
+									<a href="#" data-toggle="tooltip" title="Buscar por folio" class="pull-right text-primary" id="btnFolio">
+										<i class="mdi mdi-magnify"></i>
+									</a>
+								</th>
+								<th>Fecha</th>
+								<th>SKU / Producto</th>
+								<th class="text-center">Cantidad</th>
+								<th class="text-center">Costo</th>
+								<th class="text-center">Importe</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr data-ent="0"><td colspan="8"><small>Seleccione la sucursal para ver las ventas del periodo</small></td></tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+			<?php if($admin) : ?>
+			<div class="card-footer">
+				<div class="row">
+					<div class="col-sm-6">
+					</div>
+					<div class="col-sm-6 text-right">
+						<h3 class="card-title">TOTAL <strong>$ 0.00</strong> <i class="mdi mdi-cash-multiple"></i></h3>
+					</div>
+				</div>
+			</div>
+			<?php endif; ?>
+		</div>
+	</div>
+	<?php if(in_array(MOD_ACTION_FACT, $permisos)) : ?>
+		<div id="frm-envio" class="modal" >
+			<div class="modal-dialog">
+				<div class="modal-content d-flex p-2">
+					<div class="modal-header">
+						<h3 class="modal-title">Enviar factura</h3>
+					</div>
+					<div class="modal-body">
+						<form action="">
+							<label for="envio-correo" class="col-form-label col-form-label-sm">Para</label>
+							<input type="text" class="form-control form-control-sm email-inputmask" id="envio-correo" placeholder="Correo electrónico" required>
+							<label for="envio-mensaje" class="col-form-label col-form-label-sm">Mensaje</label>
+							<textarea class="form-control form-control-sm" id="envio-mensaje" rows="5" placeholder="Mensaje para el correo"></textarea>
+							<input type="hidden" id="envio-cfdi" value="0">
+						</form>
+					</div>
+					<div class="modal-footer d-flex justify-content-end">
+						<button type="submit" class="btn btn-inverse waves-effect waves-light m-r-20" data-dismiss="modal">Cancelar</button>
+						<button type="submit" class="btn btn-success waves-effect waves-light" id="btnSendFact">Enviar</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	<?php endif; ?>
+	<?php include 'footer.phtml'; ?>
+	<script src="https://cdn.datatables.net/buttons/1.7.0/js/dataTables.buttons.min.js"></script>
+	<script src="https://cdn.datatables.net/buttons/1.7.0/js/buttons.print.min.js"></script>
+	<script src="https://cdn.datatables.net/buttons/1.7.0/js/buttons.html5.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+	<script type="text/javascript">
+		$(function() {
+			$('#mnu-ven').addClass('active');
+			$apiUrl = '<?= URL_API ?>venta/';
+			$('.input-daterange-datepicker').daterangepicker({
+				buttonClasses: ['btn', 'btn-sm'],
+				applyClass: 'btn-primary',
+				cancelClass: 'btn-inverse',
+				maxDate: '<?= date('d/m/Y') ?>',
+				locale: $dateRangeLocale,
+				ranges: $dateRanges,
+				alwaysShowCalendars: true,
+				autoApply: true
+			}, function(start, end, label) {
+				getItems(0,10);
+			});
+
+			containerBranch = $('#busSuc');
+			if(parseInt('<?= $user->usuario_tipo_id ?>') == 1) {
+				containerBranch.empty();
+				$.get('<?= URL_API ?>sucursal/getAll/', function(sucursales) {
+					containerBranch.empty().append('<option value="-1">Sucursal</option>');
+					containerBranch.append('<option value="0">Todas</option>');
+					$.each(sucursales.result, function(id, sucursal) { containerBranch.append('<option value="'+sucursal.id+'">'+sucursal.nombre.toUpperCase()+'</option>'); });
+					if(sucursales.result.length == 1) { containerBranch.parents('.sucursal').addClass('hide'); }
+					$.unblockUI(); 
+					//containerBranch.val(<?= $_SESSION['sucursal'] ?>);
+					//getItems(0, 10);
+					containerBranch.val(-1);
+				},'json');
+			} else {
+				$.get('<?= URL_API ?>sucursal/get/<?= $_SESSION['sucursal'] ?>', function(sucursal) {
+					if(sucursal.response) { sucursal = sucursal.result; containerBranch.append('<option value="'+sucursal.id+'">'+sucursal.nombre.toUpperCase()+'</option>'); }
+					//containerClient.find('option:first').prop('selected', true);
+					containerBranch.parents('.sucursal').addClass('hide');
+					$.unblockUI();
+					containerBranch.val(<?= $_SESSION['sucursal'] ?>);
+					getItems(0, 10);
+				},'json');
+			}
+
+			function getItems(pag, lim) {
+				$('#btnFolio').popover('hide');
+				suc = $('#busSuc').val();
+				if(suc == -1){
+					//$('#tbl-items tbody').empty().append('<tr><td colspan="8"><small>Seleccione la sucursal para ver las ventas del periodo</small></td></tr>');
+					return false;
+				}
+				blockPage();
+				var fechas = $('#fechas').data('daterangepicker');
+				ini = fechas.startDate.format('YYYY-MM-DD');
+				fin = fechas.endDate.format('YYYY-MM-DD');
+				$('#tbl-items').parents('.card').find('.card-footer strong').html('$ 0.00');
+				$.get($apiUrl+'getAll/'+ini+'/'+fin+'/'+pag+'/0/'+suc+'/0/0', function(resp) {
+					$.unblockUI();
+					if ( $.fn.dataTable.isDataTable( '#tbl-items' ) ) {
+						$('#tbl-items').DataTable().destroy();
+					}
+					$('#tbl-items tbody').empty();
+					if(resp.total > 0) {
+						$.each(resp.result, function(index, item) {
+							addRow(item);
+						});
+						$('#tbl-items').parents('.card').find('.card-footer strong').html('$ '+resp.suma);
+					}else{
+						//$('#tbl-items tbody').append('<tr data-ent="0"><td colspan="8"><small>No existen productos con ese termino</small></td></tr>');
+					}
+					doTable(resp.suma);
+				});
+			}
+			
+			function doTable(total){
+				clase = 'btn btn-sm btn-secondary';
+				title = '<h2>Sucursal <strong>'+$('#busSuc option:selected').text()+'</strong> Periodo '+$('#fechas').val()+'<h2>';
+				footer = '<h2 class="text-right text-dark m-t-20">Total: <strong>$ '+total+'</strong></h2>';
+				titleExp = 'Sucursal '+$('#busSuc option:selected').text()+' Periodo '+$('#fechas').val();
+				footerExp = ' Total: $ '+total;
+				$('#tbl-items').DataTable({
+					dom: 'lBfrtip',
+					buttons: [
+						{ extend: 'print', className: clase, messageTop: title, messageBottom: footer, text: 'Imprimir' }, 
+						{ extend: 'excel', className: clase, messageTop: titleExp, messageBottom: footerExp, autoFilter: true, }, 
+						{ extend: 'pdf', className: clase, messageTop: titleExp+footerExp, download: 'open' }, 
+					]
+				});
+			}
+
+			function addRow(item) {
+				$('#tbl-items tbody tr[data-ent="0"]').remove();
+				tr = $('<tr data-ent="'+item.id+'"></tr>');
+				if($('#tbl-items [data-id="'+item.id+'"]').length > 0) {
+					tr = $('#tbl-items [data-id="'+item.id+'"]').parents('tr');
+					tr.empty();
+				}
+				
+				btnFact = '--';
+				$.each(item.detalles, function(index, det) {
+					row = $('<td data-id="'+item.id+'">'+item.folio+'</td>').appendTo(tr);
+					actions = $('<div class="pull-right"></div>').appendTo(row);
+					actions.append('<a href="#" data-popup="tooltip" title="Imprimir Ticket" class="btnPrintTicket"><i class="fa fa-ticket"></i></a>');
+					<?php if(in_array(MOD_ACTION_DEL, $permisos)) : ?>
+					actions.append(' | <a href="#" data-popup="tooltip" title="Cancelar" class="btnDel"><i class="mdi mdi-close-circle" style="color:red;"></i></a>');
+					<?php endif; ?>
+					tr.append('<td><small>'+item.fecha+' '+item.hora+'</small></td>');
+					tr.append('<td><small>'+det.nombre+' '+det.modelo+' '+(det.tamano==null? '': det.tamano)+(det.sku!=''? ' - <strong>'+det.sku+'</strong>': '')+'</small></td>');
+					tr.append('<td class="text-center">'+det.cantidad+'</td>');
+					tr.append('<td class="text-right">'+det.costo+'</td>');
+					tr.append('<td class="text-right">'+det.importe+'</td>');
+
+					$('#tbl-items tbody').append(tr);
+					tr = $('<tr data-ent="'+item.id+'"></tr>');
+				});
+			}
+
+			function addRowOld(item) {
+				$('#tbl-items tbody tr[data-ent="0"]').remove();
+				tr = $('<tr data-ent="'+item.id+'"></tr>');
+				if($('#tbl-items [data-id="'+item.id+'"]').length > 0) {
+					tr = $('#tbl-items [data-id="'+item.id+'"]').parents('tr');
+					tr.empty();
+				}
+
+				rspan = item.detalles.length;
+				row = $('<td rowspan="'+rspan+'" data-id="'+item.id+'">'+item.folio+'</td>').appendTo(tr);
+				actions = $('<div class="pull-right"></div>').appendTo(row);
+				//actions.append('<a href="<?= URL_ROOT ?>/venta/print/'+item.id+'?dl=1" target="_blank" data-popup="tooltip" title="Imprimir" class="btnPrint"><i class="mdi mdi-printer"></i></a> | ');
+				actions.append('<a href="#" data-popup="tooltip" title="Imprimir Ticket" class="btnPrintTicket"><i class="fa fa-ticket"></i></a>');
+				<?php if(in_array(MOD_ACTION_DEL, $permisos)) : ?>
+				actions.append(' | <a href="#" data-popup="tooltip" title="Cancelar" class="btnDel"><i class="mdi mdi-close-circle" style="color:red;"></i></a>');
+				<?php endif; ?>
+				// tr.append('<td rowspan="'+rspan+' "data-id="'+item.id+'">'+btnPrint+btnTicket+item.folio+btnCancel+'</td>');
+				tr.append('<td rowspan="'+rspan+'"><small>'+item.fecha+' '+item.hora+'</small></td>');
+				// cli = $('#item-cliente_id option[value="'+item.cliente_id+'"]').text();
+				// row = $('<td rowspan="'+rspan+'"><small>'+cli+'</small></td>');
+				//row =  $('<td class="hide" rowspan="'+rspan+'"><small>'+(item.cliente.nombre+' '+item.cliente.apellidos).toUpperCase()+'</small></td>');
+				row =  $('<td class="hide" rowspan="'+rspan+'"><small></small></td>');
+				<?php if(in_array(MOD_ACTION_PAGO_ADD, $permisos) || in_array(MOD_ACTION_PAGO_VALID, $permisos) || in_array(MOD_ACTION_PAGO_CANCEL, $permisos)) : ?>
+				if(item.pagado == '0') {
+					btnPagar = '<a href="#" data-popup="tooltip" title="Pagar" class="btnPagar pull-right"><i class="fa fa-credit-card"></i></a>';
+					row.find('small').append(btnPagar);
+				}
+				<?php endif; ?>
+				tr.append(row);
+
+				btnFact = '--';
+				<?php if(in_array(MOD_ACTION_FACT, $permisos)) : ?>
+				if(item.cfdi_id == 0) {
+					btnFact = '<a href="#" data-popup="tooltip" title="Facturar" class="btnFact"><i class="mdi mdi-seal"></i> <small>Facturar</small></a> ';
+				}else{
+					btnFact = '<a href="<?= URL_ROOT ?>/venta/print/'+item.id+'?dl=1" target="_blank" data-popup="tooltip" title="PDF" class="btnPdf text-danger"><i class="mdi mdi-file-pdf"></i></a> ';
+					btnFact += '<a href="<?= URL_ROOT ?>/venta/getXML/'+item.cfdi_id+'" target="_blank" data-popup="tooltip" title="XML" class="btnXml text-muted"><i class="mdi mdi-file-xml"></i></a> ';
+					btnFact += '<a href="#" data-popup="tooltip" title="Enviar" class="btnSend"><i class="mdi mdi-send"></i></a>';
+				}
+				<?php endif; ?>
+				tr.append('<td rowspan="'+rspan+'" data-mail="'+item.mail+'" class="hide">'+btnFact+'</td>');
+				$.each(item.detalles, function(index, det) {
+					//tr.append('<td><small>'+det.nombre+' '+det.modelo+' '+(det.tamano==null? '': det.tamano)+(det.sku!=null? ' - <strong>'+det.sku_nombre+': '+det.sku+'</strong>': '')+'</small></td>');
+					tr.append('<td><small>'+det.nombre+' '+det.modelo+' '+(det.tamano==null? '': det.tamano)+(det.sku!=null? ' - <strong>'+det.sku+'</strong>': '')+'</small></td>');
+					tr.append('<td class="text-center">'+det.cantidad+'</td>');
+					tr.append('<td class="text-right">'+det.costo+'</td>');
+					tr.append('<td class="text-right">'+det.importe+'</td>');
+
+					$('#tbl-items tbody').append(tr);
+					tr = $('<tr data-ent="'+item.id+'"></tr>');
+				});
+
+				// $('#tbl-items tbody tr[data-ent="'+item.id+'"]').first().append('<td rowspan="'+rspan+'" class="text-center">'+parseInt(item.descuento)+'%</td>');
+				// $('#tbl-items tbody tr[data-ent="'+item.id+'"]').first().append('<td rowspan="'+rspan+'" class="text-center">'+item.total+'%</td>');
+				// tr.append('<td class="text-center">'+item.total+'</td>');
+			}
+
+			$('#tbl-items tbody').on('click', '.btnPrintTicket', function(e) {
+				e.preventDefault();
+				window.open($apiUrl+'printTicket/'+$(this).parents('tr').data('ent'), '_blank', "width=900,height=600");
+			});
+
+			$('#busSuc').change(function() { getItems(0,$('#cont').val()); });
+
+			$('#btnFolio').popover({
+				placement: 'top',
+				html:true,
+				sanitize: false, 
+				content:  '<div class="form"><div class="input-group"><input type="text" class="form-control form-control-sm" placeholder="Folio" id="buscafolioi"><div class="input-group-append"><button type="button" class="btn btn-secondary btn-sm" id="btn-busf"><i class="fa fa-search"></i></button></div></div></div>'
+			}).on('click', function(e) {
+				e.preventDefault();
+				$('#buscafolioi').keyup(function(e) { if(e.keyCode == 13) { buscaFolio(); } });
+				$('#btn-busf').click(function() { buscaFolio(); });
+			});
+			$('#btnFolio').on('shown.bs.popover', function () { $('#buscafolioi').val('').focus(); });
+
+			function buscaFolio() {
+				folio = $.trim($('#buscafolioi').val());
+				if(folio != '') {
+					$('#btnFolio').popover('hide');
+					blockPage();
+					$('#tbl-items tbody').empty();
+					$('#tbl-items').parents('.card').find('.card-footer strong').html('$ 0.00');
+					$.get($apiUrl+'buscaFolio/'+folio, function(resp) {
+						$.unblockUI();
+						if ( $.fn.dataTable.isDataTable( '#tbl-items' ) ) {
+							$('#tbl-items').DataTable().destroy();
+						}
+						$('#tbl-items tbody').empty();
+						if(resp.total > 0) {
+							$.each(resp.result, function(index, item) {
+								addRow(item);
+							});
+							$('#tbl-items').parents('.card').find('.card-footer strong').html('$ '+resp.suma);
+						}else{
+							//$('#tbl-items tbody').append('<tr><td colspan="8"><small>No existen ventas con ese folio</small></td></tr>');
+						}
+						doTable(resp.suma);
+					});
+				}
+			}
+
+			$("html").on("mouseup", function (e) {
+				var l = $(e.target);
+				if (l[0].className.indexOf("popover") == -1) {
+					$(".popover").each(function () {
+						$(this).popover("hide");
+					});
+				}
+			});
+
+			<?php if(in_array(MOD_ACTION_ADD, $permisos)) : ?>
+				$('#frm-external-sale').on('hide.bs.modal', function () { 
+					getItems(0, 10);
+				});
+
+				$('#tbl-items').on('click', '.btnPagar', function() {
+					id = $(this).parents('tr').data('ent');
+					$.get($apiUrl+'get/'+id, function(venta) {
+						if(venta.response) {
+							$('#item-id').val(venta.result);
+							$('#item-cliente_id').prop('disabled', true);
+							$('#btnAddCli').addClass('hide');
+							$('#item-sucursal_id').prop('disabled', true);
+							$('.prodDel, .btnEditProducto, .btnDelProducto').addClass('hide');
+							$('#tbl-prods tfoot tr').addClass('hide');
+							$('#item-empleado_id').prop('disabled', true);
+							$('#item-descuento').prop('readonly', true);
+							$('#subcategories-tab').click().trigger('click');
+							$('#frm-item .modal-header').css('padding-bottom', 0);
+							$('#frm-item .modal-header').find('.row').last().removeClass('hide');
+							$('#btnSave').text('Guardar');
+							$('#frm-item').modal('show');
+
+							$.each(venta.result, function(index, item) {
+								if($('#item-'+index).length > 0) {
+									$('#item-'+index).val(item).trigger('change');
+								}
+							});
+
+							$.each(venta.detalle, function(index, item) {
+								container = $('#tbl-prods tbody');
+								tr = $('<tr data-id="'+item.id+'"></tr>').appendTo(container);
+								tr.append('<td>['+item.sku+'] '+item.nombre+' '+item.modelo+'</td>');
+								tr.append('<td class="text-right">'+item.cantidad+'</td>');
+								tr.append('<td class="text-right">'+item.costo+'</td>');
+								tr.append('<td class="text-right">'+item.importe+'</td>');
+							});
+
+							$('#tbl-items-sub tbody').empty();
+							if(venta.pagos.length > 0) {
+								$.each(venta.pagos, function(index, item) {
+									addRowPago(item);
+								});
+							} else {
+								$('#tbl-items-sub tbody').append('<tr><td colspan="6">No se ha registrado ningún pago</td></tr>');
+							}
+						}
+					}, 'json');
+				});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_ACTION_DEL, $permisos)) : ?>
+				$('tbody').on('click', '.btnDel', function(event) {
+					event.preventDefault();
+					id = $(this).parents('td').data('id');
+					trp = $('#tbl-items [data-id="'+id+'"]').parents('tr');
+					folio = trp.find('td:eq(0)').text();
+					swal({   
+						title: "Cancelar venta",
+						text: "Se eliminará la venta <strong>"+folio+"</strong> y se sumaran los productos al inventario, ¿Continuar?",
+						type: "warning",   
+						html: true,
+						showCancelButton: true,   
+						cancelButtonText: "No",
+						confirmButtonColor: "#DD6B55",   
+						confirmButtonText: "Si, continuar",
+						closeOnConfirm: false 
+					}, function() {
+						//data: {fk_usuario: 1, fk_session: 1}, 
+						$.ajax({
+							url: $apiUrl+'del/'+id,
+							type: 'PUT',
+							dataType: 'json',
+							success: function(resp) {
+								if(resp.response) {
+									$('#tbl-items [data-ent="'+id+'"]').remove();
+									swal({
+										type: "success",
+										title: "¡Listo!",   
+										text: "Se eliminó la venta",   
+										timer: 4000
+									});
+								}
+							}
+						});
+					});
+				});
+			<?php endif; ?>
+		});
+	</script>
+	<?php else: include 'footer.phtml'; endif; ?>

@@ -1,0 +1,740 @@
+<?php
+	$vista = 'Inicio';
+	include 'header_tienda.phtml';
+?>
+<div class="banner">
+	<div class="row row0 events-container">
+		<?php $contador=0; foreach($events as $event): $contador++; ?>
+		<div class="col-lg-6 col-md-6 col-sm-6 col-xs-6 col0 wow fadeInLeft">
+			<div class="collection" data-value="<?= $event->id_evento ?>">
+				<a href="<?= URL_ROOT."/$event->slug" ?>" class="c-img hv-bounce-to-right">
+					<img src="<?= $event->image == URL_IMG_DEFAULT ? URL_ROOT.'/assets/image/eventos/proximamente.jpg' : $event->image ?>" class="img-responsive">
+				</a>
+			</div>
+		</div>
+		<?php endforeach; ?>
+		<?php while($contador < 2): $contador++; ?>
+		<div class="col-lg-6 col-md-6 col-sm-6 col-xs-6 col0 wow fadeInLeft">
+			<div class="collection">
+				<a class="c-img hv-bounce-to-right">
+					<img src="<?= URL_ROOT."/assets/image/eventos/proximamente.jpg" ?>" class="img-responsive">
+				</a>
+			</div>
+		</div>
+		<?php endwhile; ?>
+	</div>
+</div>
+<div class="new-arrivals featured-product new-arrivals-container">
+	<div class="container">
+		<div class="featured-tab wow fadeInDown">
+			<ul class="nav nav-tabs">
+				<li class="active">
+					<h3 class="title-underline">
+						<a class="smooth" data-toggle="tab" href="#new-arrivals">LO M&Aacute;S NUEVO</a>
+					</h3>
+				</li>
+			</ul>
+		</div>
+		<div class="featured-content">
+			<div class="tab-content">
+				<div class="tab-pane fade in active" id="new-arrivals">
+					<div class="new-arrivals-slider-tab new-arrivals-section" id="owl1">
+						<?php $numProducts=count($newArrivals); for($iArrival=0; $iArrival<$numProducts; $iArrival++): ?>
+						<div class="item-box">
+							<div class="item wow fadeInUp">
+								<?php $producto = $newArrivals[$iArrival]; ?>
+								<div class="product-box" data-id="<?= $producto->id_producto ?>">
+									<div class="product-image">
+										<a href="<?= URL_ROOT."/producto/$producto->friendly_url" ?>" class="c-img link-product">
+											<img src="<?= (($producto->recien_llegados!='')? ((count($producto->images)>0)? URL_ROOT.'/assets/image/productos/th_'.$producto->images[0]->nombre: URL_IMG_DEFAULT): URL_ROOT."/assets/image/loading.gif") ?>" class="img-responsive">
+										</a>
+										<a class="smooth quickview iframe-link btn-button quickview quickview_handler visible-lg" href="<?= "prod_preview/$producto->id_producto" ?>" title="VISTA PREVIA" target="_self" data-fancybox-type="iframe">
+											<i class="fa fa-search" aria-hidden="true"></i>
+										</a>
+									</div>
+									<div class="product-info">
+										<h4 class="product-name"><a href="<?= URL_ROOT."/producto/$producto->friendly_url" ?>" class="smooth"><?= $producto->producto ?></a></h4>
+										<div class="price"><?= number_format($producto->precio, 2) ?> <span class="price-old<?= ($producto->precio_original==$producto->precio || floatval($producto->precio_original)==0)? ' hide': '' ?>"><?= number_format($producto->precio_original, 2) ?></span></div>
+										<div class="rating">
+											<div class="rating-box">
+												<span><?= floatval($producto->puntuacion) ?> </span>
+												<span class="fa fa-stack">
+													<?php if($producto->puntuacion==0): ?>
+														<i class="fa fa-star-o fa-stack-1x"></i>
+													<?php elseif($producto->puntuacion>=1): ?>
+														<i class="fa fa-star fa-stack-1x"></i>
+													<?php else: ?>
+														<i class="fa fa-star-half-o fa-stack-1x"></i>
+													<?php endif; ?>
+												</span>
+												<span class="fa fa-stack">
+													<?php if($producto->puntuacion<=1): ?>
+														<i class="fa fa-star-o fa-stack-1x"></i>
+													<?php elseif($producto->puntuacion>=2): ?>
+														<i class="fa fa-star fa-stack-1x"></i>
+													<?php else: ?>
+														<i class="fa fa-star-half-o fa-stack-1x"></i>
+													<?php endif; ?>
+												</span>
+												<span class="fa fa-stack">
+													<?php if($producto->puntuacion<=2): ?>
+														<i class="fa fa-star-o fa-stack-1x"></i>
+													<?php elseif($producto->puntuacion>=3): ?>
+														<i class="fa fa-star fa-stack-1x"></i>
+													<?php else: ?>
+														<i class="fa fa-star-half-o fa-stack-1x"></i>
+													<?php endif; ?>
+												</span>
+												<span class="fa fa-stack">
+													<?php if($producto->puntuacion<=3): ?>
+														<i class="fa fa-star-o fa-stack-1x"></i>
+													<?php elseif($producto->puntuacion>=4): ?>
+														<i class="fa fa-star fa-stack-1x"></i>
+													<?php else: ?>
+														<i class="fa fa-star-half-o fa-stack-1x"></i>
+													<?php endif; ?>
+												</span>
+												<span class="fa fa-stack">
+													<?php if($producto->puntuacion<=4): ?>
+														<i class="fa fa-star-o fa-stack-1x"></i>
+													<?php elseif($producto->puntuacion==5): ?>
+														<i class="fa fa-star fa-stack-1x"></i>
+													<?php else: ?>
+														<i class="fa fa-star-half-o fa-stack-1x"></i>
+													<?php endif; ?>
+												</span>
+												<?= "($producto->reviews)" ?>
+											</div>
+										</div>
+									</div>
+									<div class="button-group">
+										<button class="wishlist-btn smooth btn-compare" title="COMPARAR">
+											<i class="fa fa-retweet" aria-hidden="true"></i>
+										</button>
+										<button class="add-to-cart smooth btn-carrito-add" data-stock="<?= $producto->stock ?>">
+											AGREGAR AL CARRITO
+										</button>
+										<button class="wishlist-btn smooth btn-wishlist-add" title="AGREGAR A LA LISTA DE DESEOS">
+											<i class="fa fa-heart" aria-hidden="true"></i>
+										</button>
+									</div>
+								</div>
+							</div>
+						</div>
+						<?php endfor; ?>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="best-seller">
+	<div class="container">
+		<div class="best-seller-box" id="best-seller">
+			<h2 class="title-underline wow fadeInLeftBig">LO M&Aacute;S VENDIDO</h2>
+			<div class="row best-seller-section">
+				<?php $numProducts=count($bestSellers); for($iBestSeller=0; $iBestSeller<$numProducts; $iBestSeller++): ?>
+				<div class="col-lg-12 col-md-12 col-sm-12">
+					<?php $counter=0; while($counter<=1 && $iBestSeller+$counter<$numProducts):
+						$iBestSeller += $counter;
+						$producto = $bestSellers[$iBestSeller];
+					?>
+					<div class="col-lg-6 col-md-6 col-sm-6 wow fadeInUp">
+						<div class="deals-box product-info clearfix">
+							<div class="product-image-right">
+								<a href="<?= URL_ROOT."/producto/$producto->friendly_url" ?>" class="hv-radial">
+									<img src="<?= count($producto->images)>0? URL_ROOT.'/assets/image/productos/th_'.$producto->images[0]->nombre: URL_IMG_DEFAULT ?>" class="img-responsive" style="width: 85px">
+								</a>
+							</div>
+							<div class="box">
+								<h5 class="product-name"><a href="/producto/<?= $producto->friendly_url ?>" class="smooth"><?= $producto->producto ?></a></h5>
+								<div class="price"><?= number_format($producto->precio, 2) ?> <span class="price-old<?= ($producto->precio_original==$producto->precio || floatval($producto->precio_original)==0)? ' hide': '' ?>"><?= number_format($producto->precio_original, 2) ?></span></div>
+								<div class="rating">
+									<div class="rating-box">
+										<span><?= floatval($producto->puntuacion) ?> </span>
+										<span class="fa fa-stack">
+											<?php if($producto->puntuacion==0): ?>
+												<i class="fa fa-star-o fa-stack-1x"></i>
+											<?php elseif($producto->puntuacion>=1): ?>
+												<i class="fa fa-star fa-stack-1x"></i>
+											<?php else: ?>
+												<i class="fa fa-star-half-o fa-stack-1x"></i>
+											<?php endif; ?>
+										</span>
+										<span class="fa fa-stack">
+											<?php if($producto->puntuacion<=1): ?>
+												<i class="fa fa-star-o fa-stack-1x"></i>
+											<?php elseif($producto->puntuacion>=2): ?>
+												<i class="fa fa-star fa-stack-1x"></i>
+											<?php else: ?>
+												<i class="fa fa-star-half-o fa-stack-1x"></i>
+											<?php endif; ?>
+										</span>
+										<span class="fa fa-stack">
+											<?php if($producto->puntuacion<=2): ?>
+												<i class="fa fa-star-o fa-stack-1x"></i>
+											<?php elseif($producto->puntuacion>=3): ?>
+												<i class="fa fa-star fa-stack-1x"></i>
+											<?php else: ?>
+												<i class="fa fa-star-half-o fa-stack-1x"></i>
+											<?php endif; ?>
+										</span>
+										<span class="fa fa-stack">
+											<?php if($producto->puntuacion<=3): ?>
+												<i class="fa fa-star-o fa-stack-1x"></i>
+											<?php elseif($producto->puntuacion>=4): ?>
+												<i class="fa fa-star fa-stack-1x"></i>
+											<?php else: ?>
+												<i class="fa fa-star-half-o fa-stack-1x"></i>
+											<?php endif; ?>
+										</span>
+										<span class="fa fa-stack">
+											<?php if($producto->puntuacion<=4): ?>
+												<i class="fa fa-star-o fa-stack-1x"></i>
+											<?php elseif($producto->puntuacion==5): ?>
+												<i class="fa fa-star fa-stack-1x"></i>
+											<?php else: ?>
+												<i class="fa fa-star-half-o fa-stack-1x"></i>
+											<?php endif; ?>
+										</span>
+										<?= "($producto->reviews)" ?>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<?php $counter++; endwhile; ?>
+				</div>
+				<?php endfor; ?>
+			</div>
+		</div>
+		<div class="best-seller-box" id="featured">
+			<h2 class="title-underline wow fadeInLeftBig">LO M&Aacute;S DESTACADO</h2>
+			<div class="row best-seller-section">
+				<?php $numProducts=count($featured_side); for($iFeatured_side=0; $iFeatured_side<$numProducts; $iFeatured_side++): ?>
+				<div class="col-lg-12 col-md-12 col-sm-12">
+					<?php $counter=0; while($counter<=1 && $iFeatured_side+$counter<$numProducts):
+						$iFeatured_side += $counter;
+						$producto = $featured_side[$iFeatured_side];
+						// if($producto->featured!=''):
+					?>
+					<div class="col-lg-6 col-md-6 col-sm-6 wow fadeInUp">
+						<div class="deals-box product-info clearfix<?= $producto->featured==''? ' hide': ''; ?>">
+							<div class="product-image-right">
+								<a href="<?= URL_ROOT."/producto/$producto->friendly_url" ?>" class="hv-radial">
+									<img src="<?= count($producto->images)>0? URL_ROOT.'/assets/image/productos/th_'.$producto->images[0]->nombre: URL_IMG_DEFAULT ?>" class="img-responsive" style="width: 85px">
+								</a>
+							</div>
+							<div class="box">
+								<h5 class="product-name"><a href="<?= URL_ROOT."/producto/$producto->friendly_url" ?>" class="smooth"><?= $producto->producto ?></a></h5>
+								<div class="price"><?= number_format($producto->precio, 2) ?> <span class="price-old<?= ($producto->precio_original==$producto->precio || floatval($producto->precio_original)==0)? ' hide': '' ?>"><?= number_format($producto->precio_original, 2) ?></span></div>
+								<div class="rating">
+									<div class="rating-box">
+										<span><?= floatval($producto->puntuacion) ?> </span>
+										<span class="fa fa-stack">
+											<?php if($producto->puntuacion==0): ?>
+												<i class="fa fa-star-o fa-stack-1x"></i>
+											<?php elseif($producto->puntuacion>=1): ?>
+												<i class="fa fa-star fa-stack-1x"></i>
+											<?php else: ?>
+												<i class="fa fa-star-half-o fa-stack-1x"></i>
+											<?php endif; ?>
+										</span>
+										<span class="fa fa-stack">
+											<?php if($producto->puntuacion<=1): ?>
+												<i class="fa fa-star-o fa-stack-1x"></i>
+											<?php elseif($producto->puntuacion>=2): ?>
+												<i class="fa fa-star fa-stack-1x"></i>
+											<?php else: ?>
+												<i class="fa fa-star-half-o fa-stack-1x"></i>
+											<?php endif; ?>
+										</span>
+										<span class="fa fa-stack">
+											<?php if($producto->puntuacion<=2): ?>
+												<i class="fa fa-star-o fa-stack-1x"></i>
+											<?php elseif($producto->puntuacion>=3): ?>
+												<i class="fa fa-star fa-stack-1x"></i>
+											<?php else: ?>
+												<i class="fa fa-star-half-o fa-stack-1x"></i>
+											<?php endif; ?>
+										</span>
+										<span class="fa fa-stack">
+											<?php if($producto->puntuacion<=3): ?>
+												<i class="fa fa-star-o fa-stack-1x"></i>
+											<?php elseif($producto->puntuacion>=4): ?>
+												<i class="fa fa-star fa-stack-1x"></i>
+											<?php else: ?>
+												<i class="fa fa-star-half-o fa-stack-1x"></i>
+											<?php endif; ?>
+										</span>
+										<span class="fa fa-stack">
+											<?php if($producto->puntuacion<=4): ?>
+												<i class="fa fa-star-o fa-stack-1x"></i>
+											<?php elseif($producto->puntuacion==5): ?>
+												<i class="fa fa-star fa-stack-1x"></i>
+											<?php else: ?>
+												<i class="fa fa-star-half-o fa-stack-1x"></i>
+											<?php endif; ?>
+										</span>
+										<?= "($producto->reviews)" ?>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<?php /*endif;*/ $counter++; endwhile; ?>
+				</div>
+				<?php endfor; ?>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- <div id="promociones" class="promo-slider yt-content-slider" data-autoplay="yes" data-delay="4" data-speed="0.6" data-margin="0" data-items_column00="1" data-items_column0="1" data-items_column1="1" data-items_column2="1" data-items_column3="1" data-items_column4="1" data-arrows="no" data-pagination="yes" data-lazyload="yes" data-loop="yes" data-hoverpause="yes">
+	<?php for ($i=1; $i < 4; $i++) : ?>
+	<div class="item-slider">
+		<a href="#" class="">
+			<img src="<?= URL_ROOT ?>/assets/image/slider/promo-<?= $i ?>.png" alt="">
+		</a>
+	</div>
+	<?php endfor; ?>
+</div> -->
+
+<div class="deals">
+	<div class="container">
+		<div class="deals-left wow fadeInLeft">
+			<div class="tab-content deals-content-section">
+				<?php foreach($productsByCategory as $iCategory => $category): ?>
+				<div id="cate<?= $category->id ?>_2" class="tab-pane fade in deal-content<?= $iCategory==0? " active in": "" ?>" data-value="<?= $category->id ?>">
+					<div class="deals-slider" id="cate-slider<?= $category->id ?>">
+						<?php if(count($category->products)>0): foreach($category->products as $producto): ?>
+						<div class="row row5" data-value="<?= $producto->id_producto ?>">
+							<div class="col-lg-6 col-md-6 col-sm-6 col-xs-12 col5">
+								<div class="product-image">
+									<a href="/producto/<?= $producto->friendly_url ?>" class="hv-light c-img">
+										<img src="<?= count($producto->images)>0? URL_ROOT.'/assets/image/productos/th_'.$producto->images[0]->nombre: URL_IMG_DEFAULT ?>" class="img-responsive">
+									</a>
+									<!-- <span class="label-sale red-right">SALE</span> -->
+								</div>
+							</div>
+							<div class="col-lg-6 col-md-6 col-sm-6 col-xs-12 col5">
+								<div class="product-info">
+									<div class="product-info-top">
+										<h3 class="product-name">
+											<a href="/producto/<?= $producto->friendly_url ?>" class="smooth"><?= $producto->producto ?></a>
+										</h3>
+										<div class="price"><?= number_format($producto->precio, 2) ?> <span class="price-old<?= ($producto->precio_original==$producto->precio || floatval($producto->precio_original)==0)? ' hide': '' ?>"><?= number_format($producto->precio_original, 2) ?></span></div>
+										<div class="rating">
+											<div class="rating-box">
+												<span><?= floatval($producto->puntuacion) ?> </span>
+												<span class="fa fa-stack">
+													<?php if($producto->puntuacion==0): ?>
+														<i class="fa fa-star-o fa-stack-1x"></i>
+													<?php elseif($producto->puntuacion>=1): ?>
+														<i class="fa fa-star fa-stack-1x"></i>
+													<?php else: ?>
+														<i class="fa fa-star-half-o fa-stack-1x"></i>
+													<?php endif; ?>
+												</span>
+												<span class="fa fa-stack">
+													<?php if($producto->puntuacion<=1): ?>
+														<i class="fa fa-star-o fa-stack-1x"></i>
+													<?php elseif($producto->puntuacion>=2): ?>
+														<i class="fa fa-star fa-stack-1x"></i>
+													<?php else: ?>
+														<i class="fa fa-star-half-o fa-stack-1x"></i>
+													<?php endif; ?>
+												</span>
+												<span class="fa fa-stack">
+													<?php if($producto->puntuacion<=2): ?>
+														<i class="fa fa-star-o fa-stack-1x"></i>
+													<?php elseif($producto->puntuacion>=3): ?>
+														<i class="fa fa-star fa-stack-1x"></i>
+													<?php else: ?>
+														<i class="fa fa-star-half-o fa-stack-1x"></i>
+													<?php endif; ?>
+												</span>
+												<span class="fa fa-stack">
+													<?php if($producto->puntuacion<=3): ?>
+														<i class="fa fa-star-o fa-stack-1x"></i>
+													<?php elseif($producto->puntuacion>=4): ?>
+														<i class="fa fa-star fa-stack-1x"></i>
+													<?php else: ?>
+														<i class="fa fa-star-half-o fa-stack-1x"></i>
+													<?php endif; ?>
+												</span>
+												<span class="fa fa-stack">
+													<?php if($producto->puntuacion<=4): ?>
+														<i class="fa fa-star-o fa-stack-1x"></i>
+													<?php elseif($producto->puntuacion==5): ?>
+														<i class="fa fa-star fa-stack-1x"></i>
+													<?php else: ?>
+														<i class="fa fa-star-half-o fa-stack-1x"></i>
+													<?php endif; ?>
+												</span>
+												<?= "($producto->reviews)" ?>
+											</div>
+										</div>
+									</div>
+									<div class="product-info-bottom">
+										<div class="product-desc">
+											<?= $producto->descripcion_larga ?>
+										</div>
+										<div class="left-group">
+											<!-- <div class="table-countdown" data-countdown="2020/12/15">
+											</div> -->
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<?php endforeach; else: ?>
+						<div class="row row5">
+							<div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 col5">
+								<div class="product-info">
+									<div class="container-fluid">
+										<div class="alert alert-warning">¡UPS! Al parecer no hay productos disponibles para la categor&iacute;a de <?= $category->nombre ?>.</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<?php endif; ?>
+					</div>
+				</div>
+				<div id="cate<?= $category->id ?>" class="tab-pane fade in deal-content<?= $iCategory==0? "": "" ?>" data-value="<?= $category->id ?>">
+					<div class="deals-slider" id="cate-slider<?= $category->id ?>">
+						<?php if(count($category->products)>0): foreach($category->products as $producto): ?>
+						<div class="row row5" data-value="<?= $producto->id_producto ?>">
+							<div class="col-lg-6 col-md-6 col-sm-6 col-xs-12 col5">
+								<div class="product-image">
+									<a href="/producto/<?= $producto->friendly_url ?>" class="hv-light c-img">
+										<img src="<?= count($producto->images)>0? URL_ROOT.'/assets/image/productos/th_'.$producto->images[0]->nombre: URL_IMG_DEFAULT ?>" class="img-responsive">
+									</a>
+									<!-- <span class="label-sale red-right">SALE</span> -->
+								</div>
+							</div>
+							<div class="col-lg-6 col-md-6 col-sm-6 col-xs-12 col5">
+								<div class="product-info">
+									<div class="product-info-top">
+										<h3 class="product-name">
+											<a href="/producto/<?= $producto->friendly_url ?>" class="smooth"><?= $producto->producto ?></a>
+										</h3>
+										<div class="price"><?= number_format($producto->precio, 2) ?> <span class="price-old<?= ($producto->precio_original==$producto->precio || floatval($producto->precio_original)==0)? ' hide': '' ?>"><?= number_format($producto->precio_original, 2) ?></span></div>
+										<div class="rating">
+											<div class="rating-box">
+												<span><?= floatval($producto->puntuacion) ?> </span>
+												<span class="fa fa-stack">
+													<?php if($producto->puntuacion==0): ?>
+														<i class="fa fa-star-o fa-stack-1x"></i>
+													<?php elseif($producto->puntuacion>=1): ?>
+														<i class="fa fa-star fa-stack-1x"></i>
+													<?php else: ?>
+														<i class="fa fa-star-half-o fa-stack-1x"></i>
+													<?php endif; ?>
+												</span>
+												<span class="fa fa-stack">
+													<?php if($producto->puntuacion<=1): ?>
+														<i class="fa fa-star-o fa-stack-1x"></i>
+													<?php elseif($producto->puntuacion>=2): ?>
+														<i class="fa fa-star fa-stack-1x"></i>
+													<?php else: ?>
+														<i class="fa fa-star-half-o fa-stack-1x"></i>
+													<?php endif; ?>
+												</span>
+												<span class="fa fa-stack">
+													<?php if($producto->puntuacion<=2): ?>
+														<i class="fa fa-star-o fa-stack-1x"></i>
+													<?php elseif($producto->puntuacion>=3): ?>
+														<i class="fa fa-star fa-stack-1x"></i>
+													<?php else: ?>
+														<i class="fa fa-star-half-o fa-stack-1x"></i>
+													<?php endif; ?>
+												</span>
+												<span class="fa fa-stack">
+													<?php if($producto->puntuacion<=3): ?>
+														<i class="fa fa-star-o fa-stack-1x"></i>
+													<?php elseif($producto->puntuacion>=4): ?>
+														<i class="fa fa-star fa-stack-1x"></i>
+													<?php else: ?>
+														<i class="fa fa-star-half-o fa-stack-1x"></i>
+													<?php endif; ?>
+												</span>
+												<span class="fa fa-stack">
+													<?php if($producto->puntuacion<=4): ?>
+														<i class="fa fa-star-o fa-stack-1x"></i>
+													<?php elseif($producto->puntuacion==5): ?>
+														<i class="fa fa-star fa-stack-1x"></i>
+													<?php else: ?>
+														<i class="fa fa-star-half-o fa-stack-1x"></i>
+													<?php endif; ?>
+												</span>
+												<?= "($producto->reviews)" ?>
+											</div>
+										</div>
+									</div>
+									<div class="product-info-bottom">
+										<div class="product-desc">
+											<?= $producto->descripcion_larga ?>
+										</div>
+										<div class="left-group">
+											<!-- <div class="table-countdown" data-countdown="2020/12/15">
+											</div> -->
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<?php endforeach; else: ?>
+						<div class="row row5">
+							<div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 col5">
+								<div class="product-info">
+									<div class="container-fluid">
+										<div class="alert alert-warning">¡UPS! Al parecer no hay productos disponibles para la categor&iacute;a de <?= $category->nombre ?>.</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<?php endif; ?>
+					</div>
+				</div>
+				<?php endforeach; ?>
+			</div>
+		</div>
+		<div class="deals-right wow fadeInRight">
+			<div class="categories-tab deals-categories-section">
+				<ul class="nav nav-tabs">
+					<?php foreach($productsByCategory as $iCategory => $category): ?>
+					<li <?= $iCategory==0? 'class="active"': '' ?>data-value="<?= $category->id ?>">
+						<a data-toggle="tab" href="#cate<?= $category->id ?>_2">
+							<img src="<?= $category->icono ?>" class="img-responsive">
+							<h4 class="cate-name"><?= $category->nombre ?></h4>
+						</a>
+					</li>
+					<?php endforeach; ?>
+				</ul>
+			</div>
+		</div>
+	</div>
+</div>
+<?php include 'footer_tienda.phtml'; ?>
+<script>
+	$(function(){
+		$apiUrl = '<?= URL_API ?>';
+
+		$('.deals-categories-section li:eq(1) a').trigger('click');
+		$('.deals-categories-section li:eq(0) a').trigger('click');
+		// $(document).ready(function() {
+			// 	categorias = [5, 1, 2, 3, 4, 6, 9, 10, 11];
+			// 	$.each(categorias, function(index, item) {
+			// 		$.get($apiUrl+'producto/search/1/5/0/'+item+'/0/_/-1/-1/2/best_seller', function(resp) {
+			// 			if(resp.result.length > 0) {
+			// 				id_categoria = resp.result[0].fk_linea;
+			// 				owl = $('#cate-slider'+id_categoria);
+			// 				owl.owlCarousel2({
+			// 					animateOut: 'slideOutUp',
+			// 					animateIn: 'slideInUp',
+			// 					center: true,
+			// 					items:1, 
+			// 					autoplay: true,
+			// 					navigation: true,
+			// 					nav: true,
+			// 					navRewind: true,
+			// 					mouseDrag: false,
+			// 					navText: [ '<', '>' ],
+			// 					navSpeed: false,
+			// 					navElement: 'div',
+			// 					navContainer: false,
+			// 					navContainerClass: 'owl2-nav',
+			// 					navClass: [ 'owl2-prev', 'owl2-next' ],
+			// 					slideBy: 1,
+			// 					dotClass: 'owl2-dot',
+			// 					dotsClass: 'owl2-dots',
+			// 					dots: true,
+			// 					dotsEach: false,
+			// 					dotData: false,
+			// 					dotsSpeed: false,
+			// 					dotsContainer: false,
+			// 					controlsClass: 'owl2-controls',
+			// 					themeClass: 'owl2-theme',
+			// 					baseClass: 'owl2-carousel',
+			// 					itemClass: 'owl2-item',
+			// 					centerClass: 'center',
+			// 					activeClass: 'active',
+			// 				// 	// responsive:{
+			// 				// 	// 	0:{
+			// 				// 	// 		items:1
+			// 				// 	// 	},
+			// 				// 	// 	600:{
+			// 				// 	// 		items:2
+			// 				// 	// 	},
+			// 				// 	// 	1000:{
+			// 				// 	// 		items:3
+			// 				// 	// 	}
+			// 				// 	// }
+			// 				});
+							
+			// 				items = [];
+			// 				$.each(resp.result, function(index, producto) {
+			// 						content =  
+			// 							'<div class="owl2-item">'+
+			// 								'<div class="row row5" data-value="'+producto.id_producto+'">'+
+			// 									'<div class="col-lg-6 col-md-6 col-sm-6 col-xs-12 col5">'+
+			// 										'<div class="product-image">'+
+			// 											'<a href="<?= URL_ROOT ?>/producto/'+producto.friendly_url+'" class="hv-light c-img">'+
+			// 												'<img src="'+(producto.images.length>0? '<?= URL_ROOT ?>/assets/image/productos/th_'+producto.images[0].nombre: '<?= URL_IMG_DEFAULT ?>')+'" class="img-responsive">'+
+			// 											'</a>'+
+			// 										'</div>'+
+			// 									'</div>'+
+			// 									'<div class="col-lg-6 col-md-6 col-sm-6 col-xs-12 col5">'+
+			// 										'<div class="product-info">'+
+			// 											'<div class="product-info-top">'+
+			// 												'<h3 class="product-name">'+
+			// 													'<a href="<?= URL_ROOT ?>/producto/'+producto.friendly_url+'" class="smoth">'+producto.producto+'</a>'+
+			// 												'</h3>'+
+			// 												'<div class="price">'+
+			// 													parseFloat(producto.precio).toFixed(2)+
+			// 													'<span class="price-old'+((producto.precio_original==producto.precio || parseFloat(producto.precio_original==0)? 'hide': ''))+'">'+
+			// 														parseFloat(producto.precio_original).toFixed(2)+
+			// 													'</span>'+
+			// 												'</div>'+
+			// 												'<div class="rating">'+
+			// 													'<div class="rating-box">'+
+			// 														'<span>'+parseFloat(producto.puntuacion).toFixed(2)+'</span>'+
+			// 														'<span class="fa fa-stack"><i class="fa fa-star'+(producto.puntuacion==0? '-o': (producto.puntuacion>=1? '': '-half-o'))+' fa-stack-1x"></i></span>'+
+			// 														'<span class="fa fa-stack"><i class="fa fa-star'+(producto.puntuacion<=1? '-o': (producto.puntuacion>=2? '': '-half-o'))+' fa-stack-1x"></i></span>'+
+			// 														'<span class="fa fa-stack"><i class="fa fa-star'+(producto.puntuacion<=2? '-o': (producto.puntuacion>=3? '': '-half-o'))+' fa-stack-1x"></i></span>'+
+			// 														'<span class="fa fa-stack"><i class="fa fa-star'+(producto.puntuacion<=3? '-o': (producto.puntuacion>=4? '': '-half-o'))+' fa-stack-1x"></i></span>'+
+			// 														'<span class="fa fa-stack"><i class="fa fa-star'+(producto.puntuacion<=4? '-o': (producto.puntuacion==5? '': '-half-o'))+' fa-stack-1x"></i></span>'+
+			// 														'('+producto.reviews+')'+
+			// 													'</div>'+
+			// 												'</div>'+
+			// 											'</div>'+
+			// 											'<div class="product-desc">'+
+			// 												producto.descripcion_larga+
+			// 											'</div>'+
+			// 											// '<div class="left-group">'+
+			// 												// '<div class="table-countdown" data-countdown="2020/12/15">'+
+			// 												// '</div>'+
+			// 											// '</div>'+
+			// 										'</div>'+
+			// 									'</div>'+
+			// 								'</div>'+
+			// 							'</div>';
+			// 						items.push(content);
+			// 						owl.find('.owl2-stage').append($(content));
+			// 					});
+			// 					owl.trigger('refreshed.owl.carousel2');
+			// 			}
+			// 		}, 'json');
+			// 	});
+		// });
+
+		<?php if(isset($_SESSION['wishlist'])): 
+			if(isset($_SESSION['wishlist'])): ?>
+				swal({
+					type: "success",
+					title: "¡Listo!",
+					text: "Se agregó el producto a la lista de deseos.",
+					confirmButtonText: "Aceptar",
+				});
+			<?php else: ?>
+				swal({
+					type: "warning",
+					title: "¡Ocurrió algo extraño!",
+					text: "El producto ya se encuentra en la lista de deseos.",
+					confirmButtonText: "Aceptar",
+				});
+			<?php endif; 
+			unset($_SESSION['wishlist']);
+		endif; ?>
+		
+		$.each($('.new-arrivals-section .owl2-item'), function(index, item) {
+			switch(parseInt($(item).find('img[src="<?= URL_ROOT ?>/assets/image/loading.gif"]').length)) {
+				case 2:	$(item).remove();	break;
+				case 1: $(item).find('.product-box img[src="<?= URL_ROOT ?>/assets/image/loading.gif"]').parents('.product-box').remove(); break;
+			}
+		});
+		
+		if($('.new-arrivals-section .product-box').length == 0) {
+			$('.new-arrivals-container').addClass('hide');
+		} else if($('.new-arrivals-section .product-box').length <= 8) {
+			$('.new-arrivals-section').find('.owl2-prev, .owl2-next').addClass('hide');
+		}
+
+		// container = $('.best-seller .featured-box');
+		// if(container.find('.deals-box').length == 0) {
+		// 	container.addClass('hide');
+		// }
+
+		// $('.best-seller .featured-box').css('width', $('.best-seller .best-seller-box').css('width'));
+		// $(window).resize(function() {
+		// 	$('.best-seller .featured-box').css('width', $('.best-seller .best-seller-box').css('width'));
+		// });
+
+		$('.best-seller #featured').css('width', $('.best-seller #best-seller').css('width'));
+		$(window).resize(function() {
+			$('.best-seller #featured').css('width', $('.best-seller #best-seller').css('width'));
+		});
+		
+		$.each($('.featured-products-section .owl2-item'), function(index, item) {
+			switch(parseInt($(item).find('img[src="<?= URL_ROOT ?>/assets/image/loading.gif"]').length)) {
+				case 2:	$(item).remove();	break;
+				case 1: $(item).find('.product-box img[src="<?= URL_ROOT ?>/assets/image/loading.gif"]').parents('.product-box').remove(); break;
+			}
+		});
+		
+		if($('.featured-products-section .product-box').length == 0) {
+			$('.featured-products-container').addClass('hide');
+		} else if($('.featured-products-section .product-box').length <= 8) {
+			$('.featured-products-section').find('.owl2-prev, .owl2-next').addClass('hide');
+		}
+
+		$('.btn-wishlist-add').on('click', function(e) {
+			e.preventDefault();
+			id_producto = $(this).parents('.product-box').attr('data-id');
+			
+			<?php if(!isset($_SESSION['cliente'])): ?>
+				swal({
+					type: "info",
+					title: "No has iniciado sesión",
+					showCancelButton: true,
+					cancelButtonText: "Cancelar",
+					confirmButtonText: "Iniciar Sesión",
+					closeOnConfirm: false 
+				}, function() {
+					window.location.href= "<?= URL_ROOT ?>/login/"+id_producto;
+				});
+			<?php else: ?>
+				$.get($apiUrl+'lista_deseos/getByCliente/<?= $_SESSION['cliente']->id_cliente ?>/'+id_producto, function(response) {
+					if(response.result.length == 0) {
+						data = {
+							fk_producto: id_producto,
+							fk_cliente: '<?= $_SESSION['cliente']->id_cliente ?>',
+							fecha: '<?= date('Y-m-d H:i:s') ?>'
+						}
+						$.post($apiUrl+'lista_deseos/add/', data, function(resp) {
+							if(resp.response) {
+								swal({
+									type: "success",
+									title: "¡Listo!",
+									text: "Se agregó el producto a la lista de deseos.",
+									confirmButtonText: "Aceptar",
+									closeOnConfirm: false 
+								}, function() {
+									location.reload();
+								});
+							}
+						});
+					} else {
+						swal({
+							type: "warning",
+							title: "¡Ocurrió algo extraño!",
+							text: "El producto ya se encuentra en la lista de deseos.",
+							confirmButtonText: "Aceptar",
+						});
+					}
+				}, 'json');
+			<?php endif; ?>
+		});
+	});
+</script>

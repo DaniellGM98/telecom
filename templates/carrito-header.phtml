@@ -1,0 +1,64 @@
+<?php 
+        $prodsCart = 0;
+        if(isset($_SESSION['cart'])){
+            $prodsCart = $_SESSION['cart']['productos'];
+        }
+        //print_r($_SESSION);
+    ?>
+    <div class="cart wow fadeInRight">
+        <a href="#" class="smooth cart-box dropdown-toggle" data-toggle="dropdown-menu">
+            <i class="fa fa-shopping-cart" aria-hidden="true"></i>
+            <p class="cart-title">CARRITO</p>
+            <p class="quantity"><span><?= $prodsCart ?></span> <span class="hidden-xs"> art&iacute;culo(s)</span></p>
+        </a>
+        <ul class="dropdown-menu shopping-cart">
+            <li class="shopping-cart-title clearfix">
+                <label>Producto</label>
+                <label>Precio</label>
+            </li>
+            <li class="product-item">
+                <table class="table cart-table">
+                    <tbody>
+                        <?php if(isset($_SESSION['cart'])) : foreach ($_SESSION['cart']['items'] as $cartItem): ?>
+                        <tr data-prod="<?= $cartItem['fk_producto'] ?>">
+                            <td class="product-item-image">
+                                <a href="/producto/<?= $cartItem['url'] ?>" class="">
+                                    <img src="<?= URL_ROOT.$cartItem['thumbnail'] ?>" alt="" class="img-responsive">
+                                </a>
+                                <button class="remove-product-cart smooth" title="Eliminar del carrito">
+                                    <i class="fa fa-times"></i>
+                                </button>
+                            </td>
+                            <td class="product-item-name">
+                                <h4 class="product-name">
+                                    <a href="/producto/<?= $cartItem['url'] ?>" class="smooth"><?= $cartItem['producto'] ?></a>
+                                </h4>
+                                <span class="product-item-quantity">Cantidad: <?= $cartItem['cantidad'] ?></span>
+                            </td>
+                            <td class="product-item-price">
+                                <span class="shopping-price">$<?= $cartItem['importe'] ?></span>
+                            </td>
+                        </tr>
+                        <?php endforeach; else : ?>
+                        <tr class="cart-empty">
+                            <td class="product-item-name">
+                                <h4 class="product-name">
+                                    <a href="#" class="smooth">Carrito vacío u_u</a>
+                                </h4>
+                                <span class="product-item-quantity">Aún no has agregado productos a tu carrito</span>
+                            </td>
+                        </tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </li>
+            <li class="total-price clearfix">
+                <label class="total-title">TOTAL:</label>
+                <label class="float-right total">$<?= number_format($_SESSION['cart']['total'],2) ?></label>
+            </li>
+            <li class="shopping-cart-checkout">
+                <a href="<?= URL_ROOT ?>/carrito" class="smooth">IR AL CARRITO</a>
+                <a href="<?= URL_ROOT ?>/checkout" class="smooth pull-right">PAGAR</a>
+            </li>
+        </ul>
+    </div>

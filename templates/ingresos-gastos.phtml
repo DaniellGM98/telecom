@@ -1,0 +1,429 @@
+<?php 
+	include 'header.phtml';
+
+	define('MOD_EXTRAS', 	13);
+	define('MOD_INGRESO_ADD', 	90);
+	define('MOD_INGRESO_DEL', 	91);
+	define('MOD_GASTO_ADD', 	92);
+	define('MOD_GASTO_DEL', 	93);
+
+	if(isset($_SESSION['sucursal']) && (!isset($solicitudes) || count($solicitudes)==0)):
+?>
+
+	<div class="row page-titles">
+		<div class="col-md-5 align-self-center">
+			<h3 class="text-themecolor"><i class="mdi mdi-contrast-box fa-lg"></i> Entradas y Retiro de efectivo</h3>
+		</div>
+		<div class="col-md-7 align-self-center">
+			<div class="form-inline pull-right <?= $_SESSION['sucursal'] > 0 ? 'hide' : '' ?>">
+				<input type="date" class="form-control form-control-sm m-r-10" id="rpt-ini" value="<?= date('Y-m-d') ?>">
+				<input type="date" class="form-control form-control-sm m-r-10" id="rpt-fin" value="<?= date('Y-m-d') ?>">
+				<select id="rpt-suc" class="form-control form-control-sm">
+					<option value="0">Todas las sucursales</option>
+				</select>
+			</div>
+		</div>
+	</div>
+
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-sm-6">
+				<div class="card">
+					<div class="card-header">
+						<div class="pull-right form-inline">
+							<div class="input-group input-group-sm">
+								<div class="input-group-prepend">
+									<span class="input-group-text"><i class="fa fa-filter"></i></span>
+								</div>
+								<input type="search" placeholder="Buscar por concepto" class="form-control form-control-sm filter">
+							</div>
+							<?php if(in_array(MOD_INGRESO_ADD, $permisos)) : ?>
+							<button class="btn btn-sm btn-success m-l-10" id="btnAddI"><i class="mdi mdi-plus"></i></button>
+							<?php endif; ?>
+						</div>
+						<h4 class="card-title"><i class="mdi mdi-login"></i> Entradas</h4>
+						<h6 class="card-subtitle">Ingresos de efectivo distintos a ventas</h6>
+					</div>
+					<div class="card-body">
+						<div class="table-responsive">
+							<table id="tbl-ingresos" class="table table-sm table-striped table-hover">
+								<thead>
+									<tr>
+										<th class="<?= $_SESSION['sucursal'] > 0 ? 'hide' : '' ?>">Fecha</th>
+										<th>Hora</th>
+										<th class="<?= $_SESSION['sucursal'] > 0 ? 'hide' : '' ?>">Sucursal</th>
+										<th>Concepto</th>
+										<th class="text-right">Importe</th>
+										<th></th>
+									</tr>
+								</thead>
+								<tbody></tbody>
+								<tfoot class="hide">
+									<tr>
+										<th colspan="<?= $_SESSION['sucursal'] > 0 ? '2' : '4' ?>" class="text-right">Total</th>
+										<th class="text-right"><span class="total"></span></th>
+										<th></th>
+									</tr>
+								</tfoot>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="col-sm-6">
+				<div class="card">
+					<div class="card-header">
+						<div class="pull-right form-inline">
+							<div class="input-group input-group-sm">
+								<div class="input-group-prepend">
+									<span class="input-group-text"><i class="fa fa-filter"></i></span>
+								</div>
+								<input type="search" placeholder="Buscar por concepto" class="form-control form-control-sm filter">
+							</div>
+							<?php if(in_array(MOD_GASTO_ADD, $permisos)) : ?>
+							<button class="btn btn-sm btn-success m-l-10" id="btnAddG"><i class="mdi mdi-plus"></i></button>
+							<?php endif; ?>
+						</div>
+						<h4 class="card-title"><i class="mdi mdi-logout"></i> Retiros</h4>
+						<h6 class="card-subtitle m-b-0">Gastos o salidas de efectivo</h6>
+					</div>
+					<div class="card-body">
+						<div class="table-responsive">
+							<table id="tbl-gastos" class="table table-sm table-striped table-hover">
+								<thead>
+									<tr>
+										<th class="<?= $_SESSION['sucursal'] > 0 ? 'hide' : '' ?>">Fecha</th>
+										<th>Hora</th>
+										<th class="<?= $_SESSION['sucursal'] > 0 ? 'hide' : '' ?>">Sucursal</th>
+										<th>Concepto</th>
+										<th class="text-right">Importe</th>
+										<th></th>
+									</tr>
+								</thead>
+								<tbody></tbody>
+								<tfoot class="hide">
+									<tr>
+										<th colspan="<?= $_SESSION['sucursal'] > 0 ? '2' : '4' ?>" class="text-right">Total</th>
+										<th class="text-right"><span class="total"></span></th>
+										<th></th>
+									</tr>
+								</tfoot>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+	</div>
+	
+	<?php if(in_array(MOD_INGRESO_ADD, $permisos) || in_array(MOD_GASTO_ADD, $permisos)) : ?>
+	<div id="frm-item" class="modal" data-backdrop="static" data-keyboard="false" tabindex="-1">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h3 class="modal-title"></h3>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+				<div class="modal-body">
+					<div class="form-horizontal">
+						<div class="form-group row">
+							<label for="item-importe" class="col-md-4 col-form-label">Importe</label>
+							<div class="col-md-8">
+								<div class="input-group">
+									<div class="input-group-prepend">
+										<span class="input-group-text" id="basic-addon1">$</span>
+									</div>
+									<input type="text" class="form-control text-right" id="item-importe" placeholder="Ingresa el Importe" required>
+								</div>
+							</div>
+						</div>
+						<div class="form-group row m-b-0">
+							<label class="col-md-4 col-form-label" for="item-concepto">Concepto</label>
+							<div class="col-md-8">
+								<textarea class="form-control" id="item-concepto" placeholder="Concepto" rows="2"></textarea>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<input type="hidden" id="item-destino">
+					<button type="submit" class="btn btn-inverse waves-effect waves-light m-r-20" data-dismiss="modal">Cancelar</button>
+					<?php if(in_array(MOD_INGRESO_ADD, $permisos) || in_array(MOD_GASTO_ADD, $permisos)) : ?>
+					<button type="submit" class="btn btn-success waves-effect waves-light" id="btnSave">Guardar</button>
+					<?php endif; ?>
+				</div>
+			</div>
+		</div>
+	</div>
+	<?php endif; ?>
+		
+	<?php include 'footer.phtml';?>
+	<script src="<?=URL_ROOT?>/assets/plugins/inputmask/dist/min/jquery.inputmask.bundle.min.js"></script>
+	<script src="<?=URL_ROOT?>/assets/js/mask.init.js"></script>
+
+	<script type="text/javascript">
+		$(function() {
+
+			$apiUrl = '<?= URL_API ?>';
+			$('#item-importe').inputmask({ alias: "numeric", groupSeparator: ',', digits: 2, digitsOptional: false });
+			
+			function getItems(){
+				blockPage();
+				ini = $('#rpt-ini').val();
+				fin = $('#rpt-fin').val();
+				$('#tbl-ingresos tbody, #tbl-gastos tbody').empty();
+				$.get($apiUrl+"pos/getIngresoGasto/"+ini+"/"+fin,
+				function (data) {
+						arrSuc = [];
+						if(data.ingresos.length > 0){
+							$.each(data.ingresos, function (index, item) { 
+								addRow(item, 'ingreso'); 
+								if(!arrSuc.includes(item.sucursal_id)){ $('#rpt-suc').append('<option value="'+item.sucursal+'">'+item.sucursal+'</option>'); arrSuc.push(item.sucursal_id)};
+							});
+						}else{
+							$('#tbl-ingresos tbody').append('<tr class="no-data"><td colspan="<?= $_SESSION['sucursal'] > 0 ? '4' : '6' ?>">No hay registros de Ingresos</td></tr>');
+							$('#tbl-ingesos tfoot').addClass('hide');
+						}
+
+						if(data.egresos.length > 0){
+							$.each(data.egresos, function (index, item) { 
+								addRow(item, 'gasto'); 
+								if(!arrSuc.includes(item.sucursal_id)){ $('#rpt-suc').append('<option value="'+item.sucursal+'">'+item.sucursal+'</option>'); arrSuc.push(item.sucursal_id)};
+							});
+						}else{
+							$('#tbl-gastos tbody').append('<tr class="no-data"><td colspan="<?= $_SESSION['sucursal'] > 0 ? '4' : '6' ?>">No hay registros de Gastos</td></tr>');
+							$('#tbl-gastos tfoot').addClass('hide');
+						}
+						$.unblockUI();
+					},
+					"json"
+				);
+			}
+			getItems();
+
+			function addRow(item, tipo){
+				tr = $('<tr></tr>');
+
+				tr.append('<td class="<?= $_SESSION['sucursal'] > 0 ? 'hide' : '' ?>">'+item.fecha+'</td>');
+				tr.append('<td>'+item.hora+'</td>');
+				user = '<i class="mdi mdi-account pull-right" title="'+item.usuario+'"></i>';
+				tr.append('<td class="<?= $_SESSION['sucursal'] > 0 ? 'hide' : '' ?>">'+item.sucursal+user+'</td>');
+				tr.append('<td>'+item.concepto+'</td>');
+				tr.append('<td class="text-right">'+item.importe+'</td>');
+
+				tda = $('<td class="text-right" data-id="'+item.id+'"></td>');
+				<?php if(in_array(MOD_INGRESO_DEL, $permisos)) : ?>
+				if(tipo=='ingreso') tda.append('<a href="#" data-popup="tooltip" title="Eliminar" class="btnDelI"><i class="mdi mdi-delete" style="color:red;"></i></a>');
+				<?php endif; ?>
+				<?php if(in_array(MOD_GASTO_DEL, $permisos)) : ?>
+				if(tipo=='gasto') tda.append('<a href="#" data-popup="tooltip" title="Eliminar" class="btnDelG"><i class="mdi mdi-delete" style="color:red;"></i></a>');
+				<?php endif; ?>
+				tr.append(tda);
+				
+				$('#tbl-'+tipo+'s').find('tr.no-data').remove();
+				$('#tbl-'+tipo+'s tfoot').removeClass('hide');
+				$('#tbl-'+tipo+'s tbody').append(tr);
+				calcTot('tbl-'+tipo+'s');
+			}
+
+			function calcTot(tbl){
+				tot = 0;
+				$.each($('#'+tbl+' tbody tr'), function (index, elem) { 
+					imp = parseFloat($(elem).find('td:eq(4)').text().replace(',','')) ;
+					tot += imp;
+				});
+				$('#'+tbl+' .total').text('$ '+tot.toFixed(2));
+			}
+		
+			$('.filter').keyup(function(e) { 
+				q = $.trim($(this).val()).toUpperCase();
+				$.each($(this).parents('.card').find('table tbody tr'), function (index, elem) { 
+					conc = $(elem).find('td:eq(3)').text().toUpperCase();
+					imp = $(elem).find('td:eq(4)').text().toUpperCase();
+					if(conc.indexOf(q) > -1 || imp.indexOf(q) > -1){
+						$(elem).css('display', '');
+					}else{
+						$(elem).css('display', 'none');
+					}
+				});
+			 });
+
+			 $(".filter").on("search", function(evt){
+				$.each($(this).parents('.card').find('table tbody tr'), function (index, elem) { 
+					$(elem).css('display', '');
+				});
+			});
+
+			$('#rpt-suc').change(function(){
+				$('.filter').val('');
+				suc = $(this).val();
+				if(suc == '0'){
+					$.each($('tbody tr'), function (index, elem) { 
+						$(elem).css('display', '');
+					});
+				}else{
+					$.each($('tbody tr'), function (index, elem) { 
+						if($(elem).find('td:eq(2)').text() == suc){
+							$(elem).css('display', '');
+						}else{
+							$(elem).css('display', 'none');
+						}
+					});
+				}
+			});
+
+			$('#rpt-ini, #rpt-fin').change(function(){
+				getItems();
+			});
+
+			<?php if(in_array(MOD_INGRESO_ADD, $permisos)) : ?>
+			$('#btnAddI').click(function(e) {
+				e.preventDefault();
+				$('#item-importe, #item-concepto').val('');
+				$('#item-destino').val('addIngreso');
+				$('#frm-item .modal-title').html('<i class="mdi mdi-login"></i> Agregar Entrada');
+				$('#frm-item').modal('show');
+			});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_GASTO_ADD, $permisos)) : ?>
+			$('#btnAddG').click(function(e) {
+				e.preventDefault();
+				$('#item-importe, #item-concepto').val('');
+				$('#item-destino').val('addEgreso');
+				$('#frm-item .modal-title').html('<i class="mdi mdi-logout"></i> Agregar Retiro');
+				$('#frm-item').modal('show');
+			});
+			<?php endif; ?>
+
+			$('#frm-item').on('shown.bs.modal', function () { $('#item-importe').focus(); });
+
+			<?php if(in_array(MOD_INGRESO_DEL, $permisos)) : ?>
+			$('tbody').on('click', '.btnDelI', function(event) {
+				event.preventDefault();
+				id = $(this).parent().data('id');
+				trp = $(this).parents('tr');
+				swal({   
+					title: "Eliminar entrada",
+					text: "No podrá revertir esta acción",
+					type: "warning",   
+					html: true,
+					showCancelButton: true,   
+					cancelButtonText: "Cancelar",
+					confirmButtonColor: "#DD6B55",   
+					confirmButtonText: "Si, eliminar",
+					closeOnConfirm: false 
+				}, function() {
+					//data: {fk_usuario: 1, fk_session: 1}, 
+					blockPage();
+					$.ajax({
+						url: $apiUrl+'pos/delIngreso/'+id,
+						type: 'PUT',
+						dataType: 'json',
+						success: function(resp) {
+							if(resp.response) {
+								trp.remove();
+								calcTot('ingreso');
+								swal({
+									type: "success",
+									title: "¡Listo!",   
+									text: "Se eliminó el registro",   
+									timer: 4000
+								});
+							}
+							$.unblockUI();
+						}
+					});
+				});
+			});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_GASTO_DEL, $permisos)) : ?>
+			$('tbody').on('click', '.btnDelG', function(event) {
+				event.preventDefault();
+				id = $(this).parent().data('id');
+				trp = $(this).parents('tr');
+				swal({   
+					title: "Eliminar retiro",
+					text: "No podrá revertir esta acción",
+					type: "warning",   
+					html: true,
+					showCancelButton: true,   
+					cancelButtonText: "Cancelar",
+					confirmButtonColor: "#DD6B55",   
+					confirmButtonText: "Si, eliminar",
+					closeOnConfirm: false 
+				}, function() {
+					//data: {fk_usuario: 1, fk_session: 1}, 
+					blockPage();
+					$.ajax({
+						url: $apiUrl+'pos/delEgreso/'+id,
+						type: 'PUT',
+						dataType: 'json',
+						success: function(resp) {
+							if(resp.response) {
+								trp.remove();
+								calcTot('gasto');
+								swal({
+									type: "success",
+									title: "¡Listo!",   
+									text: "Se eliminó el registro",   
+									timer: 4000
+								});
+							}
+							$.unblockUI();
+						}
+					});
+				});
+			});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_INGRESO_ADD, $permisos) || in_array(MOD_SUCURSALES_EDIT, $permisos)) : ?>
+			$('#btnSave').click(function() {
+				$('.invalid-tooltip').remove();
+				id = parseInt($('#item-id').val());
+				destino = $('#item-destino').val();
+				data = {importe: $.trim($('#item-importe').val()), concepto: $.trim($('#item-concepto').val())};
+
+				$errLabel = $('<div class="invalid-tooltip"></div>');
+				if(data.importe == '' || !$.isNumeric(data.importe) || parseFloat(data.importe) == 0.00) {
+					$errLabel.html('Debe ingresar el importe');
+					$('#item-importe').after($errLabel);
+					$errLabel.show();
+				}else{
+					blockPage();
+					$.post($apiUrl+'pos/'+destino+'/', data, 
+						function(resp) {
+							if(resp.response) {
+								data.id = resp.result;
+								data.hora = resp.hora;
+								tipo = destino=='addIngreso'?'ingreso':'gasto';
+								addRow(data, tipo);
+								$('#frm-item').modal('hide');									
+								swal({
+									type: "success",
+									title: "¡Listo!",   
+									text: "Se guardaron los datos correctamente.",   
+									timer: 4000
+								});
+							}else{
+								swal({
+									type: "warning",
+									title: "Oops!",   
+									text: resp.message,   
+									timer: 4000
+								});
+							}
+							$.unblockUI();
+					},'json');
+				}
+			});
+			<?php endif; ?>
+		});
+		
+	</script>
+<?php else: include 'footer.phtml'; endif; ?>

@@ -1,0 +1,449 @@
+<?php 
+	include 'header.phtml';
+	define('MOD_ACTION_ADD',	33);
+	define('MOD_ACTION_EDIT', 	34);
+	define('MOD_ACTION_DEL', 	35);
+	define('MOD_ACTION_BAJA', 	36);
+
+	if(isset($_SESSION['sucursal']) && (!isset($solicitudes) || count($solicitudes)==0)):
+?>
+
+	<div class="row page-titles">
+		<div class="col-md-5 align-self-center">
+			<h3 class="text-themecolor"><i class="mdi mdi-square-inc-cash"></i> Listas de Precios</h3>
+		</div>
+	</div>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-12">
+				<div class="card">
+					<div class="card-body">
+						<?php if(in_array(MOD_ACTION_ADD, $permisos)) : ?>
+						<button class="btn btn-success pull-right" id="btnAdd"><i class="mdi mdi-plus"></i></button>
+						<?php endif; ?>
+						<div class="col-sm-3 pull-right form hide">
+							<div class="input-group">
+								<input type="text" id="bus" placeholder="Buscar por nombre" class="form-control">
+								<div class="input-group-append">
+									<button type="button" class="btn btn-secondary btn-sm" id="btn-bus"><i class="fa fa-search"></i></button>
+								</div>
+							</div>
+						</div>
+
+						<h4 class="card-title">Listas de precios</h4>
+						<h6 class="card-subtitle">Crea, edita y elimina listas de precios generales y de descuento.</h6>
+
+						<div class="table-responsive">
+							<table id="tbl-items" class="table table-hover table-striped">
+								<thead>
+									<tr>
+										<th>Sucursal</th>
+										<th>Tipo</th>
+										<th>Nombre</th>
+										<th>Origen</th>
+										<th>Status</th>
+										<th>Acciones</th>
+									</tr>
+								</thead>
+								<tbody></tbody>
+							</table>
+						</div>
+						
+						<div class="row hide">
+							<div class="col-sm-6">
+								<div class="dataTables_length" id="editable-datatable_length">
+									<label>
+										<select name="editable-datatable_length" aria-controls="editable-datatable" class="form-control input-sm" id="cont">
+											<option value="10">Ver 10</option>
+											<option value="25">Ver 25</option>
+											<option value="50">Ver 50</option>
+											<option value="100">Ver 100</option>
+										</select>
+									</label>
+									<span id="reg" class="heading-text"></span>
+								</div>
+							</div>
+							<div class="col-sm-6">
+								<div class="card-body">
+									<nav aria-label="Page navigation example">
+										<ul id="pag" class="pagination pull-right"></ul>
+									</nav>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div id="frm-item" class="modal" >
+			<div class="modal-dialog">
+				<div class="modal-content d-flex p-2">
+					<div class="modal-header">
+						<h3 class="modal-title">Datos de la lista</h3>
+					</div>
+					<div class="modal-body">
+						<form class="form">
+							<div class="form-group sucursal">
+								<label for="item-sucursal_id">Sucursal</label>
+								<div class="input-group">
+									<div class="input-group-prepend">
+										<span class="input-group-text" id="basic-addon1">
+											<i class="ti-home"></i>
+										</span>
+									</div>
+									<select class="form-control" id="item-sucursal_id"></select>
+								</div>
+							</div>
+
+							<div class="form-group">
+								<label for="item-origen">Tipo</label>
+								<select class="form-control" id="item-origen">
+									<option value="0">Normal (Independiente)</option>
+								</select>
+							</div>
+
+							<div class="form-group descuento">
+								<div class="input-group">
+									<div class="input-group-prepend">
+										<span class="input-group-text" id="basic-addon1">Descuento</span>
+									</div>
+									<input type="number" class="form-control" id="item-descuento" placeholder="Descuento" max="99" maxlength="2">
+									<div class="input-group-append">
+										<span class="input-group-text" id="basic-addon1">%</span>
+									</div>
+								</div>
+							</div>
+
+							<div class="form-group">
+								<label for="item-nombre">Nombre</label>
+								<input type="text" class="form-control" id="item-nombre" placeholder="Ingresa el Nombre" required>
+							</div>
+							<input type="hidden" id="item-id" value="0">
+						</form>
+					</div>
+					<div class="modal-footer d-flex justify-content-end">
+						 <button type="button" class="btn btn-inverse waves-effect waves-light" data-dismiss="modal">Cancelar</button>
+						 <?php if(in_array(MOD_ACTION_ADD, $permisos) || in_array(MOD_SUCURSALES_EDIT, $permisos)) : ?>
+						 <button type="button" class="btn btn-success waves-effect waves-light" id="btnSave">Guardar</button>
+						 <?php endif; ?>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+	</div>
+	<?php include 'footer.phtml';?>
+	<script src="<?=URL_ROOT?>/assets/plugins/inputmask/dist/min/jquery.inputmask.bundle.min.js"></script>
+	<script src="<?=URL_ROOT?>/assets/js/mask.init.js"></script>
+
+	<script type="text/javascript">
+		$(function() {
+
+			$apiUrl = '<?= URL_API ?>';
+
+			$.get($apiUrl+'sucursal/getAll/', function(data) {
+				$.each(data.result, function(index, item) {
+					$('#item-sucursal_id').append('<option value="'+item.id+'">'+item.nombre+'</option>');
+				});
+				if(data.result.length == 1) $('.sucursal').addClass('hide');
+				getItems(0,10);
+			},'json');
+
+
+			function getItems(pag, lim) {
+				blockPage();
+				$('#tbl-items tbody').empty();
+				bus ='';
+				bus = $.trim($('#bus').val());
+				if(bus == '') bus = 0;
+				$.get($apiUrl+'prod_lista_precio/getAll/', function(resp) {
+					$.unblockUI();
+					if(resp.total > 0) {
+						$.each(resp.result, function(index, item) {
+							addRow(item);
+							if($('#item-origen option').length < (resp.total+1))
+								$('#item-origen').append('<option value="'+item.id+'">Descuento '+item.nombre+' ('+item.sucursal+')</option>');
+						});
+					}else{
+						$('#tbl-items tbody').append('<tr><td colspan="6">No existen listas de precios</td></tr>');
+					}
+					doPagination(resp.total, lim, pag);
+				});
+			}
+
+			function addRow(item) {
+				tr = $('<tr></tr>');
+				if($('#tbl-items [data-id="'+item.id+'"]').length > 0) {
+					tr = $('#tbl-items [data-id="'+item.id+'"]').parents('tr');
+					tr.empty();
+				}
+
+				suc = $('#item-sucursal_id option[value="'+item.sucursal_id+'"]').text();
+				tr.append('<td>'+suc+'</td>');
+				tr.append('<td>'+(item.origen == 0 ? 'Normal' : 'Descuento')+'</td>');
+				tr.append('<td>'+item.nombre+'</td>');
+				origen = '--';
+				if(item.origen > 0) {
+					sucOri = $('#item-origen option[value="'+item.origen+'"]').text().replace('Descuento ','');
+					origen = item.descuento+'% sobre '+sucOri;
+				}
+				tr.append('<td><small>'+origen+'</small></td>');
+				
+				status = '<span class="label label-success">Activo</span>';
+				<?php if(in_array(MOD_ACTION_BAJA, $permisos)) : ?>
+				status += ' <a href="#" data-popup="tooltip" title="Inactivar" class="btnBaja text-danger pull-right"><i class="mdi mdi-close-circle"></i></a>';
+				<?php endif; ?>
+				if(item.status == 2) {
+					status = '<span class="label label-warning">Inactivo</span>';
+					<?php if(in_array(MOD_ACTION_BAJA, $permisos)) : ?>
+					status += ' <a href="#" data-popup="tooltip" title="Activar" class="btnBaja text-success pull-right"><i class="mdi mdi-check-circle"></i></a>';
+					<?php endif; ?>
+				}
+				tr.append('<td data-id="'+item.id+'">'+status+'</td>');
+
+				tda = $('<td class="td-center" data-id="'+item.id+'"></td>');
+				tda.append('<a href="#" data-popup="tooltip" title="Editar" class="btnEdit"><i class="mdi mdi-pencil"></i></a> ');
+				<?php if(in_array(MOD_ACTION_DEL, $permisos)) : ?>
+				tda.append('<a href="#" data-popup="tooltip" title="Eliminar" class="btnDel"><i class="mdi mdi-delete" style="color:red;"></i></a>');
+				<?php endif; ?>
+				tr.append(tda);
+
+				$('#tbl-items tbody').append(tr);
+			}
+		
+			$('#bus').keyup(function(e) { if(e.keyCode == 13) { getItems(0, $('#cont').val()); } });
+			$('#btn-bus').click(function(e) { getItems(0, $('#cont').val()); });		
+			$('#cont').change(function() { cont = $(this).val(); getItems(0,cont); });
+
+			<?php if(in_array(MOD_ACTION_ADD, $permisos)) : ?>
+			$('#btnAdd').click(function(e) {
+				e.preventDefault();
+				clearData();
+				$('#item-origen').removeAttr('disabled');
+				$('#frm-item').modal('show');
+			});
+			<?php endif; ?>
+
+			function clearData() {
+				$('.invalid-tooltip').remove();
+				$('#item-origen').val(0);
+				$('.descuento').addClass('hide');
+				$('#frm-item input').val('');
+				$('#item-email').removeAttr('disabled');
+				$('#item-id').val(0);
+			}
+
+			$('#frm-item').on('shown.bs.modal', function () { $('#item-nombre').focus(); });
+
+			$('#item-origen').change(function() {
+				if($(this).val() > 0) {
+					$('.descuento').removeClass('hide');
+					$('#item-nombre').val($('#item-origen option:selected').text().replace('Descuento','Desc'));
+					$('#item-descuento').focus();
+				}else{
+					$('.descuento').addClass('hide');
+					$('#item-descuento').val('');
+					$('#item-nombre').val('').focus();
+				}
+			});
+
+			$('tbody').on('click', '.btnEdit', function(event) {
+				event.preventDefault();
+				$('#frm-item .validation-error-label').remove();
+				id = $(this).parents('td').data('id');
+				blockPage();
+				clearData();
+				$.get($apiUrl+'prod_lista_precio/get/'+id, function(data) {
+					$('#item-id').val(data.result.id);
+					$('#item-sucursal_id').val(data.result.sucursal_id);
+					$('#item-origen').val(data.result.origen).attr('disabled', 'disabled');
+					$('#item-descuento').val(data.result.descuento);
+					$('#item-nombre').val(data.result.nombre);
+					if(data.result.origen > 0)
+						$('.descuento').removeClass('hide');
+					$.unblockUI();
+					$('#frm-item').modal('show');
+				});
+			});
+
+			<?php if(in_array(MOD_ACTION_DEL, $permisos)) : ?>
+			$('tbody').on('click', '.btnDel', function(event) {
+				event.preventDefault();
+				id = $(this).parents('td').data('id');
+				trp = $('#tbl-items [data-id="'+id+'"]').parents('tr');
+				nom = trp.find('td:eq(2)').text();
+				suc = trp.find('td:eq(0)').text();
+				swal({   
+					title: "Eliminar lista",
+					text: "No podrá restaurar la lista <strong>"+nom+"</strong> de"+suc,
+					type: "warning",   
+					html: true,
+					showCancelButton: true,   
+					cancelButtonText: "Cancelar",
+					confirmButtonColor: "#DD6B55",   
+					confirmButtonText: "Si, eliminar",
+					closeOnConfirm: false 
+				}, function() {
+					//data: {fk_usuario: 1, fk_session: 1}, 
+					blockPage();
+					$.ajax({
+						url: $apiUrl+'prod_lista_precio/del/'+id,
+						type: 'PUT',
+						dataType: 'json',
+						success: function(resp) {
+							if(resp.response) {
+								trp.remove();
+								swal({
+									type: "success",
+									title: "¡Listo!",   
+									text: "Se eliminó la lista",   
+									timer: 4000
+								});
+							}
+							$.unblockUI();
+						}
+					});
+				});
+			});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_ACTION_ADD, $permisos) || in_array(MOD_ACTION_EDIT, $permisos)) : ?>
+			$('#btnSave').click(function() {
+				$('.invalid-tooltip').remove();
+				id = parseInt($('#item-id').val());
+				data = {};
+				data.sucursal_id = $('#item-sucursal_id').val();
+				data.origen = $('#item-origen').val();
+				data.nombre = $('#item-nombre').val();
+				data.descuento = $('#item-descuento').val();
+
+				$errLabel = $('<div class="invalid-tooltip"></div>');
+				if(data.nombre == '') {
+					$errLabel.html('Debe ingresar el nombre');
+					$('#item-nombre').after($errLabel);
+					$errLabel.show();
+				}else if(data.descuento == '' && data.origen > 0) {
+					$errLabel.html('Debe ingresar el descuento');
+					$('#item-descuento').after($errLabel);
+					$errLabel.show();
+				}else{
+					blockPage();
+					if(id == 0) {
+						$.post($apiUrl+'prod_lista_precio/add/', data, 
+							function(resp) {
+								if(resp.response) {
+									data.id = resp.result;
+									addRow(data);
+									$('#item-id').val(0);
+									$('#frm-item').modal('hide');									
+									swal({
+										type: "success",
+										title: "¡Listo!",   
+										text: "Se guardaron los datos correctamente.",   
+										timer: 4000
+									});
+								}else{
+									swal({
+										type: "warning",
+										title: "Oops!",   
+										text: resp.message,   
+										timer: 4000
+									});
+								}
+								$.unblockUI();
+						},'json');
+					}else{
+						$row = $('#tbl-items tbody tr td[data-id="'+id+'"]');
+						$.ajax({
+							url: $apiUrl+'prod_lista_precio/edit/'+id,
+							type: 'PUT',
+							dataType: 'json',
+							data: data, 
+						}).done(function(resp) {
+							if(resp.response) {
+								data.id = resp.result;
+								addRow(data);
+								$('#item-id').val(0);
+								$('#frm-item').modal('hide');
+								swal({
+									type: "success",
+									title: "¡Listo!",   
+									text: "Se guardaron los datos correctamente.",   
+									timer: 4000
+								});
+							}else{
+								swal({
+									type: "warning",
+									title: "Oops!",   
+									text: resp.message,   
+									timer: 4000
+								});
+							}
+							$.unblockUI();
+						});
+					}
+				}
+			});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_ACTION_BAJA, $permisos)) : ?>
+			$('tbody').on('click', '.btnBaja', function(event) {
+				event.preventDefault();
+				id = $(this).parents('td').data('id');
+				td = $(this).parents('td');
+				trp = $('#tbl-items [data-id="'+id+'"]').parents('tr');
+				suc = trp.find('td:eq(0)').text();
+				nom = trp.find('td:eq(2)').text();
+				status = $(this).hasClass('text-danger') ? 2 : 1;
+				titulo = $(this).hasClass('text-danger') ? 'Inactivar' : 'Activar';
+				swal({   
+					title: titulo+" lista",
+					text: "¿Desea "+titulo+" la lista <strong>"+nom+"</strong> de "+suc+"?",
+					type: "warning",   
+					html: true,
+					showCancelButton: true,   
+					cancelButtonText: "Cancelar",
+					//confirmButtonColor: "#DD6B55",   
+					confirmButtonText: "Si, "+titulo,
+					closeOnConfirm: true 
+				}, function() {
+					//data: {fk_usuario: 1, fk_session: 1}, 
+					blockPage();
+					$.ajax({
+						url: $apiUrl+'prod_lista_precio/edit/'+id,
+						type: 'PUT',
+						dataType: 'json',
+						data: {status: status}, 
+					}).done(function(resp) {
+						if(resp.response) {
+							if(status == 1) {
+								td.html('<span class="label label-success">Activo</span> <a href="#" data-popup="tooltip" title="Inactivar" class="btnBaja text-danger pull-right"><i class="mdi mdi-close-circle"></i></a>');
+							}else{
+								td.html('<span class="label label-warning">Inactivo</span> <a href="#" data-popup="tooltip" title="Activar" class="btnBaja text-success pull-right"><i class="mdi mdi-check-circle"></i></a>');
+							}
+						}else{
+							swal({
+								type: "warning",
+								title: "Oops!",   
+								text: resp.message,   
+								timer: 4000
+							});
+						}
+						$.unblockUI();
+					});
+				});
+			});
+			<?php endif; ?>
+
+			$('body').on('click', '#pag li a', function(event) {
+				event.preventDefault();
+				pag = parseInt($(this).attr('href'));
+				cont = parseInt($('#cont').val());
+				if(!$(this).parent().hasClass('active') && !$(this).parent().hasClass('active'))
+					getItems(pag, cont);
+			});
+		});
+		
+	</script>
+<?php else: include 'footer.phtml'; endif; ?>

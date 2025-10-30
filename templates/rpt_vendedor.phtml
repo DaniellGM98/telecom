@@ -1,0 +1,222 @@
+<?php 
+	include 'header.phtml';
+
+	if(isset($_SESSION['sucursal']) && (!isset($solicitudes) || count($solicitudes)==0)):
+?>
+	<link href="<?=URL_ROOT?>/assets/plugins/bootstrap-daterangepicker/daterangepicker.css" rel="stylesheet">
+			
+	<div class="row page-titles">
+		<div class="col-md-5 align-self-center">
+			<h3 class="text-themecolor"><i class="mdi mdi-chart-areaspline"></i> Reportes</h3>
+		</div>
+	</div>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-12">
+				<div class="card">
+					<div class="card-body">
+						<h4 class="card-title">Reportes de ventas por vendedor</h4>
+						<h6 class="card-subtitle">Seleccione un periodo de ventas y un vendedor para generar el reporte</h6>
+								
+						<div class="row">
+							<div class="col-sm-3">
+								<div class="form-group mb-0">
+									<div class="input-group">
+										<div class="input-group-prepend">
+											<span class="input-group-text"><i class="fa fa-calendar"></i></span>
+										</div>
+										<input class="form-control input-daterange-datepicker" type="text" id="fechas" value="<?= date("d/m/Y",strtotime(date("01-m-Y"))) . ' - ' . date('d/m/Y') ?>" />
+									</div>
+								</div>
+							</div>
+							<div class="col-sm-3">
+								<div class="input-group">
+									<div class="input-group-prepend"><span class="input-group-text"><i class="mdi mdi-clipboard-account"></i></span></div>
+									<select class="form-control" id="busVend">
+										<option value="0">Vendedor</option>
+										<?php foreach ($vendedores as $vend) {
+											echo '<option value="'.$vend->usuario_id.'">'.$vend->nombre.'</option>';
+										}
+										?>
+									</select>
+								</div>
+							</div>
+							<div class="col-sm-3">
+								<div class="input-group">
+									<div class="input-group-prepend"><span class="input-group-text"><i class="fa fa-cubes"></i></span></div>
+									<select class="form-control" id="busCat">
+										<option value="0">Categoría</option>
+										<?php foreach ($categorias as $cat) {
+											echo '<option value="'.$cat->id.'">'.$cat->nombre.'</option>';
+										}
+										?>
+									</select>
+								</div>
+							</div>
+							<div class="col-sm-3">
+								<div class="input-group sucursal">
+									<div class="input-group-prepend"><span class="input-group-text"><i class="fa fa-home"></i></span></div>
+									<select class="form-control" id="busSuc">
+										<option value="0">Sucursal</option>
+										<?php foreach ($sucursales as $suc) {
+											echo '<option value="'.$suc->id.'">'.$suc->nombre.'</option>';
+										}
+										?>
+									</select>
+								</div>
+							</div>
+						</div>
+						<hr>
+						<div class="table-responsive">
+							<table id="tbl-items" class="table table-hover table-striped m-t-0 m-b-0">
+								<thead>
+									<tr>
+										<th>Folio</th>
+										<th>Fecha</th>
+										<th>Sucursal</th>
+										<th>Categoría</th>
+										<th>Producto</th>
+										<th class="text-center">Cant</th>
+										<th class="text-right">Precio</th>
+										<th class="text-right">Importe</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr><td colspan="8"><small>Seleccione un vendedor</small></td></tr>
+								</tbody>
+								<tfoot>
+									<tr>
+										<th colspan="5"><small></small></th>
+										<th colspan="2" class="text-right">TOTAL:</th>
+										<th class="text-right"></th>
+									</tr>
+								</tfoot>
+							</table>
+						</div>
+						<div class="row hide">
+							<div class="col-sm-6">
+								<div class="dataTables_length" id="editable-datatable_length">
+									<label>
+										<select name="editable-datatable_length" aria-controls="editable-datatable" class="form-control input-sm" id="cont">
+											<option value="100">Ver 100</option>
+											<option value="10">Ver 10</option>
+											<option value="25">Ver 25</option>
+											<option value="50">Ver 50</option>
+										</select>
+									</label>
+									<span id="reg" class="heading-text"></span>
+								</div>
+							</div>
+							<div class="col-sm-6">
+								<div class="card-body">
+									<nav aria-label="Page navigation example">
+										<ul id="pag" class="pagination pull-right"></ul>
+									</nav>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<?php include 'footer.phtml';?>
+	<script src="<?=URL_ROOT?>/assets/plugins/bootstrap-daterangepicker/daterangepicker.js"></script>
+	<script src="<?=URL_ROOT?>/assets/plugins/typeahead.js-master/dist/typeahead.bundle.min.js"></script>
+	<script src="<?=URL_ROOT?>/assets/plugins/select2/dist/js/select2.full.min.js" type="text/javascript"></script>
+
+	<script type="text/javascript">
+		$(function() {
+			$apiUrl = '<?= URL_API ?>venta/';
+            $('#mnu-rpt').addClass('active');
+			$('.input-daterange-datepicker').daterangepicker({
+				buttonClasses: ['btn', 'btn-sm'],
+				applyClass: 'btn-primary',
+				cancelClass: 'btn-inverse',
+				maxDate: '<?= date('d/m/Y') ?>',
+				locale: $dateRangeLocale,
+				ranges: $dateRanges,
+				alwaysShowCalendars: true,
+				autoApply: true
+			}, function(start, end, label) {
+				getItems(0,100);
+			});
+
+			function getItems(pag, lim) {
+				vend = $('#busVend').val();
+				if(vend>0){
+					$('#tbl-items tbody').empty();
+					blockPage();
+					suc = $('#busSuc').val();
+					cat = $('#busCat').val();
+					var fechas = $('#fechas').data('daterangepicker');
+					ini = fechas.startDate.format('YYYY-MM-DD');
+					fin = fechas.endDate.format('YYYY-MM-DD');
+					$.get($apiUrl+'getVentasByVendedor/'+ini+'/'+fin+'/'+vend+'/'+suc+'/'+cat, function(resp) {
+						if(resp.ventas.length > 0) {
+							if ( $.fn.dataTable.isDataTable( '#tbl-items' ) ) {
+								$('#tbl-items').DataTable().destroy();
+							}
+							$('#tbl-items tbody').empty();
+							prods = 0;
+							$.each(resp.ventas, function(index, item) {
+								addRow(item);
+								$.each(item.detalles, function (index, det) { 
+									if (['0',det.prod_categoria_id].includes($('#busCat').val())) {
+										prods+=parseInt(det.cantidad); 
+									}
+								});
+							});
+							$('#tbl-items tfoot th:eq(0) small').html(prods+' productos en '+resp.ventas.length+' ventas registradas en el periodo');
+							$('#tbl-items tfoot th:eq(2)').html('$ '+resp.total);
+							$('#tbl-items').DataTable({
+								"paging":   false,
+								"searching": false,
+								"info":     false
+							});
+						}else{
+							$('#tbl-items tbody').append('<tr><td colspan="8"><small>No existen ventas para este vendedor en el periodo</small></td></tr>');
+							$('#tbl-items tfoot th:eq(0) small').html('');
+							$('#tbl-items tfoot th:eq(2)').html('$ '+resp.total);
+						}
+						$.unblockUI();
+					});
+				}
+			}
+
+			function addRow(item) {
+				tr = $('<tr data-ent="'+item.id+'"></tr>');
+				if($('#tbl-items [data-id="'+item.id+'"]').length > 0) {
+					tr = $('#tbl-items [data-id="'+item.id+'"]').parents('tr');
+					tr.empty();
+				}
+
+				rspan = item.detalles.length;
+				btnPrint = '';//'<a href="<?= URL_ROOT ?>/venta/print/'+item.id+'?dl=1" target="_blank" data-popup="tooltip" title="Imprimir" class="btnPrint"><i class="mdi mdi-printer"></i></a> ';
+				/*tr.append('<td rowspan="'+rspan+' "data-id="'+item.id+'">'+btnPrint+item.folio+'</td>');
+				tr.append('<td rowspan="'+rspan+'"><small>'+item.fecha+'</small></td>');
+				tr.append('<td rowspan="'+rspan+'">'+item.sucursal+'</td>');*/
+
+				$.each(item.detalles, function(index, det) {
+					if (['0',det.prod_categoria_id].includes($('#busCat').val())) {
+						tr.append('<td "data-id="'+item.id+'">'+btnPrint+item.folio+'</td>');
+						tr.append('<td><small>'+item.fecha+'</small></td>');
+						tr.append('<td>'+item.sucursal+'</td>');
+
+						tr.append('<td><small>'+det.categoria+'</small></td>');
+						tr.append('<td><small>'+det.nombre+' '+det.modelo+' <strong>'+det.sku+'</strong></small></td>');
+						tr.append('<td class="text-center">'+det.cantidad+'</td>');
+						tr.append('<td class="text-right">$ '+det.costo+'</td>');
+						tr.append('<td class="text-right">$ '+det.importe+'</td>');
+
+						$('#tbl-items tbody').append(tr);
+						tr = $('<tr data-ent="'+item.id+'"></tr>');
+					}
+				});
+			}
+		
+			$('#busVend, #busCat, #busSuc').change(function() { getItems(0,$('#cont').val()); });
+		});
+		
+	</script>
+<?php else: include 'footer.phtml'; endif; ?>

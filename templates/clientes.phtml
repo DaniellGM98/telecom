@@ -1,0 +1,435 @@
+<?php 
+	include 'header.phtml';
+
+	if(!defined('MOD_CLIENTE_ADD')) { define('MOD_CLIENTE_ADD', 	23); }
+	if(!defined('MOD_CLIENTE_EDIT')) { define('MOD_CLIENTE_EDIT', 	24); }
+	if(!defined('MOD_CLIENTE_DEL')) { define('MOD_CLIENTE_DEL', 	25); }
+
+	if(isset($_SESSION['sucursal']) && (!isset($solicitudes) || count($solicitudes)==0)):
+?>
+	<div class="row page-titles">
+		<div class="col-md-5 align-self-center">
+			<h3 class="text-themecolor"><i class="mdi mdi-contacts"></i> Clientes</h3>
+		</div>
+	</div>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-12">
+				<div class="card">
+					<div class="card-body">
+						<?php if(in_array(MOD_CLIENTE_ADD, $permisos)) : ?>
+							<button class="btn btn-success pull-right" id="btnAddCliente"><i class="mdi mdi-plus"></i> Agregar nuevo</button>
+						<?php endif; ?>
+
+						<h4 class="card-title">Clientes</h4>
+						<h6 class="card-subtitle">Crea, edita y elimina clientes</h6>
+
+						<div class="table-responsive">
+							<table id="tbl-clientes" class="table table-hover table-striped">
+								<thead>
+									<tr>
+										<th class="text-center">Nombre</th>
+										<th class="text-center">RFC</th>
+										<th class="text-center">Direcci&oacute;n</th>
+										<th class="text-center">Email</th>
+										<th class="text-center">Teléfono</th>
+										<th class="text-center">Acciones</th>
+									</tr>
+								</thead>
+								<tbody></tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!--Modales -->
+		<?php if(in_array(MOD_CLIENTE_ADD, $permisos) || in_array(MOD_CLIENTE_EDIT, $permisos)) : ?>
+			<div id="frm-cliente" class="modal" >
+				<div class="modal-dialog modal-lg">
+					<div class="modal-content d-flex p-2">
+						<div class="modal-header">
+							<h3 class="modal-title">Datos del cliente</h3>
+						</div>
+						<div class="modal-body">
+							<form class="form p-t-20 form-horizontal">
+								<div class="row">
+									<div class="col-sm-12">
+										<div class="form-group row">
+											<label for="cliente-nombre" class="col-form-label text-right col-sm-2">Nombre</label>
+											<div class="col-sm-4">
+												<input type="text" class="form-control" id="cliente-nombre" placeholder="Nombre del cliente" required>
+											</div>
+											<div class="col-sm-6">
+												<input type="text" class="form-control" id="cliente-apellidos" placeholder="Apellidos del cliente" required>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="row">
+									<div class="col-sm-12">
+										<div class="form-group row">
+											<label for="cliente-telefono" class="col-form-label text-right col-sm-2">Teléfono</label>
+											<div class="col-sm-4">
+												<input type="text" class="form-control phone-inputmask" id="cliente-telefono" placeholder="Teléfono" required>
+											</div>
+											<label for="cliente-correo" class="col-form-label text-right col-sm-1">Email</label>
+											<div class="col-sm-5">
+												<input type="text" class="form-control email-inputmask" id="cliente-correo" placeholder="Correo electrónico" required>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="row">
+									<div class="col-sm-12">
+										<div class="form-group row">
+											<label for="cliente-direccion" class="col-form-label text-right col-sm-2">Dirección</label>
+											<div class="col-sm-10">
+												<input type="text" class="form-control" id="cliente-direccion" placeholder="Dirección del cliente (Opcional)">
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="row">
+									<div class="col-sm-12">
+										<div class="form-group row">
+											<label for="cliente-razon_social" class="col-form-label text-right col-sm-2">Razón social</label>
+											<div class="col-sm-4">
+												<input type="text" class="form-control" id="cliente-razon_social" placeholder="Razón social">
+											</div>
+											<label for="cliente-descuento" class="col-form-label text-right col-sm-2">Descuento</label>
+											<div class="col-sm-4">
+												<input type="text" class="form-control descuento" id="cliente-descuento" placeholder="Descuento">
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="row">
+									<div class="col-sm-12">
+										<div class="form-group row">
+											<label for="cliente-rfc" class="col-form-label text-right col-sm-2">RFC</label>
+											<div class="col-sm-4">
+												<input type="text" class="form-control" id="cliente-rfc" placeholder="Registro Federal de Contribuyentes" required maxlength="13">
+											</div>
+											<label for="cliente-uso_cfdi" class="col-form-label text-right col-sm-2">Uso de CFDi</label>
+											<div class="col-sm-4">
+												<select id="cliente-uso_cfdi" class="form-control">
+													<option value="G01">Adquisición de mercancias</option>
+													<option value="G03">Gastos en general</option>
+													<option value="I02">Mobilario y equipo de oficina por inversiones</option>
+													<option value="P01">Por definir</option>
+												</select>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="row">
+									<div class="col-sm-12">
+										<div class="form-group row">
+											<label for="cliente-tiene_credito" class="col-form-label text-right col-sm-2">Cr&eacute;dito</label>
+											<div class="col-sm-4">
+												<select id="cliente-tiene_credito" class="form-control">
+													<option value="0">Sin cr&eacute;dito</option>
+													<option value="1">Con cr&eacute;dito</option>
+												</select>
+											</div>
+											<label for="cliente-credito_dias" class="col-form-label text-right col-sm-2 dias-credito">D&iacute;as de cr&eacute;dito</label>
+											<div class="col-sm-4 dias-credito">
+												<input type="text" id="cliente-credito_dias" class="form-control" placeholder="D&iacute;as de cr&eacute;dito" required>
+											</div>
+										</div>
+									</div>
+								</div>
+								<input type="hidden" id="cliente-id" value="0">
+							</form>
+						</div>
+						<div class="modal-footer d-flex justify-content-end">
+							<button type="submit" class="btn btn-inverse waves-effect waves-light m-r-20" data-dismiss="modal">Cancelar</button>
+							<button type="submit" class="btn btn-success waves-effect waves-light" id="btnSave">Guardar</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		<?php endif; ?>
+	</div>
+	<?php include 'footer.phtml';?>
+	<script src="<?=URL_ROOT?>/assets/plugins/inputmask/dist/min/jquery.inputmask.bundle.min.js"></script>
+	<script src="<?=URL_ROOT?>/assets/js/mask.init.js"></script>
+	<script type="text/javascript">
+		$(function() {
+			$apiUrl = '<?= URL_API ?>cliente/';
+
+			getClientes();
+			function getClientes(arrColumnas=null) { blockPage();
+				$('#tbl-clientes tbody').empty();
+				$.get($apiUrl+'getAllBusca/', function(clientes) {
+					$.each(clientes.result, function(index, cliente) { addClienteRow(cliente, arrColumnas); });
+					$.unblockUI();
+				});
+			}
+
+			function addClienteRow(cliente, arrColumnas) {
+				cleanTable('tbl-clientes');
+
+				container = $('#tbl-clientes tbody');
+				container.find('td[data-id="'+cliente.id+'"]').parents('tr').remove();
+				tr = $('<tr></tr>').appendTo(container);
+
+				tr.append('<td class="text-left"><small class="nombre">'+cliente.nombre+' '+cliente.apellidos+'</small></td>');
+				tr.append('<td class="text-center"><small class="rfc">'+cliente.rfc+'</small></td>');
+				tr.append('<td class="text-left"><small class="direccion">'+(cliente.direccion!=null? cliente.direccion: '')+'</small></td>');
+				tr.append('<td class="text-center"><small class="correo">'+(cliente.correo!=null? cliente.correo: '')+'</small></td>');
+				tr.append('<td class="text-center"><small class="telefono">'+(cliente.telefono!=null? cliente.telefono: '')+'</small></td>');
+
+				tda = $('<td class="text-center" data-id="'+cliente.id+'"></td>');
+				acciones = $('<div class="pull-right"></div>').appendTo(tda);
+				if(parseInt(cliente.id) != parseInt('<?= $_SESSION['cliente_general'] ?>')) {
+					<?php if(in_array(MOD_CLIENTE_EDIT, $permisos)) : ?> acciones.append('<a href="#" data-popup="tooltip" title="Editar" class="btnEditCliente"><i class="mdi mdi-pencil"></i></a> '); <?php endif; ?>
+					<?php if(in_array(MOD_CLIENTE_DEL, $permisos)) : ?> acciones.append('<a href="#" data-popup="tooltip" title="Eliminar" class="btnDelCliente"><i class="mdi mdi-delete" style="color:red;"></i></a>'); <?php endif; ?>
+				}
+				tr.append(tda);
+
+				createTable('tbl-clientes', arrColumnas);
+			}
+
+			<?php if(in_array(MOD_CLIENTE_ADD, $permisos)) : ?>
+				$('#btnAddCliente').click(function(e) {
+					e.preventDefault();
+					clearClienteData();
+					$('#frm-cliente').modal('show');
+					$('#cliente-correo').removeAttr('disabled');
+				});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_CLIENTE_EDIT, $permisos)) : ?>
+				$('tbody').on('click', '.btnEditCliente', function(event) { event.preventDefault(); blockPage(); clearClienteData();
+					$('#frm-cliente .validation-error-label').remove();
+					id = $(this).parents('td').data('id');
+
+					$.get($apiUrl+'get/'+id, function(data) {
+						$.each(data.result, function(index, val) {
+							$('#cliente-'+index).val(val).trigger('change');
+						});
+						
+						$('#frm-cliente').modal('show');
+						$('#cliente-correo').attr('disabled', 'disabled');
+						$.unblockUI();
+					});
+				});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_CLIENTE_ADD, $permisos) || in_array(MOD_CLIENTE_EDIT, $permisos)) : ?>
+				$('#frm-cliente').on('shown.bs.modal', function () { $('#cliente-nombre').focus(); $('#cliente-tiene_credito').trigger('change'); });
+				$('#frm-external-sale-cliente, #frm-cliente').on('hidden.bs.modal', function() { getClientes($('#columns-tbl-clientes').val()); });
+
+				$("#cliente-credito_dias").inputmask({
+					alias: "numeric", groupSeparator: ',', digits: 0, digitsOptional: false
+				});
+
+				$('#cliente-tiene_credito').change(function() {
+					if($(this).find('option:selected').val() == 0) {
+						$('#cliente-credito_dias').val(undefined);
+						$('.dias-credito').addClass('hide');
+					} else {
+						$('.dias-credito').removeClass('hide');
+					}
+				});
+
+				$(".descuento").inputmask({
+					alias: "numeric", groupSeparator: ',', digits: 0, digitsOptional: false, mask: 99
+				});
+
+				function clearClienteData() {
+					$('.invalid-tooltip').remove();
+					$('#frm-cliente input').val('');
+					$('#frm-cliente select').val(0).trigger('change');
+					$('#cliente-id').val(0);
+				}
+
+				$('#btnSave').click(function() {
+					$('.invalid-tooltip').remove();
+					id = parseInt($('#cliente-id').val());
+
+					data = {};
+					$.each($('#frm-cliente').find('input, select'), function(index, elem) {
+						ide = $(elem).attr('id').replace('cliente-','');
+						data[ide] = $.trim($(elem).val());
+					});
+					if(data.credito_dias == '') { data.credito_dias = 0; }
+					data.telefono = data.telefono.replace('(','').replace(')','').replace(' ','').replace('-','').replace(/_/g, '');
+					data.uso_cfdi = $('#cliente-uso_cfdi').val();
+					rfcReg = new RegExp('^[A-Z&Ñ]{3,4}[0-9]{2}(0[1-9]|1[012])(0[1-9]|[12][0-9]|3[01])[A-Z0-9]{2}[0-9A]$');
+
+					$errLabel = $('<div class="invalid-tooltip"></div>');
+					if(data.nombre == '') {
+						$errLabel.html('Debe ingresar el nombre');
+						$('#cliente-nombre').after($errLabel);
+						$errLabel.show();
+					}else if(data.correo == '') {
+						$errLabel.html('Debe ingresar el correo');
+						$('#cliente-correo').after($errLabel);
+						$errLabel.show();
+					}else if(data.rfc.length > 0 && !rfcReg.test(data.rfc)) {
+						$errLabel.html('Debe ingresar un RFC válido');
+						$('#cliente-rfc').after($errLabel);
+						$errLabel.show();
+					}else if(data.telefono == '' || data.telefono.length != 10) {
+						$errLabel.html('Debe ingresar el telefono a 10 digitos');
+						$('#cliente-telefono').after($errLabel);
+						$errLabel.show();
+					}else{
+						blockPage();
+						if(id == 0) {
+							data.status = 2;
+							if(data.descuento == '') { data.descuento = 0; }
+							$.post($apiUrl+'add/', data, function(resp) {
+								if(resp.response) {
+									data.id = resp.result;
+									addClienteRow(data);
+
+									$('#cliente-id').val(0);
+									$('#frm-cliente').modal('hide');
+									swal({ type: "success", title: "¡Listo!", text: "Se guardaron los datos correctamente.", timer: 4000 });
+								} else { swal({ type: "warning", title: "Oops!", text: resp.message, timer: 4000 }); }
+
+								$.unblockUI();
+							},'json');
+						}else{
+							$.ajax({ url: $apiUrl+'edit/'+id, type: 'PUT', dataType: 'json', data: data, }).done(function(resp) {
+								if(resp.response) {
+									tr = $('#tbl-clientes td[data-id="'+id+'"]').parents('tr'); trInfo = getTrElement('tbl-clientes', tr);
+									trInfo.find('.nombre').html(data.nombre); trInfo.find('.rfc').html(data.rfc); trInfo.find('.direccion').html(data.direccion); trInfo.find('.correo').html(data.correo); trInfo.find('.telefono').html(data.telefono);
+									setTrData('tbl-clientes', tr, trInfo);
+
+									$('#cliente-id').val(0);
+									$('#frm-cliente').modal('hide');
+									swal({ type: "success", title: "¡Listo!", text: "Se guardaron los datos correctamente.", timer: 4000 });
+								}else{ swal({ type: "warning", title: "Oops!", text: resp.message, timer: 4000 }); }
+
+								$.unblockUI();
+							});
+						}
+					}
+				});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_CLIENTE_DEL, $permisos)) : ?>
+				$('tbody').on('click', '.btnDelCliente', function(event) {
+					event.preventDefault();
+					id = $(this).parents('td').data('id');
+					trp = $('#tbl-clientes [data-id="'+id+'"]').parents('tr');
+					nom = getTrElement('tbl-clientes', trp).find('.nombre').text();
+					swal({
+						title: "Eliminar cliente",
+						text: "No podrá restaurar el cliente <strong>"+nom+"</strong>",
+						type: "warning",
+						html: true,
+						showCancelButton: true,   
+						cancelButtonText: "Cancelar",
+						confirmButtonColor: "#DD6B55",   
+						confirmButtonText: "Si, eliminar",
+						closeOnConfirm: false 
+					}, function() {
+						//data: {fk_usuario: 1, fk_session: 1}, 
+						blockPage();
+						$.ajax({
+							url: $apiUrl+'del/'+id,
+							type: 'PUT',
+							dataType: 'json',
+							success: function(resp) {
+								if(resp.response) {
+									arrColumnas = $('#columns-tbl-clientes').val(); cleanTable('tbl-clientes'); trp.remove(); createTable('tbl-clientes', arrColumnas);
+									swal({
+										type: "success",
+										title: "¡Listo!",   
+										text: "Se eliminó el cliente",   
+										timer: 4000
+									});
+								}
+								$.unblockUI();
+							}
+						});
+					});
+				});
+			<?php endif; ?>
+
+			function getTrElement(tblName, tr) {
+				container = $('<div></div>');
+				trInfo = $('#'+tblName).DataTable().row(tr).data();
+				$.each(trInfo, function(index, trInfoRow) {
+					container.append(trInfoRow);
+				});
+				
+				return container;
+			}
+
+			function setTrData(tblName, row, trElement) {
+				arrContent = [];
+				$.each(trElement.children(), function(index, element) { element = $(element);
+					tagName = element.prop('tagName').toLowerCase();
+					html = '<'+tagName;
+					$.each(element[0].attributes, function(index, attr) {
+						html += ' '+attr.name+'="'+attr.value+'"';
+					});
+					html += '>'+element.html()+'</'+tagName+'>';
+
+					arrContent.push(html);
+				});
+
+				$('#'+tblName).DataTable().row(row).data(arrContent);
+				swal({ type:"success", title:"¡Listo!", text:"Se guardaron los cambios correctamente.", timer:4000 });
+			}
+
+			function cleanTable(tbl) {
+				if($.fn.dataTable.isDataTable('#'+tbl)) {
+					table = $('#'+tbl).DataTable();
+					table.destroy();
+				}
+				$("#nodata").remove();
+			}
+
+			function createTable(tbl, arrColumnas=null) {
+				container = $('<div class="form-inline pull-right" style="overflow: visible"></div>');
+				fColumnas = $('<select class="selectpicker" multiple data-selected-text-format="static" id="columns-'+tbl+'" title="Mostrar/Ocultar columnas" data-width="fit"></select>').appendTo(container);
+				fColumnas.append('<option class="form-control-sm" value="0">Nombre</option>');
+				fColumnas.append('<option class="form-control-sm" value="1">RFC</option>');
+				fColumnas.append('<option class="form-control-sm" value="2">Dirección</option>');
+				fColumnas.append('<option class="form-control-sm" value="3">Email</option>');
+				fColumnas.append('<option class="form-control-sm" value="4">Teléfono</option>');
+				fColumnas.selectpicker('val', arrColumnas!=null? arrColumnas: ['0', '1', '2', '3', '4']);
+				fColumnas.on('changed.bs.select', function(e, index) { blockPage();
+					column = $('#'+tbl).DataTable().column(index);
+					column.visible(!column.visible());
+					$.unblockUI();
+				});
+
+				searchContainer = $('<div class="input-group"></div>').appendTo(container);
+				search = $('<input type="text" id="bus" placeholder="Buscar por nombre, dirección, correo, etc" class="form-control">').appendTo(searchContainer);
+				icon = $('<div class="input-group-append"></div>').appendTo(searchContainer);
+				icon.append('<button type="button" class="btn btn-secondary btn-sm" id="btn-bus"><i class="fa fa-search"></i></button>');
+				search.keyup(function(e) { $("#"+tbl+"_filter label input").val($.trim($(this).val())).trigger('keyup'); });
+				search.on("search", function(evt) { $("#"+tbl+"_filter label input").val(undefined).trigger('keyup'); });
+				search.find("#btn-bus").click(function(evt) { evt.preventDefault(); $("#"+tbl+"_filter label input").val($.trim($('#bus').val())).trigger('keyup'); });
+				
+				$('#'+tbl).dataTable({
+					scrollX: false,
+					paging: true,
+					pagingType: "full_numbers",
+					dom: 'Rl<"#toolbar-'+tbl+'">frtip',
+					"columnDefs": [
+						{"orderable": true, "targets": [0], 'visible': (arrColumnas==null || arrColumnas.includes('0'))},
+						{"orderable": true, "targets": [1], 'visible': (arrColumnas==null || arrColumnas.includes('1'))},
+						{"orderable": true, "targets": [2], 'visible': (arrColumnas==null || arrColumnas.includes('2'))},
+						{"orderable": true, "targets": [3], 'visible': (arrColumnas==null || arrColumnas.includes('3'))},
+						{"orderable": true, "targets": [4], 'visible': (arrColumnas==null || arrColumnas.includes('4'))},
+						{"orderable": false, "targets": [5]},
+					],
+					'order': [0, 'asc']
+				});
+
+				$('#toolbar-'+tbl).html(container);
+				$("#"+tbl+"_filter label").hide();
+			}
+		});
+	</script>
+<?php else: include 'footer.phtml'; endif; ?>

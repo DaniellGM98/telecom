@@ -1,0 +1,363 @@
+<?php 
+	include 'header.phtml';
+
+	define('MOD_SALDO_SET', 	102);
+	define('MOD_CIERRA_CAJA', 	103);
+
+	$admin = $_SESSION['sucursal'] == 0 ? true : false;
+	
+	if(isset($_SESSION['sucursal']) && (!isset($solicitudes) || count($solicitudes)==0)):
+?>
+	<link href="<?= URL_ROOT ?>/assets/plugins/x-editable/dist/bootstrap3-editable/css/bootstrap-editable.css" rel="stylesheet" />
+
+	<div class="row page-titles">
+		<div class="col-md-5 align-self-center">
+			<h3 class="text-themecolor"><i class="mdi mdi-calculator fa-lg"></i> Corte de Caja</h3>
+		</div>
+		<div class="col-md-7 align-self-center text-right">
+			<small><?= $fechaLarga ?></small>
+		</div>
+	</div>
+	<div class="container-fluid">
+		<?php if($admin) : ?>
+		<div class="card saldos">
+			<div class="card-header">
+				<div class="pull-right form">
+					<div class="input-group input-group-sm">
+						<input type="text" id="bus" placeholder="Buscar por sucursal" class="form-control form-control-sm">
+						<div class="input-group-append">
+							<span class="input-group-text"><i class="fa fa-search"></i></span>
+						</div>
+					</div>
+				</div>
+				
+				<h4 class="card-title"><i class="mdi mdi-square-inc-cash"></i> Saldos <small class="card-subtitle">Asigna los saldos iniciales</small></h4>
+			</div>
+			<div class="card-body">
+				<div class="table-responsive">
+					<table id="tbl-items" class="table table-hover table-striped">
+						<thead>
+							<tr>
+								<th>Nombre</th>
+								<th>Teléfono</th>
+								<th class="text-center">Usuario</th>
+								<th class="text-right">Inicial</th>
+								<th class="text-right">Final</th>
+								<th class="text-center"></th>
+							</tr>
+						</thead>
+						<tbody></tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+		<?php endif; ?>
+		
+		<div class="card corte <?= $admin ? 'hide' : '' ?>">
+			<?php if($admin) : ?>
+			<div class="card-header">
+				<h4 class="card-title">
+					<div class="pull-right form-inline">
+						<input type="date" class="form-control form-control-sm m-r-10" id="corte-fecha" value="<?= date('Y-m-d') ?>">
+						<?php if(in_array(MOD_CIERRA_CAJA, $permisos)) : ?>
+						<button class="btn btn-info btn-sm m-r-5 d-print-none" id="btnCierra"><i class="mdi mdi-close"></i> Cerrar Corte</button>
+						<?php endif; ?>
+						<button type="button" class="btn btn-secondary btn-sm d-print-none m-r-5" id="btnPrint"><i class="mdi mdi-printer"></i> Imprimir</button> 
+						<button type="button" class="btn btn-secondary btn-sm d-print-none" id="btnBack"><i class="mdi mdi-arrow-left-bold-circle"></i> Regresar</button>
+					</div>
+					<i class="mdi mdi-calculator"></i> Corte de Caja 
+					<small class="card-subtitle suc-name">Pachuca</small>
+				</h4>
+			</div>
+			<?php endif; ?>
+			<div class="card-body">
+				<div class="row">
+					<div class="col-sm-6">
+						<table class="table table-sm table-hover table-striped" id="tbl-ventas">
+							<caption>Accesorios, Chips, Tarjetas, etc</caption>
+							<thead>
+								<tr>
+									<th class="text-center">Cant</th>
+									<th>Producto</th>
+									<th>Código</th>
+									<th class="text-right">Importe</th>
+								</tr>
+							</thead>
+							<tbody></tbody>
+						</table>
+						<hr>
+						<div class="alert alert-info">
+							<strong>Traspasos: </strong> <span id="traspasos">No se realizaron traspasos</span> <br>
+							<strong>Devoluciones: </strong> <span id="devoluciones">No se realizaron devoluciones</span> <br>
+							<strong>Accesorios de regalo: </strong> <span id="regalo">No se regalaron accesorios</span>
+						</div>
+					</div>
+					<div class="col-sm-6">
+						<table class="table table-sm table-hover table-striped" id="tbl-phones">
+							<caption>Teléfonos</caption>
+							<thead>
+								<tr>
+									<th class="text-center">Hora</th>
+									<th>Usuario</th>
+									<th>Producto</th>
+									<th>C&oacute;digo</th>
+									<th class="text-right">Precio</th>
+								</tr>
+							</thead>
+							<tbody></tbody>
+						</table>
+						<hr>
+						<table id="tbl-resumen" class="table table-sm table-hover">
+							<tr class="text-right">
+								<td>Venta Teléfonos</td><td id="ventaTelefonos">0.00</td>
+								<td>Saldo Inicial</td><td id="saldoInicial">0.00</td>
+							</tr>
+							<tr class="text-right">
+								<td>Accesorios, chips, tarj, etc</td><td id="ventaAccesorios">0.00</td>
+								<td>Ingresos</td><td id="ingresos">0.00</td>
+							</tr>
+							<tr class="text-right">
+								<td>Tiempo Aire</td><td id="tiempoAire">0.00</td>
+								<td>Retiros</td><td id="retiros">0.00</td>
+							</tr>
+							<tr class="text-right">
+								<td>Otros ingresos</td><td id="otrosIngresos">0.00</td>
+								<td>Devoluciones</td><td id="totalDevoluciones">0.00</td>
+							</tr>
+							<tr class="text-right bg-dark text-white">
+								<th>Total Ingresos</th><th id="totalIngresos">0.00</th>
+								<th>Saldo Final</th><th id="saldoFinal">0.00</th>
+							</tr>
+							<tr class="text-right bg-primary text-white <?= $_SESSION['sucursal'] == 0 ? '' : 'hide' ?>">
+								<th>Utilidad Otros</th><th id="utilidadOtros">0.00</th>
+								<th>Utilidad Teléfonos</th><th id="utilidadTelefonos">0.00</th>
+							</tr>
+						</table>
+					</div>
+				</div>
+			</div>
+			<?php if($admin) : ?>
+			<div class="card-footer">
+				<div class="row">
+					<div class="col-sm-6">
+						<h3 class="card-title"><i class="mdi mdi-cash-multiple"></i> INVENTARIO ACTUAL <strong></strong></h3>
+					</div>
+					<div class="col-sm-6 text-right">
+						<h3 class="card-title">UTILIDAD <strong></strong> <i class="mdi mdi-cash-multiple"></i></h3>
+					</div>
+				</div>
+			</div>
+			<?php endif; ?>
+		</div>
+	</div>
+	<?php include 'footer.phtml';?>
+	<script src="<?=URL_ROOT?>/assets/plugins/inputmask/dist/min/jquery.inputmask.bundle.min.js"></script>
+	<script src="<?=URL_ROOT?>/assets/js/mask.init.js"></script>
+	<script type="text/javascript" src="<?=URL_ROOT?>/assets/plugins/x-editable/dist/bootstrap3-editable/js/bootstrap-editable.js"></script>
+
+	<script type="text/javascript">
+		$(function() {
+
+			$apiUrl = '<?= URL_API ?>sucursal/';
+
+			<?php if($admin) : ?>
+			getItems();
+			function getItems() {
+				blockPage();
+				$('#tbl-items tbody').empty();
+				$.get($apiUrl+"getSaldos",
+					function (data) {
+						$.each(data.result, function(index, item) {
+							addRow(item);
+						});
+						$('.editable').editable();
+						$.unblockUI();
+					},
+					"json"
+				);
+			}
+
+			$.fn.editable.defaults.mode = 'inline';
+			$.fn.editable.defaults.url = '<?= URL_API ?>sucursal/setSaldo';
+			function addRow(item) {
+				tr = $('<tr></tr>');
+				tr.append('<td>'+item.nombre+'</td>');
+				tr.append('<td>'+item.telefono+'</td>');
+				status = '<span class="status label label-'+(item.usuario=='Libre'? 'success': 'warning')+'">'+item.usuario+'</span>';
+				tr.append('<td class="text-center">'+status+'</td>');
+				<?php if(in_array(MOD_SALDO_SET, $permisos)) : ?>
+				if(item.status == 2) inicial = '<span>'+item.inicial+'</span>';
+				else inicial = '<a href="#" class="editable text-right" data-type="number" data-pk="'+item.id+'" data-name="inicial">'+item.inicial+'</a>';
+				tr.append('<td class="text-right"><span>'+inicial+'</span></td>');
+				<?php else : ?>
+				tr.append('<td class="text-right"><span>'+item.inicial+'</span></td>');
+				<?php endif; ?>
+				tr.append('<td class="text-right"><span>'+item.final+'</span></td>'); 
+
+				tda = $('<td class="td-center text-right"></td>');
+				tda.append('<button type="button" class="btnCorte btn btn-xs btn-info" data-id="'+item.id+'" data-status="'+item.status+'"><i class="mdi mdi-calculator fa-lg"></i> Corte de Caja</button>');
+				tr.append(tda);
+
+				$('#tbl-items tbody').append(tr);
+			}
+
+			$('#bus').keyup(function(e) { 
+				q = $.trim($(this).val()).toUpperCase();
+				$.each($('#tbl-items tbody tr'), function (index, elem) { 
+					suc = $(elem).find('td:eq(0)').text().toUpperCase();
+					if(suc.indexOf(q) > -1){
+						$(elem).css('display', '');
+					}else{
+						$(elem).css('display', 'none');
+					}
+				});
+			 });
+
+			 $("#bus").on("search", function(evt){
+				$.each($('#tbl-items tbody tr'), function (index, elem) { 
+					$(elem).css('display', '');
+				});
+			});
+
+			$('tbody').on('click', '.btnCorte', function(event) {
+				event.preventDefault();
+				id = $(this).data('id');
+				suc = $(this).parents('tr').find('td:first').text();
+				/*if($(this).data('status') == 1)*/ $('#btnCierra').data('id', id);
+				$('#btnCierra').toggleClass('hide', $(this).data('status') != 1);
+				getCorte(id, suc);
+			});
+
+			$('#btnBack').click(function(){
+				$('.saldos').slideDown();
+				$('.corte').slideUp();
+				getItems();
+			});
+
+			$('#corte-fecha').change(function(){ $('#btnCierra').addClass('hide'); getCorte($('#btnCierra').data('id'), $('.suc-name').text());  });
+
+			<?php if(in_array(MOD_CIERRA_CAJA, $permisos)) : ?>
+			$('#btnCierra').click(function(){
+				id = $(this).data('id');
+				swal({   
+					title: "Cerrar Corte de Caja",
+					text: "No podrás revertir esta acción, ¿deseas cerrar el corte?",
+					type: "warning",   
+					html: true,
+					showCancelButton: true,   
+					cancelButtonText: "Cancelar",
+					//confirmButtonColor: "#DD6B55",   
+					confirmButtonText: "Si, cerrar",
+					closeOnConfirm: false 
+				}, function() {
+					//data: {fk_usuario: 1, fk_session: 1}, 
+					blockPage();
+					$.post($apiUrl+"setSaldo", {name: 'status', value: 2, pk: id}, 
+						function (resp) {
+							if(resp.response) {
+								$('#btnCorte').addClass('hide').data('id',0);
+								$('#tbl-items [data-id="'+id+'"]').parents('tr').find('td:eq(3)').html($('#tbl-items [data-id="'+id+'"]').parents('tr').find('td:eq(3)').text());
+								$('#tbl-items [data-id="'+id+'"]').parents('tr').find('button').data('status', 2);
+								$('.saldos').slideDown();
+								$('.corte').slideUp();
+								swal({
+									type: "success",
+									title: "¡Listo!",   
+									text: "Se cerró el corte de la sucursal",   
+									timer: 4000
+								});
+							}
+							$.unblockUI();
+						}, "json"
+					);
+				});
+			});
+			<?php endif; ?>
+
+			<?php else: ?>
+			getCorte(<?= $_SESSION['sucursal'] ?>);
+			<?php endif; ?>
+
+			function getCorte(suc, lbl=''){
+				blockPage();
+				$('.suc-name').text(lbl);
+				$('.saldos').slideUp();
+				$('.corte').slideDown();
+				$('#btnCorte').data('id', suc).removeClass('hide');
+				$('#tbl-ventas tbody, #tbl-phones tbody, .corte span').empty();
+				url = $apiUrl+'getCorte/'+suc;
+				if($('#corte-fecha').length) url+='/'+$('#corte-fecha').val();
+				$.get(url, function(data) {
+					ventaAccesorios = 0;	utilidadOtros = 0;
+					if(data.otros.length == 0){
+						$('#tbl-ventas tbody').append('<tr><td colspan="4"><small>No hay registros para mostrar</small></td></tr>');
+					}else{
+						container = $('#tbl-ventas tbody'); container.empty(); 
+						$.each(data.otros, function(index, itemOtro) {
+							tr = $('<tr></tr>').appendTo(container);
+							tr.append('<td class="text-center"><small>'+itemOtro.cantidad+'</small></td>');
+							tr.append('<td class="text-left"><small>'+itemOtro.producto+'</small></td>');
+							tr.append('<td class="text-left"><small>'+itemOtro.codigo+'</small></td>');
+							tr.append('<td class="text-right"><small>$ '+parseFloat(itemOtro.importe).toFixed(2)+'</small></td>');
+
+							//if(itemOtro.producto_id != 36) ventaAccesorios += parseInt(itemOtro.cantidad) * parseFloat(itemOtro.importe);
+							if(itemOtro.producto_id != 36) ventaAccesorios += parseFloat(itemOtro.importe);
+							if(itemOtro.costo != -100 && itemOtro.producto_id != 39) utilidadOtros += (parseFloat(itemOtro.importe) - parseFloat(itemOtro.costo));
+							else if(itemOtro.producto_id == 39) utilidadOtros += (parseFloat(itemOtro.costo));
+						});
+					}
+	
+					ventaTelefonos = 0;		utilidadTelefonos = 0;
+					if(data.telefonos.length == 0){
+						$('#tbl-phones tbody').append('<tr><td colspan="5"><small>No hay registros para mostrar</small></td></tr>');
+					}else{
+						container = $('#tbl-phones tbody'); container.empty(); 
+						$.each(data.telefonos, function(index, itemPhones) {
+							tr = $('<tr></tr>').appendTo(container);
+							tr.append('<td class="text-center"><small>'+moment(itemPhones.fecha).format('hh:mm:ss')+'</small></td>');
+							tr.append('<td class="text-left"><small>'+itemPhones.usuario+'</small></td>');
+							tr.append('<td class="text-left"><small>'+itemPhones.producto+'</small></td>');
+							tr.append('<td class="text-left"><small>'+itemPhones.codigo+'</small></td>');
+							tr.append('<td class="text-right"><small>$ '+parseFloat(itemPhones.importe).toFixed(2)+'</small></td>');
+
+							ventaTelefonos += parseFloat(itemPhones.importe);
+							utilidadTelefonos += (parseFloat(itemPhones.importe) - parseFloat(itemPhones.costo));
+						});
+					}
+					if($('#corte-fecha').length){
+						$('#utilidadOtros').html('$ '+utilidadOtros.toFixed(2));
+						$('#utilidadTelefonos').html('$ '+utilidadTelefonos.toFixed(2));
+						$('.card-footer strong:eq(1)').html('$ '+(utilidadOtros+utilidadTelefonos).toFixed(2));
+
+						if(data.stockVal != -1){
+							$('.card-footer strong:eq(0)').html('$ '+data.stockVal);
+						}
+					}
+
+					data.devoluciones = 0; data.totalDevoluciones = 0;
+					$('#traspasos').html(parseInt(data.traspasos)==0? 'No se realizaron traspasos.': data.traspasos+' traspasos desde esta sucursal.');
+					$('#devoluciones').html(parseInt(data.devoluciones)==0? 'No se realizaron devoluciones.': data.devoluciones+' devoluciones.');
+					$('#regalo').html(parseInt(data.regalo)==0? 'No se regalaron accesorios.': 'Se obsequiaron '+data.regalo+' accesorios.');
+					vtaTelefonos = parseFloat(ventaTelefonos);				$('#ventaTelefonos').html('$ '+vtaTelefonos.toFixed(2));
+					vtaAccesorios = parseFloat(ventaAccesorios);			$('#ventaAccesorios').html('$ '+vtaAccesorios.toFixed(2));
+					tAire = parseFloat(data.tia);							$('#tiempoAire').html('$ '+tAire.toFixed(2));
+					oIngresos = parseFloat(data.ingresos);					$('#otrosIngresos').html('$ '+oIngresos.toFixed(2));
+					sInicial = parseFloat(data.saldo_inicial);				$('#saldoInicial').html('$ '+sInicial.toFixed(2));
+					tIngresos = vtaTelefonos+vtaAccesorios+tAire+oIngresos;	$('#totalIngresos, #ingresos').html('$ '+tIngresos.toFixed(2));
+					retiros = parseFloat(data.egresos);						$('#retiros').html('$ '+retiros.toFixed(2));
+					devoluciones = parseFloat(data.totalDevoluciones);		$('#totalDevoluciones').html('$ '+devoluciones.toFixed(2));
+					sFinal = sInicial+tIngresos-retiros-devoluciones;		$('#saldoFinal').html('$ '+sFinal.toFixed(2));
+
+					if($('#corte-fecha').length == 0 || $('#corte-fecha').val() == '<?= date('Y-m-d') ?>') $.post($apiUrl+"setSaldo", {name: 'final', value: sFinal, pk: suc}, function () { }, "json");
+
+					$.unblockUI();
+				},'json');
+			}
+		});
+
+		$('#btnPrint').click(function(){
+			window.print();
+		});
+		
+	</script>
+<?php else: include 'footer.phtml'; endif; ?>

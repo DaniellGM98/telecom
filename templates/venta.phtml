@@ -1,0 +1,1504 @@
+<?php
+	define('MOD_VENTA_ADD',		28);
+	define('MOD_CLIENTE_ADD',	30);
+	define('MOD_FACTURAR',		31);
+	define('MOD_PAGO_ADD',		79);
+	define('MOD_PAGO_VALID',	80);
+	define('MOD_PAGO_CANCEL',	81);
+	define('MOD_PRECIO_VENTA',	113);
+?>
+<?php if(in_array(MOD_VENTA_ADD, $permisos)) : ?>
+	<div id="frm-external-sale" class="modal" data-backdrop="static">
+		<div class="modal-dialog modal-xl">
+			<div class="modal-content d-flex p-2">
+				<div class="modal-header">
+					<div class="col-sm-12">
+						<div class="row">
+							<h3 class="modal-title"><i class="fa fa-shopping-cart"></i> Nueva Venta</h3>
+						</div>
+						<div class="row hide" style="margin-top: 10px;">
+							<ul class="nav nav-tabs" id="myTab" role="tablist" style="border-bottom: 0px; margin-bottom: 0px;">
+								<li class="nav-item">
+									<a class="nav-link active" id="external-sale-tab" data-toggle="tab" href="#venta" role="tab" aria-controls="venta" aria-selected="true">Venta</a>
+								</li>
+								<li class="nav-item">
+									<a class="nav-link" id="external-sale-pagos-tab" data-toggle="tab" href="#external-sale-pagos" role="tab" aria-controls="external-sale-pagos" aria-selected="false">Pagos</a>
+								</li>
+							</ul>
+						</div>
+					</div>
+				</div>
+				<div class="modal-body">
+					<div class="tab-content" id="myTabContent">
+						<div class="tab-pane fade show active" id="venta" role="tabpanel" aria-labelledby="external-sale-tab">
+							<div class="row">
+								<div class="col-sm-12">
+									<form class="form form-horizontal">
+										<div class="form-group row">
+											<label for="external-sale-folio" class="col-form-label col-form-label-sm text-right col-sm-2">Folio</label>
+											<div class="col-sm-4">
+												<input type="text" class="form-control form-control-sm data-external-sale" id="external-sale-folio" placeholder="Folio" required readonly>
+											</div>
+											<label for="external-sale-sucursal_id" class="col-form-label text-right col-sm-2 sucursal col-form-label-sm">Sucursal</label>
+											<div class="col-sm-4 sucursal">
+												<select class="form-control form-control-sm data-external-sale" id="external-sale-sucursal_id"></select>
+											</div>
+											<label for="external-item-prod_categoria_id" class="col-form-label text-right col-sm-2">Categor&iacute;a</label>
+											<div class="col-sm-4">
+												<select class="form-control" id="external-item-prod_categoria_id"></select>
+											</div>
+										</div>
+										<div class="row hide">
+											<div class="col-sm-12">
+												<div class="form-group row">
+													<label for="external-sale-cliente_id" class="col-form-label text-right col-sm-2 cliente col-form-label-sm">Cliente</label>
+													<div class="col-sm-4 cliente">
+														<select class="form-control form-control-sm data-external-sale" id="external-sale-cliente_id" style="width: 100%; height:31px;"></select>
+													</div>
+													<div class="col-sm-2">
+														<?php if(in_array(MOD_CLIENTE_ADD, $permisos)) : ?>
+															<button type="button" id="btn-external-sale-add-cliente" class="btn btn-secondary btn-sm">
+																<i class="fa fa-user-plus"></i> Nuevo cliente
+															</button>
+														<?php endif; ?>
+													</div>
+													<div class="col-sm-4">
+														<?php if(in_array(MOD_FACTURAR, $permisos)) : ?>
+															<div class="checkbox">
+																<input type="checkbox" id="chkFact" value="0" class="filled-in">	
+																<label for="chkFact">Factura fiscal</label>
+															</div>
+															<small class="text-muted"></small>
+														<?php endif; ?>
+													</div>
+												</div>
+											</div>
+										</div>
+										<hr>
+										<table class="table table-hover table-striped table-sm" id="tbl-external-sale-prods">
+											<thead>
+												<tr>
+													<th class="text-center">Producto</th>
+													<th style="width:12%;" class="text-center">Cantidad</th>
+													<th style="width: 20%;" class="text-right">Precio</th>
+													<th style="width: 17%;" class="text-right">Importe</th>
+													<th style="width:40px;"></th>
+												</tr>
+											</thead>
+											<tbody></tbody>
+											<tfoot>
+												<tr>
+													<td class="w-75"><input type="text" id="external-sale-prod-search" placeholder="Buscar por nombre, modelo o SKU" class="form-control form-control-sm"><input type="hidden" id="external-sale-prod-id" value="0"><input type="hidden" id="external-sale-prod-tipo"></td>
+													<td><input type="text" class="form-control form-control-sm" id="external-sale-prod-cantidad" placeholder="Cant" required maxlength="4"><input type="hidden" id="external-sale-prod-stock" value="0"></td>
+													<td>
+														<div class="input-group">
+															<select class="hide" id="external-sale-prod-listap" placeholder="0.00"></select>
+															<input type="text" class="form-control form-control-sm col-sm-12" id="external-sale-prod-costo" placeholder="0.00" inputmode="numeric" maxlength="10"<?= in_array(MOD_PRECIO_VENTA, $permisos)? '': ' readonly' ?>>
+														</div>
+													</td>
+													<!--td><input type="text" class="form-control form-control-sm" id="external-sale-prod-costo" placeholder="0.00" inputmode="numeric" maxlength="10"></td-->
+													<td><input type="text" class="form-control form-control-sm text-right" id="external-sale-prod-importe" placeholder="0.00" inputmode="numeric" maxlength="10" readonly=""></td>
+													<td><button class="btn btn-sm btn-secondary pull-right" type="button" id="external-sale-prodAdd"><i class="fa fa-check"></i></button></td>
+												</tr>
+												<tr class="hide" id="imei">
+													<td colspan="5"><textarea class="form-control" id="external-sale-prod-imei" cols="30" rows="3"></textarea></td>
+												</tr>
+											</tfoot>
+										</table>
+										<hr>
+
+										<div class="row">
+											<div class="col-sm-4">
+												<div class="from-group ">
+													<label for="external-sale-empleado_id" class="col-form-label-sm">Vendedor</label>
+													<div class="col-sm-12">
+														<select id="external-sale-empleado_id" class="form-control form-control-sm data-external-sale" style="width: 100%; height:31px;"></select>
+													</div>
+												</div>
+												<br>
+												<button type="button" class="btn btn-secondary btn-sm hide" id="btnDesc"><i class="mdi mdi-cash-multiple"></i> Aplicar Descuento</button> 
+												<button type="button" class="btn btn-secondary btn-sm hide"><i class="mdi mdi-credit-card"></i> Pagos</button>
+												<!--div class="form-group">
+													<label for="external-sale-fecha_entrega" class="col-form-label-sm">Fecha entrega</label>
+													<div class="input-group">
+														<div class="input-group-prepend"><span class="input-group-text"><i class="fa fa-calendar"></i></span></div>
+														<input type="text" class="form-control form-control-sm" id="external-sale-fecha_entrega">
+													</div>
+												</div-->
+											</div>
+											<div class="col-sm-4 text-center">
+												<small class="text-danger"></small>
+											</div>
+											<div class="col-sm-4">
+												<div class="form-group row mb-0">
+													<label for="external-sale-subtotal" class="col-form-label text-right col-sm-4 col-form-label-sm">Subtotal</label>
+													<div class="col-sm-8">
+														<input type="text" class="form-control text-right form-control-sm data-external-sale" id="external-sale-subtotal" placeholder="0.00" readonly="">
+													</div>
+													<label for="external-sale-iva" class="col-form-label text-right col-sm-4 col-form-label-sm">IVA</label>
+													<div class="col-sm-8">
+														<input type="text" class="form-control text-right form-control-sm data-external-sale" id="external-sale-iva" placeholder="0.00" readonly="">
+													</div>
+													<label for="external-sale-descuento" class="col-form-label text-right col-sm-4 col-form-label-sm descuento hide">Descuento</label>
+													<div class="col-sm-8 descuento hide ">
+														<div class="input-group input-group-sm">
+															<input type="text" class="form-control text-right form-control-sm data-external-sale" id="external-sale-descuento" placeholder="0.00" readonly="">
+															<div class="input-group-append">
+																<span class="input-group-text">%</span>
+															</div>
+														</div>
+													</div>
+													<label for="external-sale-total" class="col-form-label text-right col-sm-4">Total</label>
+													<div class="col-sm-8">
+														<input type="text" class="form-control text-right data-external-sale" id="external-sale-total" placeholder="0.00" readonly="">
+													</div>
+												</div>
+											</div>
+										</div>
+										<input type="hidden" class="data-external-sale" id="external-sale-id">
+									</form>
+								</div>
+							</div>
+						</div>
+						<div class="tab-pane fade" id="external-sale-pagos" role="tabpanel" aria-labelledby="external-sale-pagos-tab">
+							<button class="btn btn-success pull-right" id="btnAddPagoVenta"><i class="mdi mdi-plus"></i> Registrar pago</button>
+							<div class="table-responsive">
+								<table id="tbl-external-payment-comments" class="table table-hover table-striped table-sm">
+									<thead>
+										<tr>
+											<th class="text-center">Folio</th>
+											<th class="text-center">Fecha</th>
+											<th class="text-right">Importe</th>
+											<th class="text-center">Forma de Pago</th>
+											<!-- <th class="text-center">No. Operaci&oacute;n</th> -->
+											<th class="text-center">Comentarios</th>
+											<th class="text-center">Estatus</th>
+											<!-- <th class="text-center">Acciones</th> -->
+										</tr>
+									</thead>
+									<tbody></tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer d-flex justify-content-end">
+					<button type="submit" class="btn btn-inverse waves-effect waves-light m-r-20" data-dismiss="modal">Cancelar</button>
+					<button type="submit" class="btn btn-success waves-effect waves-light" id="external-sale-btnSave">Siguiente</button>
+				</div>
+			</div>
+		</div>
+	</div>
+<?php endif; ?>
+<?php if(in_array(MOD_VENTA_ADD, $permisos) && in_array(MOD_CLIENTE_ADD, $permisos)) : ?>
+	<div id="frm-external-sale-cliente" class="modal" >
+		<div class="modal-dialog modal-lg">
+			<div class="modal-content d-flex p-2">
+				<div class="modal-header">
+					<h3 class="modal-title">Datos del cliente</h3>
+				</div>
+				<div class="modal-body">
+					<form class="form p-t-20 form-horizontal">
+						<div class="row">
+							<div class="col-sm-12">
+								<div class="form-group row">
+									<label for="external-client-nombre" class="col-form-label col-form-label-sm text-right col-sm-2">Nombre</label>
+									<div class="col-sm-4">
+										<input type="text" class="form-control" id="external-client-nombre" placeholder="Nombre del cliente" required>
+									</div>
+									<div class="col-sm-6">
+										<input type="text" class="form-control" id="external-client-apellidos" placeholder="Apellidos del cliente" required>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-sm-12">
+								<div class="form-group row">
+									<label for="external-client-telefono" class="col-form-label col-form-label-sm text-right col-sm-2">Teléfono</label>
+									<div class="col-sm-4">
+										<input type="text" class="form-control form-control-sm phone-inputmask" id="external-client-telefono" placeholder="Teléfono" required>
+									</div>
+									<label for="external-client-correo" class="col-form-label col-form-label-sm text-right col-sm-1">Email</label>
+									<div class="col-sm-5">
+										<input type="text" class="form-control form-control-sm email-inputmask" id="external-client-correo" placeholder="Correo electrónico" required>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-sm-12">
+								<div class="form-group row">
+									<label for="external-client-razon_social" class="col-form-label col-form-label-sm text-right col-sm-2">Razón social</label>
+									<div class="col-sm-10">
+										<input type="text" class="form-control form-control-sm" id="external-client-razon_social" placeholder="Razón social">
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-sm-12">
+								<div class="form-group row">
+									<label for="external-client-rfc" class="col-form-label col-form-label-sm text-right col-sm-2">RFC</label>
+									<div class="col-sm-4">
+										<input type="text" class="form-control form-control-sm" id="external-client-rfc" placeholder="Registro Federal de Contribuyentes" required maxlength="13">
+									</div>
+									<label for="external-client-uso_cfdi" class="col-form-label col-form-label-sm text-right col-sm-2">Uso de CFDi</label>
+									<div class="col-sm-4">
+										<select id="external-client-uso_cfdi" class="form-control form-control-sm">
+											<option value="G01">Adquisición de mercancias</option>
+											<option value="G03">Gastos en general</option>
+											<option value="I02">Mobilario y equipo de oficina por inversiones</option>
+											<option value="P01">Por definir</option>
+										</select>
+									</div>
+								</div>
+							</div>
+						</div>
+						<input type="hidden" id="external-client-id" value="0">
+					</form>
+				</div>
+				<div class="modal-footer d-flex justify-content-end">
+					<button type="submit" class="btn btn-inverse waves-effect waves-light m-r-20" data-dismiss="modal">Cancelar</button>
+					<button type="submit" class="btn btn-success waves-effect waves-light" id="btn-external-sale-save-cliente">Guardar</button>
+				</div>
+			</div>
+		</div>
+	</div>
+<?php endif; ?>
+<?php if(in_array(MOD_PAGO_ADD, $permisos)) : ?>
+	<div id="frm-external-payment" class="modal fade col-10 offset-1">
+		<div class="modal-dialog modal-lg">
+			<div class="modal-content d-flex p-2">
+				<div class="modal-header">
+					<h3 class="modal-title" id="external-payment-title">Registrar Pago</h3>
+				</div>
+				<div class="modal-body">
+					<form class="form form-horizontal">
+						<br>
+						<input type="hidden" id="external-payment-sale-folio">
+						<input type="hidden" id="external-payment-sale-total">
+						<input type="hidden" id="external-payment-id">
+						<div class="form-group row">
+							<label for="external-payment-cantidad" class="col-3 col-sm-2 col-form-label col-form-label-sm text-left">Cantidad:</label>
+							<div class="col-12 col-sm-2 mb-3">
+								<input type="file" id="external-payment-file" class="hide" accept="image/*">
+								<input type="text" id="external-payment-cantidad" class="form-control form-control-sm text-right" placeholder="0.00" inputmode="numeric" maxlength="10">
+							</div>
+							<label for="external-payment-tipo_pago_id" class="col-6 col-form-label text-left col-sm-3 col-form-label-sm">Forma de pago</label>
+							<div class="col-10 col-sm-4">
+								<select class="form-control form-control-sm" id="external-payment-tipo_pago_id"></select>
+							</div>
+							<a href="#" id="btn-comprobante" class="btn btn-sm btn-secondary pull-right hide" data-toggle="tooltip" title="Subir Comprobante">
+								<i class="fa fa-upload"></i>
+							</a>
+						</div>
+						<div class="form-group row">
+							<div class="comprobante hide" style="max-height: 45vh; overflow-y: scroll;">
+								<img src="#" id="external-payment-comprobante" class="img-fluid img-thumbnail" alt="Comprobante de Pago" >
+							</div>
+						</div>
+					</form>
+				</div>
+				<div class="modal-footer d-flex justify-content-end">
+					<button type="submit" class="btn btn-inverse waves-effect waves-light m-r-20" id="btn-cancel-apart" data-dismiss="modal">Cancelar</button>
+					<button type="submit" class="btn btn-primary waves-effect waves-light m-r 20" id="external-payment-btnSave">Pagar</button>
+				</div>
+			</div>
+		</div>
+	</div>
+<?php endif; ?>
+<?php if(in_array(MOD_PAGO_VALID, $permisos)) : ?>
+	<div id="frm-external-payment-comments" class="modal">
+		<div class="modal-dialog modal-lg">
+			<div class="modal-content d-flex p-2">
+				<div class="modal-header">
+					<h3 class="modal-title" id="external-payment-comments-title"></h3>
+				</div>
+				<div class="modal-body">
+					<form action="">
+						<br>
+						<input type="hidden" id="external-payment-comments-id">
+						<div class="form-group row">
+							<div class="col-sm-12">
+								<textarea id="external-payment-comments-comentario" class="form-control form-control-sm" placeholder="Observaciones" required rows="5"></textarea>
+							</div>
+						</div>
+					</form>
+				</div>
+				<div class="modal-footer d-flex justify-content-end">
+					<button type="submit" class="btn btn-inverse waves-effect waves-light m-r-20" data-dismiss="modal">Cancelar</button>
+					<button type="submit" class="btn btn-primary waves-effect waves-light m-r 20" id="external-payment-comments-btnSave"></button>
+				</div>
+			</div>
+		</div>
+	</div>
+<?php endif; ?>
+<script type="text/javascript">
+	// window.onload = function() {
+	window.addEventListener('load', function() {
+		$(function () {
+			$categoria_id = 0; $categoria_sku = ''; $contador = 0; $continuar = 0;
+			<?php if(in_array(MOD_VENTA_ADD, $permisos)) : ?>
+				$('#frm-external-sale').on('shown.bs.modal', function () { 
+					header = $(this).find('.modal-header');
+					if($('#external-sale-btnSave').text() == 'Siguiente') {
+						header.css('padding-bottom', '');
+						header.find('.row').last().addClass('hide');
+					} else if($('#external-sale-btnSave').text() == 'Guardar') {
+						header.css('padding-bottom', 0);
+						header.find('.row').last().removeClass('hide');
+					}
+				});
+
+				$('#frm-external-sale').on('hidden.bs.modal', function () { $('#external-sale-descuento').attr('readonly', 'readonly'); });
+				// $('#frm-external-sale').on('hide.bs.modal', function () { $('#external-sale-tab').click(); });
+
+				$('#btnAddVenta, #btnAddVenta-ext').click(function(e) { e.preventDefault(); blockPage(); clearVentaData();
+					$('#external-sale-cliente_id, #external-sale-sucursal_id, #external-sale-empleado_id, #external-item-prod_categoria_id').prop('disabled', false).empty();
+					$.get('<?= URL_API ?>venta/getInfoVenta/', function(info) {
+						$('#external-sale-empleado_id').append('<option value="0">Seleccionar</option>');
+						$.each(info.empleados, function(id, empleado) { $('#external-sale-empleado_id').append('<option value="'+empleado.usuario_id+'">'+(empleado.nombre+' '+empleado.apellidos).toUpperCase()+'</option>'); });
+						//$('#external-sale-empleado_id option[value="<?= $user->id ?>"]').prop('selected', true);
+						$('#external-sale-empleado_id').select2();
+
+						$.each(info.clientes, function(id, cliente) { $('#external-sale-cliente_id').append('<option value="'+cliente.usuario_id+'">'+(cliente.nombre+' '+cliente.apellidos).toUpperCase()+'</option>'); });
+						$('#external-sale-cliente_id option:contains(GENERAL):first').prop('selected', true);
+						if(info.clientes.length == 1) { $('.cliente').addClass('hide'); }
+						$('#external-sale-cliente_id').select2();
+
+						$('#external-item-prod_categoria_id').append('<option value="0">TODAS</option>');
+						$.each(info.categorias, function(index, categoria) { $('#external-item-prod_categoria_id').append('<option value="'+categoria.id+'">'+categoria.nombre.toUpperCase()+'</option>'); });
+
+						if(parseInt('<?= $user->usuario_tipo_id ?>') == 1) {
+							$.each(info.sucursales, function(id, sucursal) { $('#external-sale-sucursal_id').append('<option value="'+sucursal.id+'">'+sucursal.nombre.toUpperCase()+'</option>'); });
+							$('#external-sale-sucursal_id option:first').prop('selected', true);
+							if(sucursales.result.length == 1) { $('.sucursal').addClass('hide'); }
+						} else {
+							sucursal = info.sucursal; $('#external-sale-sucursal_id').append('<option value="'+sucursal.id+'">'+sucursal.nombre.toUpperCase()+'</option>');
+							$('#external-sale-sucursal_id option[value="<?= $_SESSION['sucursal'] ?>"]').prop('selected', true);
+							$('.sucursal').addClass('hide');
+						}
+
+						getSigFolio();
+						$('#frm-external-sale').modal('show');
+						$.unblockUI();
+					},'json');
+				});
+
+				function getSigFolio() {
+					$.get('<?= URL_ROOT ?>/venta/sigFolio/'+$('#external-sale-sucursal_id').val(), function(data) { folio = data.folio;
+						$('#chkFact').prop('disabled', false);
+						if(data.timbres == 0) {
+							$('#chkFact').prop('disabled', true);
+							$('#chkFact').parents('.col-sm-4').find('small.text-muted').html('No cuenta con folios para facturar');
+						}else{
+							$('#chkFact').parents('.col-sm-4').find('small.text-muted').html(data.timbres+' folios disponibles');
+						}
+
+						// $('#external-sale-folio').val($('#external-sale-sucursal_id').val().toString().padStart(3,0)+folio.toString().padStart(6,0));
+						$('#external-sale-folio').val(folio);
+						$('#external-sale-id').val(undefined);
+						$('#tbl-external-sale-prods tbody').empty();
+						$('#btn-external-sale-add-cliente, #tbl-external-sale-prods tfoot tr:first').removeClass('hide');
+						$('#external-sale-descuento').prop('readonly');
+						$('#external-sale-tab').click().trigger('click');
+						$('#external-sale-cliente_id').trigger('change');
+
+					},'json');
+				}
+
+				$('#external-sale-sucursal_id').change(function() {
+					clearVentaData();
+					getSigFolio();
+				});
+
+				/*$('#external-item-prod_categoria_id').change(function() {
+					clearVentaData();
+				});*/
+
+				<?php if(in_array(MOD_VENTA_ADD, $permisos) && in_array(MOD_CLIENTE_ADD, $permisos)) : ?>
+					function clearExternalClienteData() {
+						$('.invalid-tooltip').remove();
+						$('#frm-external-sale-cliente input').val('');
+						$('#external-client-id').val(0);
+					}
+
+					$('#btn-external-sale-add-cliente').click(function(e) { e.preventDefault(); clearExternalClienteData();
+						$('#frm-external-sale').modal('hide');
+						$('#frm-external-sale-cliente').modal('show');
+					});
+
+					$('#frm-external-sale-cliente').on('hidden.bs.modal', function () { $('#frm-external-sale').modal('show'); });
+
+					$('#btn-external-sale-save-cliente').click(function() { $('.invalid-tooltip').remove();
+						id = parseInt($('#external-client-id').val());
+						data = {};
+
+						$.each($('#frm-external-sale-cliente input'), function(index, elem) {
+							ide = $(elem).attr('id').replace('external-client-','');
+							data[ide] = $.trim($(elem).val());
+						});
+						data.telefono = data.telefono.replace('(','').replace(')','').replace(' ','').replace('-','').replace(/_/g, '');
+						data.uso_cfdi = $('#external-client-uso_cfdi').val();
+						rfcReg = new RegExp('^[A-Z&Ñ]{3,4}[0-9]{2}(0[1-9]|1[012])(0[1-9]|[12][0-9]|3[01])[A-Z0-9]{2}[0-9A]$');
+
+						$errLabel = $('<div class="invalid-tooltip"></div>');
+						if(data.nombre == '') {
+							$errLabel.html('Debe ingresar el nombre');
+							$('#external-client-nombre').after($errLabel);
+							$errLabel.show();
+						} else if(data.telefono == '' || data.telefono.length != 10) {
+							$errLabel.html('Debe ingresar el telefono a 10 digitos');
+							$('#external-client-telefono').after($errLabel);
+							$errLabel.show();
+						} else if(data.rfc.length > 0 && !rfcReg.test(data.rfc)) {
+							$errLabel.html('Debe ingresar un RFC válido');
+							$('#external-client-rfc').after($errLabel);
+							$errLabel.show();
+						} else { blockPage();
+							data.status = 1;
+							$.post('<?= URL_API ?>cliente/add/', data, function(resp) {
+								if(resp.response) { data.id = resp.result
+									$('#external-sale-cliente_id').append('<option value="'+data.id+'">'+data.nombre+' '+data.apellidos+'</option>');
+									$('#external-sale-cliente_id').val(data.id);
+									$('.cliente').removeClass('hide');
+									$('#external-client-id').val(0);
+									$('#frm-external-sale-cliente').modal('hide');
+									$('#frm-external-sale').modal('show');
+									$('#chkFact').prop('checked', false);
+									swal({ type: "success", title: "¡Listo!", text: "Se arego el cliente correctamente.", timer: 4000 });
+								} else { swal({ type: "warning", title: "Oops!", text: resp.message, timer: 4000 }); }
+								$.unblockUI();
+							},'json');
+						}
+					});
+				<?php endif; ?>
+
+				var fndProds = new Bloodhound({
+					initialize: false,
+					datumTokenizer: Bloodhound.tokenizers.obj.whitespace('value'),
+					queryTokenizer: Bloodhound.tokenizers.whitespace,
+					remote: {
+						wildcard: '%QUERY',
+						url: '<?= URL_API ?>producto/getProductosServicios/%QUERY',
+						replace: function(url, uriEncodedQuery) {
+							sucursal_id = $('#external-sale-sucursal_id').val();
+							prod_categoria_id = $('#external-item-prod_categoria_id').val();
+							if(!sucursal_id) return url.replace('%QUERY', uriEncodedQuery);
+							if(!prod_categoria_id) return url.replace('%QUERY', uriEncodedQuery);
+							// return url + uriEncodedQuery + '/' + sucursal_id + '/1';
+							return url.replace('%QUERY', uriEncodedQuery) + '/' + encodeURIComponent(sucursal_id) + '/1/'+encodeURIComponent(prod_categoria_id);
+						}
+					}
+				});
+
+				$('#external-sale-prod-search').typeahead({ hint: true, highlight: true, minLength: 3 }, { limit: 60, display: 'identificador', source: fndProds });
+				$('#external-sale-prod-search').change(function() {  $('.invalid-tooltip').remove(); $('#frm-external-sale small.text-danger').html('');
+					if($.trim($(this).val()) == '') {
+						$('#external-sale-prod-id').val(0);
+						$categoria_id = 0;
+						$categoria_sku = '';
+					}
+				});
+
+				function external_sale_prodExists(prodId, prodTipo) {
+					if($('#tbl-external-sale-prods > tbody > [data-id="'+prodId+'"][data-tipo="'+prodTipo+'"]').length > 0) {
+						$errLabel = $('<div class="invalid-tooltip">Ya existe el producto</div>');
+						$('#frm-external-sale small.text-danger').html('Ya existe el producto');
+						$('#external-sale-prod-search').after($errLabel).select().focus();
+						$errLabel.show();
+						return true;
+					}
+					return false;
+				}
+
+				$('#external-sale-prod-search').bind('typeahead:select', function(ev, suggestion) { $('.invalid-tooltip').remove(); $('#frm-external-sale small.text-danger').html('');
+					$('#external-sale-prod-id').val(suggestion.id);
+					$('#external-sale-prod-tipo').val(suggestion.tipo);
+					if(!external_sale_prodExists(suggestion.id, suggestion.tipo)) { blockPage();
+						$('#external-sale-prod-listap').empty();
+						$('#external-sale-prod-stock').val(suggestion.stock);
+						$('#external-sale-prod-costo').val(0.00);
+						if(suggestion.tipo == 'producto') {
+							$categoria_id = suggestion.prod_categoria_id;
+							$categoria_sku = suggestion.sku_nombre!=null? suggestion.sku_nombre.toUpperCase(): '';
+							$('#external-sale-prod-listap').prop('disabled', false).empty();
+							$.get('<?= URL_API ?>venta/getPrecio/'+suggestion.id+'/'+$('#external-sale-sucursal_id').val(), function(data) {
+								$.each(data.listas, function(index, lista) { $('#external-sale-prod-listap').append('<option value="'+lista.precio+'">'+lista.nombre+'</option>'); });
+								$('#external-sale-prod-stock').val(data.stock);
+								$('#external-sale-prod-listap').trigger('change');
+								$.get('<?= URL_API ?>prod_categoria/get/'+suggestion.prod_categoria_id, function(categoria) {
+									if(parseInt(categoria.result.tiene_sku) == 1) { 
+										$('#imei').removeClass('hide').find('textarea').attr('placeholder', categoria.result.sku_nombre.toUpperCase());
+										$('#external-sale-prod-cantidad').prop('readonly', true);
+										$('#external-sale-prod-imei').val('').focus();
+									} else {
+										$('#imei').addClass('hide');
+										$('#external-sale-prod-cantidad').prop('readonly', false).focus().val(1).trigger('change');;
+									}
+									$.unblockUI();
+								},'json');
+							},'json');
+						} else {
+							$('#external-sale-prod-listap').prop('disabled', true).empty();
+							$('#external-sale-prod-costo').val(suggestion.precio).trigger('change');
+							$('#external-sale-prod-cantidad').focus().val(1).trigger('change');
+							$.unblockUI();
+						}
+					} 
+				});
+
+				$('#external-sale-prod-search').keyup(function(event) {
+					if(event.keyCode == 8 || event.keyCode == 46) {
+						$('#external-sale-prod-id').val(0);
+						$categoria_id = 0;
+						$categoria_sku = '';
+					}
+				});
+
+				$('#external-sale-prod-listap').change(function() { $('#external-sale-prod-costo').val($(this).val()).trigger('change'); });
+				$("#external-sale-prod-cantidad").inputmask({ alias: "numeric", digits: 0});
+				$("#external-sale-prod-costo").inputmask({ alias: "numeric", groupSeparator: ',', digits: 2, digitsOptional: false, placeholder: '0' });
+
+				function external_sale_calcImporte() {
+					if(!$('#external-sale-prod-cantidad').prop('readonly')) { cant = parseInt($('#external-sale-prod-cantidad').val()); }
+					else { cant = $('#external-sale-prod-imei').val().split('\n').filter(imei => $.trim(imei).length > 0).length; }
+					if(isNaN(cant)) cant = 0;
+
+					costo = parseFloat($('#external-sale-prod-costo').val());
+					if(isNaN(costo)) costo = 0;
+
+					importe = cant * costo;
+					$('#external-sale-prod-importe').val(importe.toFixed(2));
+				}
+
+				$("#external-sale-prod-cantidad, #external-sale-prod-costo").change(function() {
+					external_sale_calcImporte();
+				});
+
+				function external_sale_agregarProducto_validStock(cant) {
+					stock = parseInt($.trim($('#external-sale-prod-stock').val()));
+					if(cant > stock) { swal({ type:"warning", title:"Stock insuficiente", text:"Solo existen "+stock+" productos en stock", html:true, timer:4000 }); }
+					else {
+						if($('#tbl-external-sale-prods tbody').find('tr[data-tipo="servicio"], tr[data-tipo="paquete"]').length > 0) {
+							$.each($('#tbl-external-sale-prods tbody').find('tr[data-tipo="servicio"], tr[data-tipo="paquete"]'), function(trIndex, trRow) { trRow = $(trRow); trRowId = trRow.attr('data-id');
+								$.each($('.servicio-info[data-id="'+trRowId+'"]').find('tr[data-id="'+$('#external-sale-prod-id').val()+'"]'), function(index, trServicio) { trServicio = $(trServicio);
+									cant += parseInt(trServicio.find('td:eq(1)').text()) * parseInt(trRow.find('td:eq(1)').text());
+								});
+								if(cant > stock) { swal({ type:"warning", title:"Stock insuficiente", text:"Solo existen "+stock+" productos en stock<br />Revisa la información de tus servicios/paquetes", html:true, timer:4000 }); }
+								else { external_sale_addProductoServicioRow(); }
+							});
+						} else { external_sale_addProductoServicioRow(); }
+					}
+				}
+
+				function external_sale_addProductoServicioRow() {
+					prod = $.trim($('#external-sale-prod-search').val());
+					cant = parseInt($.trim($('#external-sale-prod-cantidad').val()));
+					costo = $.trim($('#external-sale-prod-costo').val());
+					imp = $.trim($('#external-sale-prod-importe').val());
+					arrImei = $.trim($('#external-sale-prod-imei').val());
+					
+					if(prod.length > 0 && (cant>0 || $('#external-sale-prod-cantidad').prop('readonly')) && costo.length > 0 && imp.length > 0 && $('#external-sale-prod-id').val() > 0) {
+						if(!external_sale_prodExists($('#external-sale-prod-id').val(), $('#external-sale-prod-tipo').val())) {
+							$.get('<?= URL_API ?>producto/get/'+$('#external-sale-prod-id').val(), function(producto) { producto = producto.result;
+								$.get('<?= URL_API ?>prod_categoria/get/'+producto.prod_categoria_id, function(categoria) { categoria = categoria.result;
+									container = $('#tbl-external-sale-prods tbody').first();
+									trp = $('<tr data-id="'+$('#external-sale-prod-id').val()+'" data-tipo="'+$('#external-sale-prod-tipo').val()+'"></tr>').appendTo(container);
+									trp.append('<td><small>'+prod+'</small></td>');
+									trp.append('<td class="text-center">'+($.isNumeric(cant)? cant: arrImei.split('\n').length)+'</td>');
+									trp.append('<td class="text-right precio">'+costo+'</td>');
+									trp.append('<td class="text-right importe">'+imp+'</td>');
+									
+									td = $('<td></td>').appendTo(trp);
+									actions = $('<div class="pull-right actions"></div>').appendTo(td);
+									if(categoria.regalo == 1) {
+										actions.append('<button class="btn btn-sm btn-link tnl_external_sale_btnRegalo" type="button"><i class="fa fa-gift"></i></button> ');
+									}
+									if($('#external-sale-prod-tipo').val()=='servicio' || $('#external-sale-prod-tipo').val()=='paquete') {
+										actions.append('<button class="btn btn-sm btn-info tnl_external_sale_btnInfo" type="button"><i class="fa fa-info"></i></button> ');
+									}
+									actions.append('<button class="btn btn-sm btn-danger tbl-external-servicio-prodDel" type="button"><i class="fa fa-trash"></i></button>');
+									
+									if(arrImei!='') {
+										container.append('<tr class="imei" data-id="'+$('#external-sale-prod-id').val()+'"><td colspan="5"><textarea disabled="disabled" class="form-control">'+arrImei+'</textarea></td></tr>');
+										$('#imei').addClass('hide');
+									}
+
+									external_sale_calcTotal();
+									external_sale_clearData();
+									$('#external-sale-prod-search').focus();
+									$('#external-sale-prod-imei').val(undefined);
+									$('#external-sale-descuento').removeAttr('readonly').trigger('change');
+								}, 'json');
+							}, 'json');
+						}
+					}
+				}
+
+				$('tbody').on('click', '.tnl_external_sale_btnRegalo', function(event) { event.preventDefault();
+					tr = $(this).parents('tr');
+					tr.addClass('table-info');
+					tr.find('.precio').attr('data-org', tr.find('.precio').text()).html('0.00');
+					tr.find('.importe').attr('data-org', tr.find('.importe').text()).html('0.00');
+					tr.find('.actions').prepend('<button class="btn btn-sm btn-warning tnl_external_sale_btnRegaloCancel" type="button"><i class="fa fa-dollar"></i></button>')
+
+					$(this).remove();
+					external_sale_calcTotal();
+					$('#external-sale-descuento').trigger('change');
+				});
+
+				$('tbody').on('click', '.tnl_external_sale_btnRegaloCancel', function(event) { event.preventDefault();
+					tr = $(this).parents('tr');
+					tr.removeClass('table-info');
+					tr.find('.precio').html(tr.find('.precio').attr('data-org')).removeAttr('data-org');
+					tr.find('.importe').html(tr.find('.importe').attr('data-org')).removeAttr('data-org');
+					tr.find('.actions').prepend('<button class="btn btn-sm btn-link tnl_external_sale_btnRegalo" type="button"><i class="fa fa-gift"></i></button>')
+					
+					$(this).remove();
+					external_sale_calcTotal();
+					$('#external-sale-descuento').trigger('change');
+				});
+
+				function external_sale_addProducto() { $('#frm-external-sale small.text-danger').html('');
+					prod = $.trim($('#external-sale-prod-search').val());
+					cant = parseInt($.trim($('#external-sale-prod-cantidad').val()));
+					costo = $.trim($('#external-sale-prod-costo').val());
+					imp = $.trim($('#external-sale-prod-importe').val());
+					arrImei = $.trim($('#external-sale-prod-imei').val()).split('\n').filter(imei => $.trim(imei).length>0);
+
+					if(!external_sale_prodExists($('#external-sale-prod-id').val(), $('#external-sale-prod-tipo').val()) && (prod.length == 0 || $('#external-sale-prod-id').val() == 0)) {
+						$('#frm-external-sale small.text-danger').html('Debe elegir un producto de la lista');
+						$('#external-sale-prod-search').focus();
+					} else if((cant.length == 0 || cant == 0 || isNaN(cant)) && !$('#external-sale-prod-cantidad').prop('readonly')) {
+						$('#frm-external-sale small.text-danger').html('Debe ingresar la cantidad');
+						$('#external-sale-prod-cantidad').focus();
+					} else if($('#imei:visible').length>0 && arrImei=='') {
+						$('#frm-external-sale small.text-danger').html('Debe proporcionar todos los '+$('#external-sale-prod-imei').attr('placeholder')+' de los productos');
+						$('#external-sale-prod-imei').focus();
+					} else {
+						if($('#external-sale-prod-tipo').val() == 'producto') {
+							if($('#imei:visible').length>0) { errores = [];
+								$('#external-sale-prod-imei').val('');
+								arrSku = []; counter = 0; agregar = true; $agregado = false;
+								$.each(arrImei, function(index, item) {
+									$.get('<?= URL_API ?>prod_entrada_detalle/buscarPorSku/'+item+'/'+$categoria_id+'/'+$('#external-sale-prod-id').val()+'/<?= $_SESSION['sucursal'] ?>', function(detalle) {
+										if(detalle.response) {
+											$.get('<?= URL_API ?>venta/verificarTraspaso/'+item+'/<?= $_SESSION['sucursal'] ?>', function(veriTraspa){
+												console.log(veriTraspa.disponible)
+												if(veriTraspa.disponible){
+													agregar = false; errores.push($categoria_sku+' ('+item+'): se encuentra en traspaso'); arrImei.splice(index, 1);
+													$('#frm-external-sale small.text-danger').html(errores.join('<br>'))
+												}else{
+													$.get('<?= URL_API ?>prod_salida_detalle/buscarPorSku/'+item+'/'+$categoria_id, function(detalle) { counter++;
+														if(!detalle.response) {
+															if(!arrSku.includes(item)) { arrSku.push(item);
+																if(counter==arrImei.length && agregar) { $agregado = true;
+																	$('#external-sale-prod-imei').val(arrSku.join('\n')+'\n');
+																	
+																	external_sale_calcImporte();
+																	external_sale_agregarProducto_validStock(cant);
+																}
+															} else { agregar = false; errores.push($categoria_sku+' ('+item+'): duplicado en la venta'); }
+														} else { agregar = false; errores.push($categoria_sku+' ('+item+'): agotado'); }
+														$('#frm-external-sale small.text-danger').html(errores.join('<br>'));
+														if(!$agregado) {
+															$('#external-sale-prod-imei').val(arrSku.join('\n')+'\n');
+															external_sale_calcImporte();
+														}
+													}, 'json');
+												}
+											},'json')
+										
+										} else { agregar = false; errores.push($categoria_sku+' ('+item+'): no existe'); arrImei.splice(index, 1); }
+										$('#frm-external-sale small.text-danger').html(errores.join('<br>'));
+									}, 'json');
+								});
+							} else {
+								external_sale_agregarProducto_validStock(cant);
+							}
+						} else if($('#external-sale-prod-tipo').val()=='servicio' || $('#external-sale-prod-tipo').val()=='paquete') {
+							$.get('<?= URL_API ?>prod_servicio/getByServicio/'+$('#external-sale-prod-id').val(), function(prod_servicio) {
+								if(prod_servicio.result.length > 0) {
+									$continuar = true;	$prodSinStock = undefined;	$contador = 0;
+									$.each(prod_servicio.result, function(index, item) {
+										cant = parseInt($('#external-sale-prod-cantidad').val()) * parseInt(item.cantidad);
+										$.each($('#tbl-external-sale-prods tbody tr:not(.servicio-info)'), function(trIndex, trRow) { trRow = $(trRow); trRowId = trRow.attr('data-id'); trRowTipo = trRow.attr('data-tipo');
+											if(trRow.parents('.servicio-info').length == 0) {
+												if(trRowTipo=='producto' && trRowId==item.producto_id) {
+													cant += parseInt(trRow.find('td:eq(1)').text());
+												} else if(['servicio', 'paquete'].includes(trRowTipo)) { trRowNext = trRow.next('.servicio-info'); trRowProducto = trRowNext.find('tr[data-id="'+item.producto_id+'"]');
+													if(trRowProducto.length > 0) {
+														cant += parseInt(trRow.find('td:eq(1)').text()) * parseInt(trRowProducto.find('td:eq(1)').text());
+													}
+												}
+											}
+										});
+										
+										$.get('<?= URL_API ?>prod_kardex/getStockSuc/'+$('#external-sale-sucursal_id').val()+'/'+item.producto_id, {prodInfo: item, tipo: prod_servicio.tipo, cantidad: cant}, function(prod_kardex) {
+											$contador++;
+											if(prod_kardex.cantidad > parseInt(prod_kardex.result.final)) {
+												$continuar = false; 
+												$prodSinStock = {
+													prodInfo: prod_kardex.prodInfo, 
+													tipo: prod_kardex.tipo,
+													cantidad: prod_kardex.cantidad,
+													stock: prod_kardex.result.final
+												};
+											}
+											if($contador == prod_servicio.result.length) {
+												if($continuar) {
+													external_sale_addProductoServicioRow();
+													external_sale_mostrarDetalleServicio();
+												} else {
+													swal({
+														type: "warning",
+														title: "Stock insuficiente",
+														text: "No hay suficiente stock del siguiente producto: <br /> "+$prodSinStock+"<br /><br /> ¿Deseas eliminar/modificar algún producto del "+$prodSinStock.tipo+"?",
+														html: true,
+														showCancelButton: true,
+														cancelButtonText: "No",
+														confirmButtonColor: "#DD6B55",
+														confirmButtonText: "Si, modificar",
+														closeOnConfirm: true,
+													}, function() {
+														external_sale_mostrarDetalleServicio($prodSinStock.prodInfo);
+													});
+												}
+											}
+										}, 'json');
+									});
+								} else {
+									external_sale_addProductoServicioRow();
+									external_sale_mostrarDetalleServicio();
+								}
+							}, 'json');
+						}
+					}
+				}
+
+				// $("#external-sale-prod-cantidad, #external-sale-prod-costo").keyup(function(event) { if(event.keyCode == 13) external_sale_addProducto(); });
+				$('#external-sale-prodAdd').click(function() { external_sale_addProducto(); });
+
+				$('#tbl-external-sale-prods').on('click', '.tnl_external_sale_btnInfo', function(e) { e.preventDefault();
+					if($('#tbl-external-sale-prods').find('.stock-insufficient').length != 0) { swal({type: "warning", title: "No se puede realizar la acción", text: 'Finaliza o cancela la modificación actual para continuar', html: true, timer: 4000}); }
+					else { external_sale_mostrarDetalleServicio(undefined, $(this).parents('tr').attr('data-id')); }
+				});
+
+				function external_sale_mostrarDetalleServicio(prodSinStock=undefined, index=undefined) {
+					if(prodSinStock!=undefined) { external_sale_addProductoServicioRow(); }
+					container = $('#tbl-external-sale-prods tbody');
+					trParent = index==undefined? container.find('tr:not(.servicio-info)').last(): container.find('tr[data-id="'+index+'"]');
+					next = trParent;
+					id = trParent.attr('data-id');
+					
+					if($('.servicio-info[data-id="'+id+'"]').length>0 && !$('.servicio-info[data-id="'+id+'"]').hasClass('hide')) {
+						$('.servicio-info[data-id="'+id+'"]').addClass('hide');
+					} else if($('.servicio-info[data-id="'+id+'"]').length > 0) {
+						$('.servicio-info').addClass('hide');
+						$('.servicio-info[data-id="'+id+'"]').removeClass('hide');
+					} else {
+						$('.servicio-info').addClass('hide');
+						row = $('<tr class="servicio-info table-success hide" data-id="'+id+'"></tr>');
+						td = $('<td colspan="5"></td>').appendTo(row);
+						td.append('<a href="#" data-popup="tooltip" title="Ocultar" class="tbl-external-sale-btnCloseServicioInfo btn close" style="color:red;">&times;</a>');
+						table = $('<table class="table table-sm table-borderless"><thead><tr class="table-success"><td class="text-center">Producto</td><td class="text-center">Cantidad</td><td class="text-center">Precio</td><td class="text-center">Importe</td><td class="text-center"></td></tr></thead><tbody></tbody></table>').appendTo(td);
+						$.get('<?= URL_API ?>prod_servicio/getByServicio/'+id, function(resp) {
+							if(resp.response) {
+								$.each(resp.result, function(index, item) {
+									tr = $('<tr data-id="'+item.producto_id+'" data-tipo="producto" data-servicio="'+id+'" class="table-success"></tr>').appendTo(table);
+
+									tr.append('<td class="text-left"><small>'+item.producto+'</small></td>');
+									tr.append('<td class="text-center"><small>'+item.cantidad+'</small></td>');
+									tr.append('<td class="text-right"><small>'+item.precio+'</small></td>');
+									tr.append('<td class="text-right"><small>'+(parseInt(item.cantidad)*parseFloat(item.precio)).toFixed(2)+'</small></td>');
+
+									td = $('<td class="text-center"></td>').appendTo(tr);
+									actions = $('<div class="actions pull-right"></div>').appendTo(td);
+									actions.append('<a href="#" data-popup="tooltip" title="Modificar" class="btn btn-sm btn-info tbl_external_sale_det_servicio_btnEditProducto" type="button"><i class="fa fa-edit"></i></a> ');
+									actions.append('<a href="#" data-popup="tooltip" title="Eliminar" class="btn btn-sm btn-danger tbl_external_sale_det_servicio_btnDelProducto" type="button"><i class="fa fa-minus"></i></a>');
+									actions.append('<a href="#" data-popup="tooltip" title="Guardar" class="btn btn-sm btn-light tbl_external_sale_det_servicio_btnSaveProducto hide" type="button"><i class="ti-save"></i></a> ');
+									actions.append('<a href="#" data-popup="tooltip" title="Cancelar" class="btn btn-sm btn-danger tbl_external_sale_det_servicio_btnCancelEditProducto hide" type="button"><i class="ti-back-right"></i></a>');
+									if(prodSinStock!=undefined && parseInt(prodSinStock.producto_id)==parseInt(item.producto_id)) {
+										trParent.find('.tnl_external_sale_btnInfo').click();
+										actions.find('.tbl_external_sale_det_servicio_btnEditProducto').click();
+										actions.find('.tbl_external_sale_det_servicio_btnCancelEditProducto').addClass('stock-insufficient');
+									}
+								});
+							} else {
+								tr = $('<tr class="table-success"><td colspan="5" class="text-center"><small>Este paquete / servicio no cuenta con ningún producto registrado</small></td></tr>');
+								table.append(tr);
+							}
+						});
+
+						$(next).after(row);
+					}
+				}
+
+				$('#tbl-external-sale-prods').on('click', '.tbl_external_sale_det_servicio_btnDelProducto', function() {
+					if($('#tbl-external-sale-prods').find('.stock-insufficient').length != 0) { swal({type: "warning", title: "No se puede realizar la acción", text: 'Finaliza o cancela la modificación actual para continuar', html: true, timer: 4000}); }
+					else {
+						tr = $(this).closest('tr');
+						container = tr.parents('.servicio-info');
+						tipo = container.prev('tr').data('tipo');
+						if(container.find('tr[data-tipo="producto"]').length > 1) {
+							swal({ title: "Eliminar producto del "+tipo, text: "Esta acción es irreversible<br />¿Desea Continuar?. \n", type: "warning", html: true, showCancelButton: true, cancelButtonText: "No", confirmButtonColor: "#DD6B55", confirmButtonText: "Si, eliminar", closeOnConfirm: true }, 
+								function() {
+									idServicio = tr.data('servicio');
+									servContainer = tr.parents('.servicio-info').prev('tr[data-id="'+idServicio+'"]');
+									total = 0;
+									$.each(tr.closest('tbody').find('tr'), function(index, item) { if($(item).data('id') != tr.data('id')) { total += parseFloat($.trim($(item).find('td:eq(3)').text())); } });
+
+									tr.remove()
+									$.get('<?= URL_API ?>servicio/get/'+idServicio, function(servicio) {
+										if(servicio.response) {
+											manoDeObra = parseFloat(servicio.result.mano_obra);
+											servContainer.find('td:eq(2)').html((total + manoDeObra).toFixed(2));
+											servContainer.find('td:eq(3)').html((parseInt($.trim(servContainer.find('td:eq(1)').text())) * (total + manoDeObra)).toFixed(2));
+											
+											external_sale_calcTotal();
+										}
+									}, 'json');
+								}
+							);
+						} else {
+							swal({ title: "Eliminar producto del "+tipo, text: "Esta acción es irreversible<br />Se eliminará todo el "+tipo+"<br />¿Desea Continuar?. \n", type: "warning", html: true, showCancelButton: true, cancelButtonText: "No", confirmButtonColor: "#DD6B55", confirmButtonText: "Si, eliminar", closeOnConfirm: true }, 
+								function() {
+									container.prev('tr').remove();
+									container.remove()
+			
+									external_sale_calcTotal();
+								}
+							);
+						}
+					}
+				});
+
+				function external_sale_det_servicio_fillSucursalesProd(producto_id) { blockPage();
+					$.get('<?= URL_ROOT ?>/getPrecio/'+producto_id+'/'+$('#external-sale-sucursal_id').val(), function(data) {
+						$('#external-sale-det-servicio-prod-listap').empty();
+						$.each(data.listas, function(index, item) {
+							$('#external-sale-det-servicio-prod-listap').append('<option value="'+item.precio+'">'+item.nombre+'</option>');
+						});
+						$('#external-sale-det-servicio-prod-listap').trigger('change');
+						$.unblockUI();
+					},'json');
+				}
+
+				function external_sale_addFilaEditarProducto(tr) {
+					id = tr.attr('data-id');
+					clone = tr.clone();
+					producto = $.trim(tr.find('td:eq(0)').text());
+					cantidad = $.trim(tr.find('td:eq(1)').text());
+					precio = $.trim(tr.find('td:eq(2)').text().replace('$', ''));
+					importe = $.trim(tr.find('td:eq(3)').text().replace('$', ''));
+					
+					tr.after(clone)
+					tr.addClass('hide');
+					clone.removeClass('table-success').addClass('table-info').addClass('clone');
+					clone.find('.tbl_external_sale_det_servicio_btnEditProducto, .tbl_external_sale_det_servicio_btnDelProducto').addClass('hide');
+					clone.find('.tbl_external_sale_det_servicio_btnSaveProducto, .tbl_external_sale_det_servicio_btnCancelEditProducto').removeClass('hide');
+					clone.find('td:eq(0)').html('<input type="text" id="tbl-external-sale-det-servicio-busProdServicio" placeholder="Buscar por nombre, modelo o SKU" class="form-control form-control-sm" value="'+producto+'"><input type="hidden" id="external-sale-det-servicio-prod-id" value="'+id+'">');
+					clone.find('td:eq(1)').html('<input type="text" class="form-control form-control-sm text-right" id="external-sale-det-servicio-prod-cantidad" placeholder="cantidad" value="'+cantidad+'">');
+					clone.find('td:eq(2)').html('<div class="input-group"><select class="form-control form-control-sm col-sm-6" id="external-sale-det-servicio-prod-listap"></select><input type="text" class="form-control form-control-sm col-sm-6 text-right" id="external-sale-det-servicio-prod-costo" placeholder="0.00" inputmode="numeric" maxlength="10" readonly value="'+precio+'"></div>');
+					clone.find('td:eq(3)').html('<input type="text" class="form-control form-control-sm text-right" id="external-sale-det-servicio-prod-importe" placeholder="0.00" inputmode="numeric" maxlength="10" readonly value="'+importe+'">');
+					clone.find('td:eq(4)').css('min-width', '75px');
+					external_sale_det_servicio_fillSucursalesProd(id)
+				}
+
+				$('#tbl-external-sale-prods').on('click', '.tbl_external_sale_det_servicio_btnEditProducto', function() {
+					tr = $(this).closest('tr');
+					if($('.clone').length > 0) {
+						if($('#tbl-external-sale-prods').find('.stock-insufficient').length != 0) { swal({type: "warning", title: "No se puede realizar la acción", text: 'Finaliza o cancela la modificación actual para continuar', html: true, timer: 4000}); }
+						else {
+							swal({
+								title: "Ya estás modificando un registro",
+								text: "Se perderán todas las modificaciones hechas al producto actual<br />¿Desea Continuar?. \n",
+								type: "warning",
+								html: true,
+								showCancelButton: true,
+								cancelButtonText: "No",
+								confirmButtonColor: "#DD6B55",
+								confirmButtonText: "Si, eliminar",
+								closeOnConfirm: true
+							}, function() {
+								$('.clone').prev('tr[data-id="'+id+'"][data-tipo="producto"]').removeClass('hide');
+								$('.clone').remove();
+								external_sale_addFilaEditarProducto(tr);
+							});
+						}
+					} else {
+						external_sale_addFilaEditarProducto(tr);
+					}
+
+					var fndOnlyProds = new Bloodhound({
+						datumTokenizer: Bloodhound.tokenizers.obj.whitespace('value'),
+						queryTokenizer: Bloodhound.tokenizers.whitespace,
+						remote: {
+							url: '<?= URL_API ?>producto/find/%QUERY',
+							wildcard: '%QUERY'
+						}
+					});
+
+					$('#tbl-external-sale-det-servicio-busProdServicio').typeahead({ hint: true, highlight: true, minLength: 3 }, { limit: 60, display: 'producto', source: fndOnlyProds });
+					$('#tbl-external-sale-det-servicio-busProdServicio').change(function() { $('.invalid-tooltip').remove(); $('#frm-external-sale small.text-danger').html('');
+						if($.trim($(this).val()) == '')
+							$('#external-sale-det-servicio-prod-id').val(0);
+					});
+
+					$('#tbl-external-sale-det-servicio-busProdServicio').bind('typeahead:select', function(ev, suggestion) { $('.invalid-tooltip').remove(); $('#frm-external-sale small.text-danger').html('');
+						$('#external-sale-det-servicio-prod-id').val(suggestion.id);
+						if(!extermal_sale_det_servicio_prodExists(suggestion.id)) {
+							$('#external-sale-det-servicio-prod-listap').empty();
+							$('#external-sale-det-servicio-prod-costo').val(0.00);
+							external_sale_det_servicio_fillSucursalesProd(suggestion.id);
+						} 
+					});
+
+					$('#tbl-external-sale-det-servicio-busProdServicio').keyup(function(event) { if(event.keyCode == 8 || event.keyCode == 46) { $('#external-sale-det-servicio-prod-id').val(0); } });
+
+					function extermal_sale_det_servicio_prodExists(prod) {
+						if($('#tbl-external-sale-prods .clone').closest('tbody').find('tr[data-id="'+prod+'"][data-tipo="producto"]:not(.hide, .clone)').length > 0) {
+							$errLabel = $('<div class="invalid-tooltip">Ya existe el producto</div>');
+							$('#frm-external-sale small.text-danger').html('Ya existe el producto');
+							$('#tbl-external-sale-det-servicio-busProdServicio').after($errLabel).select().focus();
+							$errLabel.show();
+							return true;
+						}
+						return false;
+					}
+
+					$('#external-sale-det-servicio-prod-listap').change(function() { $('#external-sale-det-servicio-prod-costo').val($(this).val()).trigger('change'); });
+					$("#external-sale-det-servicio-prod-cantidad").inputmask({ alias: "numeric", digits: 0});
+					$("#external-sale-det-servicio-prod-costo").inputmask({ alias: "numeric", groupSeparator: ',', digits: 2, digitsOptional: false, placeholder: '0' });
+					$("#external-sale-det-servicio-prod-cantidad, #external-sale-det-servicio-prod-costo").change(function() { 
+						cant = parseInt($('#external-sale-det-servicio-prod-cantidad').val());		if(isNaN(cant)) cant = 0;
+						costo = parseFloat($('#external-sale-det-servicio-prod-costo').val());		if(isNaN(costo)) costo = 0;
+						importe = cant * costo;
+						
+						$('#external-sale-det-servicio-prod-importe').val(importe.toFixed(2));
+					});
+
+					$("#external-sale-det-servicio-prod-cantidad, #external-sale-det-servicio-prod-costo").keyup(function(event) { if(event.keyCode == 13) external_sale_det_servicio_editProducto(); });
+					$('#tbl-external-sale-prods').on('click', '.tbl_external_sale_det_servicio_btnSaveProducto', function() { external_sale_det_servicio_editProducto(); });
+					function external_sale_det_servicio_editProducto() {
+						clone = $('.clone');
+						trPrev = clone.prev('tr[data-id="'+clone.data('id')+'"][data-tipo="producto"].hide');
+						id = parseInt($('#external-sale-det-servicio-prod-id').val());				if(isNaN(id)) id = 0;
+						cant = parseInt($('#external-sale-det-servicio-prod-cantidad').val());		if(isNaN(cant)) cant = 0;
+
+						if(cant == 0) {
+							swal({type: "warning", title: "Debe ingresar la cantidad", timer: 4000});
+							$('#external-sale-det-servicio-prod-cantidad').focus();
+						} else {
+							if(!extermal_sale_det_servicio_prodExists(id)) {
+								cantidad = 0;
+								$.each($('#tbl-external-sale-prods tr[data-id="'+id+'"][data-tipo="producto"]:not(.hide)'), function(index, item) { 
+									times = 1;
+									cant = parseInt($.trim($(item).find('td:eq(1)').text()));
+									if($(item).parents('.servicio-info').length > 0) { times = parseInt($.trim($(item).parents('.servicio-info').prev('tr').find('td:eq(1)').text())); }
+									if(isNaN(cant)) { cant = parseInt($.trim($('#external-sale-det-servicio-prod-cantidad').val())); }
+									cantidad += cant * times;
+								});
+								$.get('<?= URL_API ?>prod_kardex/getStockSuc/'+$('#external-sale-sucursal_id').val()+'/'+id, function(prod_kardex) {
+									if(cant > parseInt(prod_kardex.result.final)) { swal({ type:"warning", title:"Stock insuficiente", text:"Solo existen "+prod_kardex.result.final+" productos en stock", html:true, timer:4000 }); }
+									else if(cantidad > parseInt(prod_kardex.result.final)) { swal({ type:"warning", title:"Stock insuficiente", text:"Solo existen "+prod_kardex.result.final+" productos en stock<br />Revisa la información de tus servicios/paquetes", html:true, timer:4000 }); }
+									else {
+										if($('#tbl-external-sale-det-servicio-busProdServicio').length != 0) {
+											trPrev.attr('data-id', $('#external-sale-det-servicio-prod-id').val());
+											trPrev.find('td:eq(0)').html('<small>'+$('#tbl-external-sale-det-servicio-busProdServicio').val()+'</small>');
+											trPrev.find('td:eq(1)').html('<small>'+$('#external-sale-det-servicio-prod-cantidad').val()+'</small>');
+											trPrev.find('td:eq(2)').html('<small>'+$('#external-sale-det-servicio-prod-costo').val()+'</small>');
+											trPrev.find('td:eq(3)').html('<small>'+$('#external-sale-det-servicio-prod-importe').val()+'</small>');
+				
+											trPrev.removeClass('hide');
+											clone.remove();
+		
+											total = 0;
+											$.each(trPrev.closest('tbody').find('tr'), function(index, item) { 
+												total += parseFloat($.trim($(item).find('td:eq(3)').text())); 
+											});
+		
+											idServicio = trPrev.data('servicio');
+											$.get('<?= URL_API ?>servicio/get/'+idServicio, function(servicio) {
+												if(servicio.response) {
+													manoDeObra = parseFloat(servicio.result.mano_obra);
+													servContainer = trPrev.parents('.servicio-info').prev('tr[data-id="'+idServicio+'"]');
+													servContainer.find('td:eq(2)').html((total + manoDeObra).toFixed(2));
+													servContainer.find('td:eq(3)').html((parseInt($.trim(servContainer.find('td:eq(1)').text())) * (total + manoDeObra)).toFixed(2));
+		
+													external_sale_calcTotal();
+													$('.stock-insufficient').removeClass('stock-insufficient');
+												}
+											}, 'json');
+										}
+									}
+								}, 'json');
+							}
+						}
+					}
+
+					$('#tbl-external-sale-prods').on('click', '.tbl_external_sale_det_servicio_btnCancelEditProducto', function() {
+						if($('#tbl-external-sale-prods').find('.stock-insufficient').length != 0) { $(this).prev('.tbl_external_sale_det_servicio_btnSaveProducto').click(); }
+						else {
+							tr = $(this).closest('tr');
+							id = tr.data('id');
+							swal({ title: "Cancelar Modificación", text: "Esta acción es irreversible,<br />Se perderán todas las modificaciones hechas al producto<br />¿Desea Continuar?. \n", type: "warning", html: true, showCancelButton: true, cancelButtonText: "No", confirmButtonColor: "#DD6B55", confirmButtonText: "Si, cancelar", closeOnConfirm: true }, 
+								function() {
+									$('.clone').prev('tr[data-id="'+id+'"][data-tipo="producto"]').removeClass('hide');
+									$('.clone').remove();
+								}
+							);
+						}
+					});
+				});
+
+				$('#tbl-external-sale-prods').on('click', '.tbl-external-sale-btnCloseServicioInfo', function(e) { e.preventDefault();
+					tipo = $(this).closest('tr').prev('tr').data('tipo');
+					if($('.clone').length == 0) { $('.servicio-info').addClass('hide'); }
+					else { swal({type: "warning", title: "No se puede ocultar el contenido del "+tipo, text: "Finaliza o cancela la modificación actual para continuar", timer: 4000}); }
+				});
+
+				$('tbody').on('click', '.tbl-external-servicio-prodDel', function(event) { event.preventDefault();
+					container = $(this).parents('tr');
+					id = container.data('id');
+					tipo = container.data('tipo');
+					if(tipo=='producto') { tbl_external_sale_eliminarArticulo(container); } 
+					else {
+						$('.servicio-info[data-id="'+id+'"]').remove();
+						tbl_external_sale_eliminarArticulo(container);
+					}
+				});
+
+				function tbl_external_sale_eliminarArticulo(articulo) {
+					id = articulo.attr('data-id');
+					$('#tbl-external-sale-prods tbody tr[data-id="'+id+'"]').remove();
+
+					external_sale_calcTotal();
+					$('#external-sale-prod-search').focus();
+					if($('#tbl-external-sale-prods tbody tr').length == 0) { $('#external-sale-descuento').attr('readonly', 'readonly'); }
+					$('#external-sale-descuento').trigger('change');
+				}
+
+				function external_sale_calcTotal() {
+					tot = 0;
+					$.each($('#tbl-external-sale-prods tbody .importe'), function(index, elem) {
+						imp = parseFloat($.trim($(elem).text().replace('$', '')));
+						tot += imp;
+					});
+					// sub = tot / 1.16;
+					sub = tot;
+					iva = sub * parseInt('<?= $_SESSION['iva'] ?>') / 100;
+					tot += iva;
+					$('#external-sale-subtotal').val(sub.toFixed(2));
+					$('#external-sale-iva').val(iva.toFixed(2));
+					$('#external-sale-total').val(tot.toFixed(2));
+				}
+
+				function external_sale_clearData() {
+					$('.invalid-tooltip').remove();
+					$('#tbl-external-sale-prods input').val('');
+					$('#external-sale-prod-search').typeahead('val','');
+					$('#external-sale-prod-id').val(0);
+					$('#imei').addClass('hide');
+				}
+			
+				function clearVentaData() {
+					$('.invalid-tooltip').remove();
+					$('#frm-external-sale input').val('');
+					$('#external-sale-id').val(undefined);
+					$('#external-sale-prod-id').val(0);
+					$('#tbl-external-sale-prods tbody').empty();
+					// if(!$('#external-sale-sucursal_id option:first').prop('selected')) { $('#external-sale-sucursal_id option:first').prop('selected', true); }
+					if($('#external-sale-sucursal_id option').length == 1) { $('#external-sale-sucursal_id option:first').prop('selected', true); }
+					//$('#external-sale-empleado_id').val(<?php $user->id ?>);
+					$('#external-sale-empleado_id').val(0);
+					$('#external-sale-descuento').val('0.00');
+					$('#chkFact').prop('checked', false);
+					$('#imei').addClass('hide');
+					$('#external-sale-prod-imei').val('');
+				}
+
+				$('#external-sale-tab, #external-sale-pagos-tab').click(function() {
+					if($(this).text() == 'Venta') { $('#external-sale-btnSave').text('Siguiente'); }
+					else if($(this).text() == 'Pagos') { $('#external-sale-btnSave').text('Guardar'); }
+				});
+
+				function addRowPago(data) {
+					container = $('#tbl-external-payment-comments tbody');
+					tr = $('<tr data-id="'+data.id+'" data-status="'+data.status+'"></tr>').appendTo(container);
+
+					td = $('<td class="text-center"></td>').appendTo(tr);
+					actions = $('<div class="pull-right"></div>').appendTo(td);
+					td.append($('<small>'+data.id+'</small>'));
+					<?php if(in_array(MOD_PAGO_CANCEL, $permisos)) :?> actions.append('<a href="#" data-popup="tooltip" title="Cancelar Pago" class="external-payment-comments-btnCancelPago"><i class="mdi mdi-close-circle" style="color:red;"></i></a>  '); <?php endif; ?>
+					if(data.tiene_comprobante == 1) { actions.append('<a href="<?= URL_ROOT ?>/data/comprobantes_pago/'+data.comprobante+'" data-popup="tooltip" title="Ver Comprobante" class="btn-external-payment-comprobante" data-lightbox="comprobante_'+data.id+'" data-title="Comprobante de Pago"><i class="fa fa-camera"></i></a>'); }
+
+					tr.append('<td class="text-center"><small>'+data.fecha+'</small></td>');
+					tr.append('<td class="text-right"><small>'+data.importe+'</small></td>');
+					tr.append('<td class="text-center"><small>'+data.tipo_pago+(data.orden_id!=''? ' No. Orden: ('+data.orden_id+')': '')+'</small></td>');
+					tr.append('<td class="text-center"><textarea id="test" class="form-control text-center form-control-sm" disabled="disabled">'+data.comentario+'</textarea></td>');
+					
+					td = $('<td class="text-center"></td>').appendTo(tr);
+					estatus = data.status==1? 'RECIBIDO': data.status==2? 'RECHAZADO': data.status==3? 'INVALIDADO': 'PENDIENTE';
+					td.append($('<small>'+estatus+'</small>'));
+					<?php if(in_array(MOD_PAGO_VALID, $permisos)) : ?>
+						if(data.es_automatico == 1) {
+							if(data.status == 1) {
+								td.append('<a href="#" data-popup="tooltip" title="MARCAR COMO INVALIDO" class="external-payment-comments-btnDown pull-right"><i class="fa fa-thumbs-down" style="color: red;"></i></a>');
+							} else {
+								td.append('<a href="#" data-popup="tooltip" title="MARCAR COMO VALIDO" class="external-payment-comments-btnUp pull-right"><i class="fa fa-thumbs-up"></i></a>');
+							}
+						}
+					<?php endif; ?>
+				}
+
+				<?php if(in_array(MOD_PAGO_CANCEL, $permisos)) : ?>
+					$('#tbl-external-payment-comments').on('click', '.external-payment-comments-btnCancelPago', function() {
+						id = $(this).parents('tr').data('id');
+						swal({ title: "Cancelar pago", text: "Esta acción es irreversible, ¿Desea Continuar?. \n", type: "warning", html: true, showCancelButton: true, cancelButtonText: "No", confirmButtonColor: "#DD6B55", confirmButtonText: "Si, continuar", closeOnConfirm: true }, 
+							function() {
+								$.ajax({ url: '<?= URL_API ?>venta_pago/del/'+id, type: 'PUT', dataType: 'json', data: {usuario: '<?= $_SESSION['usuario']->nombre.' '.$_SESSION['usuario']->apellidos ?>'}, success: 
+									function(resp) {
+										external_payment_getPagos();
+										swal({ type: "success", title: "¡Listo!", text: "Se cancelo el pago", timer: 4000 });
+									}
+								});
+							}
+						);
+					});
+				<?php endif; ?>
+
+				function external_payment_getPagos() {
+					$.get('<?= URL_API ?>venta_pago/getByVenta/'+$('#external-sale-id').val(), function(pagos) {
+							$('#tbl-external-payment-comments tbody').empty();
+							$.each(pagos.result, function(index, item) {
+								addRowPago(item);
+							});
+					}, 'json');
+				}
+
+				$('#tbl-external-payment-comments').on('click', '.external-payment-comments-btnDown, .external-payment-comments-btnUp', function() {
+					text = $(this).hasClass('external-payment-comments-btnDown')? 'Invalidar': 'Validar';
+					id = $(this).parents('tr').data('id');
+
+					$('#external-payment-comments-id').val(id);
+					$('#frm-external-payment-comments').modal('show');
+					$('#frm-external-sale').modal('hide');
+					$('#external-payment-comments-title').text(text+' Pago');
+					$('#external-payment-comments-btnSave').text(text);
+				});
+
+				$('#external-payment-comments-btnSave').click(function() {
+					text = $(this).text();
+					comentario = $('#external-payment-comments-comentario').val();
+					if(comentario == '' || comentario == null || comentario == undefined) { swal({ type: "warning", title: "Datos insuficientes", text: "Debe especificar el motivo de la acción", timer: 4000 }); }
+					else {
+						data = {comentario: comentario, status: (text=='Invalidar'? 3: 1)};
+						id = $('#external-payment-comments-id').val();
+						$.ajax({ url: '<?= URL_API ?>venta_pago/edit/'+id, type: 'PUT', async: false, dataType: 'json', data: data, success: 
+							function(data) {
+								$('#frm-external-payment-comments').modal('hide');
+								external_payment_getPagos();
+
+								swal({ type: "success", title: "¡Listo!", text: "Se "+(data.status==3? 'invalidó': 'validó')+" el pago", timer: 4000 });
+							}
+						});
+					}
+				});
+
+				$('#frm-external-payment-comments').on('shown.bs.modal', function() { $.get('<?= URL_API ?>venta_pago/get/'+$('#external-payment-comments-id').val(), function(resp) { $('#external-payment-comments-comentario').val(resp.result.comentario); }, 'json'); });
+				$('#frm-external-payment-comments').on('hidden.bs.modal', function () { 
+					$('#external-payment-comments-id').val(undefined);
+					$('#external-payment-comments-comentario').val(undefined);
+					$('#frm-external-sale').modal('show');
+				});
+
+				$('#external-sale-btnSave').click(function() { $('.invalid-tooltip').remove();
+					if($(this).text() == 'Siguiente') {
+						if($('#external-sale-id').val() == '') {
+							data = {};
+							$.each($('.data-external-sale'), function(index, elem) {
+								ide = $(elem).attr('id').replace('external-sale-','');
+								data[ide] = $.trim($(elem).val());
+							});
+		
+							data.detalles = [];
+							$.each($('#tbl-external-sale-prods tbody tr:not(.table-success, .imei)'), function(index, element) { element = $(element);
+								producto_id = element.attr('data-id');
+								cantidad = element.find('td:eq(1)').text();
+								costo = element.find('td:eq(2)').text();
+								importe = element.find('td:eq(3)').text();
+								tipo = element.attr('data-tipo');
+								detalles = { producto_id:producto_id, origen_tipo: 1, cantidad: cantidad, costo:costo, importe:importe, tipo:tipo, };
+								if($(element).next().hasClass('imei')) { detalles.arrImei = $.trim($(element).next().find('textarea').val()).split('\n').filter(imei => $.trim(imei).length>0); }
+
+								if(['servicio', 'paquete'].includes(tipo)) {
+									detalles.origen_tipo = 2;
+									detalles.productos = [];
+									$.each(element.next('.servicio-info').find('tr[data-tipo="producto"]'), function(index, producto) { producto = $(producto);
+										detalles.productos.push({
+											producto_id: producto.attr('data-id'),
+											cantidad: producto.find('td:eq(1)').text(),
+											costo: producto.find('td:eq(2)').text(),
+											importe: producto.find('td:eq(3)').text(),
+										});
+									});
+								}
+
+								data.detalles.push(detalles);
+							});
+		
+							$errLabel = $('<div class="invalid-tooltip"></div>');
+							if(data.folio == '') {
+								$errLabel.html('Debe ingresar el folio');
+								$('#external-sale-folio').after($errLabel).focus();
+								$errLabel.show();
+							} else if(data.detalles.length == 0) {
+								$errLabel.html('Debe agregar productos a la venta');
+								$('#tbl-external-sale-prods').after($errLabel);
+								$errLabel.show();
+							}else if(data.empleado_id == 0) {
+								$errLabel.html('Debe seleccionar el vendedor');
+								$('#external-sale-empleado_id').after($errLabel);
+								$errLabel.show();
+							} else {
+								if(data.id != undefined) { delete data.id; }
+								// < ?php // if(in_array(MOD_CLIENTE_ADD, $permisos)) : ?>
+								// data.facturar = $('#chkFact').is(':checked') ? 1 : 0;
+								// < ?php // else: ?>
+								// data.facturar = 0;
+								// < ?php // endif; ?>
+								blockPage();
+								$.post('<?= URL_API ?>venta/add/', data, function(venta) {
+									if(venta.response) { id_venta = venta.result;
+										$('#external-sale-id').val(id_venta);
+										// $('#external-sale-cliente_id').prop('disabled', true);
+										// $('#btn-external-sale-add-cliente').addClass('hide');
+										// $('#external-sale-sucursal_id').prop('disabled', true);
+										// $('.tbl-external-servicio-prodDel, .tbl_external_sale_det_servicio_btnEditProducto, .tbl_external_sale_det_servicio_btnDelProducto, .tnl_external_sale_btnRegaloCancel, .tnl_external_sale_btnRegalo').addClass('hide');
+										// $('#tbl-external-sale-prods tfoot tr').addClass('hide');
+										// $('#external-sale-empleado_id').prop('disabled', true);
+										// $('#external-sale-descuento').prop('readonly', true);
+										// $('#external-sale-pagos-tab').click().trigger('click');
+										// $('#frm-external-sale .modal-header').css('padding-bottom', 0);
+										// $('#frm-external-sale .modal-header').find('.row').last().removeClass('hide');
+										// $('#tbl-external-payment-comments tbody').empty().append($('<tr><td colspan="6">No se ha registrado ningún pago</td></tr>'));
+
+										data = { venta_id: id_venta, fecha: moment().format('YYYY-MM-DD hh:mm:ss'), tipo_pago_id: <?= $_SESSION['pago_efectivo'] ?>, importe: data.total, status:  1 };
+										$.post('<?= URL_API ?>venta_pago/add/', data, function(pago) {
+											if(pago.response) {
+												finalizarVenta(1);
+											} else { swal({ type:"warning", title:"Oops!", text:pago.message, timer:4000 }); }
+										}, 'json');
+									} else { swal({ type:"warning", title:"Oops!", text:venta.message, timer:4000 }); }
+									$.unblockUI();
+								},'json');
+							}
+						} else { $('#external-sale-pagos-tab').click().trigger('click'); }
+					} else if($(this).text() == 'Guardar') {
+						pagos = [];
+						totalPagos = 0;
+						$.each($('#tbl-external-payment-comments tbody tr[data-status="1"]').find('td:eq(2)'), function(index, item) {
+							totalPagos += parseFloat($(item).text());
+						});
+						if(parseFloat($('#external-sale-total').val()) == totalPagos) {
+							finalizarVenta(1);
+						} else {
+							$.get('<?= URL_API ?>cliente/get/'+$('#external-sale-cliente_id').val(), function(resp) {
+								if(resp.result.tiene_credito == '1') { finalizarVenta(0); }
+								else { swal({ type: "warning", title: "Oops!", text: 'Aún no completas la totalidad del pago requerido', html: true }); }
+							})
+						}
+					}
+				});
+
+				function finalizarVenta(pagado) {
+					$.post('<?= URL_API ?>venta/finalizar/'+$('#external-sale-id').val(), {pagado: pagado}, function(resp) {
+						if(resp.response) {
+							$('#external-sale-tab').click();
+							$('#frm-external-sale').modal('hide');
+							// getItems(0, $('#cont').val());
+							swal({ type: "success", title: "¡Listo!", text: "Se guardó la venta correctamente.", timer: 4000 });
+							window.open('<?= URL_API ?>venta/printTicket/'+$('#external-sale-id').val());
+						}
+					}, 'json');
+				}
+
+				$('#external-sale-cliente_id').change(function() {
+					$.get('<?= URL_API ?>cliente/get/'+$('#external-sale-cliente_id option:selected').val(), function(resp) {
+						if($('#external-sale-id').val() == undefined) {
+							$('#external-sale-descuento').val(resp.result.descuento)
+						}
+					}, 'json');
+				});
+			
+				<?php if(in_array(MOD_FACTURAR, $permisos)) : ?>
+					$('#external-sale-cliente_id').change(function() {
+						$('#chkFact').prop('checked', false);
+						$('.invalid-tooltip').remove();
+					});
+
+					$('#chkFact').change(function(event) {
+						if($(this).is(':checked')) {
+							$('.invalid-tooltip').remove();
+							blockPage();
+							$.get('<?= URL_API ?>cliente/get/'+$('#external-sale-cliente_id').val(), function(data) {
+								rfcReg = new RegExp('^[A-Z&Ñ]{3,4}[0-9]{2}(0[1-9]|1[012])(0[1-9]|[12][0-9]|3[01])[A-Z0-9]{2}[0-9A]$');
+								rfc = data.result.rfc;
+								//$errLabel = $('<div class="invalid-tooltip"></div>');
+								if(!rfcReg.test(rfc)) {
+									/*$errLabel.html('El cliente no cuenta con un RFC válido');
+									$('#chkFact').after($errLabel);
+									$errLabel.show();
+									setTimeout(function() { $errLabel.remove() }, 3000);*/
+									$('#chkFact').prop('checked', false);
+									swal({
+										type: "error",
+										title: "Oops!",
+										text: 'El cliente no tiene un RFC válido.<br><small>Debe modificar los datos en el catálogo de <a href="<?= URL_ROOT ?>/clientes" title="Clientes" target="_blank">clientes</a></small>',
+										html: true,
+										timer: 4000
+									});
+								}
+								if(data.timbres == 0) {
+									$('#chkFact').prop('checked', false);
+									$('#chkFact').prop('disabled', true);
+									$('#chkFact').parents('.col-sm-4').find('small.text-muted').html('No cuenta con folios para facturar');
+								}else{
+									$('#chkFact').parents('.col-sm-4').find('small.text-muted').html(data.timbres+' folios disponibles');
+								}
+								$.unblockUI();
+							},'json');
+						}
+					});
+				<?php endif; ?>
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_PAGO_ADD, $permisos)): ?>
+				$('#btnAddPagoVenta').click(function() {
+					$.get('<?= URL_API ?>venta/get/'+$('#external-sale-id').val(), function(venta) {
+						total = parseFloat(venta.result.total);
+						pagado = parseFloat(venta.pagado);
+						$('#external-payment-cantidad').val(total<=pagado? 0: total-pagado);
+						$('#external-payment-tipo_pago_id option[value="<?= $_SESSION['tipo_pago'] ?>"]').prop('selected', true);
+						$('#btnSaveSub').addClass('add');
+						$('#frm-external-payment').modal('show');
+						$('#frm-external-sale').modal('hide');
+					}, 'json');
+				});
+
+				$('#frm-external-payment').on('shown.bs.modal', function() {  });
+				$('#frm-external-payment').on('hidden.bs.modal', function() { 
+					$(this).find('input').val('');
+					$('#frm-external-sale').modal('show'); 
+					$('#external-sale-btnSave').addClass('update'); 
+					$('#btnSaveSub').removeClass('add').removeClass('update'); 
+					
+					$(this).find('.commprobante').addClass('hide');
+					$('#external-payment-cantidad').val(null);
+					$('#external-payment-tipo_pago_id').val('01');
+					$('#btn-comprobante').addClass('hide');
+					$('#external-payment-comprobante').removeAttr('src');
+					$(this).find('.comprobante').addClass('hide');
+				});
+			<?php endif; ?>
+
+			$("#external-payment-cantidad").inputmask({ alias: "numeric", groupSeparator: ',', digits: 2, digitsOptional: false, placeholder: '0' });
+			$('#external-payment-cantidad').parents('form').submit(function(e) { return false; });
+
+			$('#external-payment-tipo_pago_id').change(function() {
+				btnComprobante = $('#btn-comprobante');
+				if(!$(this).find('option:selected').data('comprobante')) {
+					btnComprobante.addClass('hide');
+					$('#external-payment-comprobante').removeAttr('src');
+					$('#frm-external-payment .comprobante').addClass('hide');
+				} else {
+					btnComprobante.removeClass('hide');
+				}
+			});
+			
+			$('#btn-comprobante').click(function() {
+				$('#external-payment-file').click();
+			});
+
+			$('#external-payment-file').change(function() {
+				if(this.files && this.files[0]) {
+					var reader = new FileReader();
+
+					reader.onload = function(e) {
+						$('#external-payment-comprobante').attr('src', e.target.result);
+					}
+					
+					reader.readAsDataURL(this.files[0]);
+					$('#frm-external-payment .comprobante').removeClass('hide');
+				}
+			});
+
+			$('#external-payment-btnSave').click(function() {
+				importe = $('#external-payment-cantidad').val();
+				image = $('#external-payment-comprobante').attr('src');
+				tipo_pago_id = $('#external-payment-tipo_pago_id').val();
+
+				if(importe == '' || !parseFloat(importe)>0) { swal({ type: "warning", title: "Datos insuficientes", text: "Debe ingresar la cantidad pagada",    timer: 4000 }); }
+				else if(parseFloat(importe) > parseFloat($('#external-payment-sale-total').val())) { swal({ type: "warning", title: "Cantidad invalida", text: "El importe no puede ser mayor que la cantidad restante", timer: 4000 }); }
+				else if($('#external-payment-tipo_pago_id option:selected').data('comprobante')==1 && (image==null || image==undefined || image=='#')) { swal({ type: "warning", title: "Datos insuficientes", text: "Debe ingresar el comprobante de pago", timer: 4000 }); }
+				else {
+					date = moment().format('YYYYY-MM-DD hh:mm:ss');
+					data = new FormData();
+					data.append('venta_id', $('#external-sale-id').val());
+					data.append('fecha', date);
+					data.append('tipo_pago_id', tipo_pago_id);
+					data.append('importe', importe);
+					data.append('status', $('#external-payment-tipo_pago_id option:selected').data('automatico') == '0'? -1: 1);
+					if($('#external-payment-tipo_pago_id option:selected').data('comprobante') == '1') { data.append('comprobante', $('#external-payment-file')[0].files[0]); }
+					$.ajax({ url: '<?= URL_API ?>venta_pago/add/', type: 'POST', data: data, contentType: false, processData: false, success: 
+						function(resp) {
+							if($('#external-payment-tipo_pago_id option:selected').data('automatico') == 1) {
+								swal({ type: "success", title: "¡Listo!", text: "Pago registrado con exito", timer: 4000 });
+								$('#frm-external-payment').modal('hide');
+								external_payment_getPagos();
+							} else {
+								data = { url: '<?= URL_API ?>ventas', titulo: 'Pago Venta Folio '+$('#external-payment-sale-folio').val(), cantidad: 1, external_reference: resp.result, precio: $('#external-payment-cantidad').val() };
+								$.ajax({ url: "<?= URL_API ?>pago/mercadopago", type: 'POST', data: data, dataType: 'json', async: false, success: function(callback) { location.href = callback.result; } });
+							}
+						}
+					});
+				}
+			});
+
+			$.get('<?= URL_API ?>tipo_pago/getAll/', function(tipos) {
+				$('#external-payment-tipo_pago_id').empty();
+				$.each(tipos.result, function(idx, item) { $('#external-payment-tipo_pago_id').append('<option value="'+item.id+'" data-comprobante="'+item.tiene_comprobante+'" data-automatico="'+item.es_automatico+'">'+item.nombre+'</option>'); });
+			}, 'json');
+
+			$("#external-sale-descuento").inputmask({ alias: "numeric", groupSeparator: ',', digits: 0, digitsOptional: false, mask: 99 });
+			$('#external-sale-descuento').change(function() {
+				ids = [];
+				$.each($('#tbl-external-sale-prods tbody tr'), function(index, item) { ids.push($(item).data('id')+'-'+$(item).find('td:eq(1)').text()) });
+				if($('#external-sale-id').val()==undefined || $('#external-sale-id').val()==0) {
+					$.post('<?= URL_API ?>producto/maxDescuento/', {productos: ids.join(',')}, function(resp) {
+						if(resp.result < $('#external-sale-descuento').val()) {
+							$('#external-sale-descuento').val(resp.result);
+	
+							$errLabel = $('<div class="invalid-tooltip"></div>');
+							$errLabel.html('El descuento máximo permitido es de '+resp.result+'%');
+							$('#external-sale-descuento').parents('.form-group').after($errLabel).focus();
+							$errLabel.show();	
+	
+							setTimeout(function () { $errLabel.hide() }, 3500);
+						}
+	
+						subtotal = parseFloat($('#external-sale-subtotal').val());
+						iva = parseFloat($('#external-sale-iva').val());
+						descuento = parseInt($('#external-sale-descuento').val());
+						total = (subtotal + iva) * (1 - (descuento / 100));
+						$('#external-sale-total').val(total.toFixed(2));
+					});
+				}
+			});
+		});
+	// }
+	});
+</script>

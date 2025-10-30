@@ -1,0 +1,459 @@
+<?php 
+	include 'header.phtml';
+	
+	define('MOD_ACTION_SEE',        43);
+	define('MOD_ACTION_ADD', 		44);
+	define('MOD_ACTION_VALID', 		45);
+	define('MOD_ACTION_CANCEL',		46);
+	
+	if(isset($_SESSION['sucursal']) && (!isset($solicitudes) || count($solicitudes)==0)):
+		if(in_array(MOD_ACTION_SEE, $permisos)) :
+?>
+	<link href="<?=URL_ROOT?>/assets/plugins/bootstrap-daterangepicker/daterangepicker.css" rel="stylesheet">
+	<link href="<?=URL_ROOT?>/assets/plugins/typeahead.js-master/dist/typehead-min.css" rel="stylesheet">
+	<link href="<?=URL_ROOT?>/assets/plugins/select2/dist/css/select2.min.css" rel="stylesheet" type="text/css" />
+	<link href="<?=URL_ROOT?>/assets/plugins/lightbox/css/lightbox.css" rel="stylesheet" type="text/css" />
+	<!--link href="<?=URL_ROOT?>/assets/plugins/bootstrap-datepicker/bootstrap-datepicker.min.css" rel="stylesheet" type="text/css" /-->
+
+	<div class="row page-titles">
+		<div class="col-md-5 align-self-center">
+			<h3 class="text-themecolor"><i class="fa fa-bookmark"></i> Pagos</h3>
+		</div>
+	</div>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-12">
+				<div class="card">
+					<div class="card-body">
+						<!-- <?php if(in_array(MOD_ACTION_SEE, $permisos)) : ?>
+						<button class="btn btn-success pull-right" id="btnAddCotizacion"><i class="mdi mdi-plus"></i></button>
+						<?php endif; ?> -->
+
+						<h4 class="card-title">Apartados</h4>
+						<h6 class="card-subtitle">Pagos</h6>
+
+						<div class="row">
+							<input type="hidden" id="filter-id" value="0">
+							<div class="col-sm-4">
+								<div class="form-group mb-0">
+									<div class="input-group">
+										<div class="input-group-prepend">
+											<span class="input-group-text"><i class="fa fa-calendar"></i></span>
+										</div>
+										<input class="form-control input-daterange-datepicker" type="text" id="filter-daterange" value="<?= date("d/m/Y",strtotime(date("01-m-Y"))) . ' - ' . date('d/m/Y') ?>" />
+									</div>
+								</div>
+							</div>
+							<div class="offset-sm-3 col-sm-3">
+								<div class="input-group" data-toggle="tooltip" title="Cliente">
+									<div class="input-group-prepend"><span class="input-group-text"><i class="mdi mdi-contacts"></i></span></div>
+									<select class="form-control" id="filter-client">
+										<option value="0" class="default-option">Todos</option>
+										<option class="default-option personalized hide">Personalizado</option>
+									</select>
+								</div>
+							</div>
+							<div class="col-sm-2">
+								<div class="input-group">
+									<div class="input-group" data-toggle="tooltip" title="Estatus">
+										<div class="input-group-prepend"><span class="input-group-text"><i class="fa fa-bell"></i></span></div>
+										<select class="form-control" id="filter-status">
+											<option value="0" class="default-option">Todos</option>
+											<option value="1" class="default-option">Recibidos</option>
+											<option value="2" class="default-option">Rechazados</option>
+										</select>
+									</div>
+								</div>
+							</div>
+						</div>
+						<hr>
+
+						<div class="table-responsive">
+							<table id="tbl-items" class="table table-hover table-striped">
+								<thead>
+									<tr>
+										<th>
+											Folio
+											<a href="#" data-toggle="tooltip" title="Buscar por folio" class="pull-right text-primary" id="btnFolio">
+												<i class="mdi mdi-magnify"></i>
+											</a>
+										</th>
+										<th>Fecha</th>
+										<th>
+											Cliente
+											<a href="#" data-toggle="tooltip" title="Buscar por cliente" class="pull-right text-primary" id="btnCliente">
+												<i class="mdi mdi-magnify"></i>
+											</a>
+										</th>
+										<th>Importe</th>
+										<th>Forma de Pago</th>
+										<th>#Pago</th>
+										<th>Observaciones</th>
+										<th>Estatus</th>
+									</tr>
+								</thead>
+								<tbody></tbody>
+							</table>
+						</div>
+						
+						<div class="row">
+							<div class="col-sm-6">
+								<div class="dataTables_length" id="editable-datatable_length">
+									<label>
+										<select name="editable-datatable_length" aria-controls="editable-datatable" class="form-control input-sm" id="cont">
+											<option value="10">Ver 10</option>
+											<option value="25">Ver 25</option>
+											<option value="50">Ver 50</option>
+											<option value="100">Ver 100</option>
+										</select>
+									</label>
+									<span id="reg" class="heading-text"></span>
+								</div>
+							</div>
+							<div class="col-sm-6">
+								<div class="card-body">
+									<nav aria-label="Page navigation example">
+										<ul id="pag" class="pagination pull-right"></ul>
+									</nav>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<?php if(in_array(MOD_ACTION_VALID, $permisos)) : ?>
+		<div id="frm-payment" class="modal">
+			<div class="modal-dialog modal-lg">
+				<div class="modal-content d-flex p-2">
+					<div class="modal-header">
+						<h3 class="modal-title" id="payment-title"></h3>
+					</div>
+					<div class="modal-body">
+						<form action="">
+							<br>
+							<input type="hidden" id="payment-id">
+							<div class="row">
+								<div class="col-sm-12">
+									<textarea id="payment-comentario" class="form-control form-control-sm" placeholder="Observaciones" required rows="5"></textarea>
+								</div>
+							</div>
+						</form>
+					</div>
+					<div class="modal-footer d-flex justify-content-end">
+						<button type="submit" class="btn btn-inverse waves-effect waves-light m-r-20" data-dismiss="modal">Cancelar</button>
+						<button type="submit" class="btn btn-primary waves-effect waves-light m-r 20" id="btn-save-payment"></button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<?php endif; ?>
+
+	</div>
+	<?php include 'footer.phtml';?>
+	<script src="<?=URL_ROOT?>/assets/plugins/inputmask/dist/min/jquery.inputmask.bundle.min.js"></script>
+	<script src="<?=URL_ROOT?>/assets/js/mask.init.js"></script>
+	<script src="<?=URL_ROOT?>/assets/plugins/bootstrap-daterangepicker/daterangepicker.js"></script>
+	<script src="<?=URL_ROOT?>/assets/plugins/typeahead.js-master/dist/typeahead.bundle.min.js"></script>
+	<script src="<?=URL_ROOT?>/assets/plugins/select2/dist/js/select2.full.min.js" type="text/javascript"></script>
+	<script src="<?=URL_ROOT?>/assets/plugins/lightbox/js/lightbox.js"></script>
+	<!--script src="<?=URL_ROOT?>/assets/plugins/bootstrap-datepicker/bootstrap-datepicker.min.js"></script>
+	<script src="<?=URL_ROOT?>/assets/plugins/bootstrap-datepicker/bootstrap-datepicker.es.js"></script-->
+
+	<script type="text/javascript">
+		$(function() {
+			$('#mnu-apart').addClass('active');
+			$apartadoApiUrl = '<?= URL_API ?>apartado/';
+			$apartadoDetalleApiUrl = '<?= URL_API ?>apartado_detalle/';
+			$apartadoPagoApiUrl = '<?= URL_API ?>apartado_pago/';
+			$sucursalApiUrl = '<?= URL_API ?>sucursal/';
+			$clienteApiUrl  = '<?= URL_API ?>cliente/';
+			$usuarioApiUrl  = '<?= URL_API ?>usuario/';
+			$productoApiUrl  = '<?= URL_API ?>producto/';
+			$ventaApiUrl  = '<?= URL_API ?>venta/';
+			
+			page = 0;
+			limit = $('#cont').val();
+
+			$('.input-daterange-datepicker').daterangepicker({
+				buttonClasses: ['btn', 'btn-sm'],
+				applyClass: 'btn-primary',
+				cancelClass: 'btn-inverse',
+				maxDate: '<?= date('d/m/Y') ?>',
+				locale: $dateRangeLocale,
+				ranges: $dateRanges,
+				alwaysShowCalendars: true,
+				autoApply: true
+			}, function(start, end, label) {
+				getPagos();
+			});
+			
+			getPagos();
+			function getPagos() {
+				blockPage();
+				$('#btnFolio').popover('hide');
+				$('#tbl-items tbody').empty();
+				
+				// page = parseInt($(this).attr('href'));
+				limit = $('#cont').val();
+				id = $('#filter-id').val();
+				var daterange = $('#filter-daterange').data('daterangepicker');
+				ini = daterange.startDate.format('YYYY-MM-DD');
+				fin = daterange.endDate.format('YYYY-MM-DD');
+				cli = $('#filter-client').val();
+				seller = '<?= in_array(MOD_ACTION_VALID, $permisos) ?>' == 1? 0: '<?= $_SESSION['usuario']->id ?>';
+				sta = $('#filter-status').val();
+				
+				$.get($apartadoPagoApiUrl+'getAll/'+page+'/'+limit+'/'+id+'/'+ini+'/'+fin+'/'+cli+'/'+seller+'/'+sta, function(resp) {
+					$.unblockUI();
+					if(resp.total > 0) {
+						$.each(resp.result, function(index, item) {
+							addRow(item);
+						});
+					}else{
+						$('#tbl-items tbody tr').remove();
+						$('#tbl-items tbody').append('<tr><td colspan="8"><small>No existen Pagos con ese termino</small></td></tr>');
+					}
+					doPagination(resp.total, limit, page);
+				});
+			}
+
+			function addRow(item) {
+				$('#tbl-items tr[data-ent="'+item.id+'"]').remove();
+				tr = $('<tr data-ent="'+item.id+'"></tr>');
+
+				cli = $('#filter-client option[value="'+item.cliente_id+'"]').text();
+				
+				actions = $('<div class="pull-right"></div>');
+				td = $('<td class="text-center"></td>');
+				// td.append('<a href="<?= URL_ROOT ?>/cotizacion/print/'+item.id+'?dl=1" target="_blank" data-popup="tooltip" title="Imprimir" class="btnPrint"><i class="mdi mdi-printer"></i></a> ');
+				td.append(item.folio);
+				<?php if(in_array(MOD_ACTION_CANCEL, $permisos)) : ?>
+				actions.append('<a href="#" data-popup="tooltip" title="Cancelar Pago" class="btn-pago-cancel"><i class="mdi mdi-close-circle" style="color:red;"></i></a>   ');
+				<?php endif; ?>
+				if(item.tiene_comprobante == 1) {
+					actions.append('<a href="<?= URL_ROOT ?>/data/comprobantes_pago/'+item.comprobante+'" data-popup="tooltip" title="Ver Comprobante" class="btn-pago-comprobante" data-lightbox="comprobante_'+item.id+'" data-title="Comprobante de Pago"><i class="fa fa-camera"></i></a>');
+				}
+				td.append(actions);
+				
+				tr.append(td);
+				tr.append('<td><small>'+item.fecha+'</small></td>');
+				tr.append('<td><small>'+cli.toUpperCase()+'</small></td>');
+				tr.append('<td><small>'+item.importe+'</small></td>');
+
+				// switch(item.forma_pago) {
+				// 	case '01': forma_pago = 'Efectivo'; break;
+				// 	case '02': forma_pago = 'Cheque'; break;
+				// 	case '03': forma_pago = 'Transferencia Electrónica'; break;
+				// 	case '04': forma_pago = 'Tarjeta de Crédito'; break;
+				// 	case '08': forma_pago = 'Vales de Despensa'; break;
+				// 	case '28': forma_pago = 'Tarjeta de Débito'; break;
+				// 	case '99': forma_pago = 'Por Definir'; break;
+				// 	default: forma_pago = 'Otro';
+				// }
+				tr.append('<td class="text-center"><small>'+item.tipo_pago+'</small></td>');
+
+				num_pago = item.metodo_pago == 'PUE'? 'Único': item.posicion;
+				tr.append('<td class="text-center"><small>'+num_pago+'</small></td>');
+				tr.append('<td><textarea class="form-control form-control-sm" disabled style="background: transparent; border: none" rows="3">'+item.comentario+'</textarea></td>');
+
+				estatus = item.status==1? 'RECIBIDO': item.status==2? 'RECHAZADO': 'PENDIENTE';
+				td = $('<td class="text-center"></td>');
+				td.append($('<small>'+estatus+'</small>'));
+				<?php if(in_array(MOD_ACTION_VALID, $permisos)) : ?>
+					if(item.status == 1) {
+						td.append('<a href="#" data-popup="tooltip" title="MARCAR COMO INVALIDO" class="btn-pago-down pull-right"><i class="fa fa-thumbs-down" style="color: red;"></i></a>');
+					} else {
+						td.append('<a href="#" data-popup="tooltip" title="MARCAR COMO VALIDO" class="btn-pago-up pull-right"><i class="fa fa-thumbs-up"></i></a>');
+					}
+				<?php endif; ?>
+				tr.append(td);
+
+				$('#tbl-items tbody').append(tr);
+			}
+
+			function getClients(parent) {
+				$('#'+parent+" option").not(".default-option").remove();
+				$.get($clienteApiUrl+'getAll/0/0', function(data) {
+					$.each(data.result, function(index, item) {
+						$('#'+parent).append('<option value="'+item.usuario_id+'">'+item.nombre+' '+item.apellidos+'</option>');
+					});
+					
+					// $('#'+parent).select2();
+				},'json');
+			}
+
+			getClients('filter-client');
+			
+			$('#filter-client').change(function() {
+				current = $(this).text();
+				if(current !== 'Personalizado') {
+					$('#filter-client .personalized').addClass('hide').removeAttr('selected').val(null);
+				}
+			});
+			
+			$('#filter-daterange, #filter-client, #filter-status, #cont').change(function() {
+				$('#pag li a[href="0"]').click();
+				getPagos();
+			});
+			
+			$('#cont').change(function() {
+				limit = $(this).val();
+			});
+			
+			$('body').on('click', '#pag li a', function(event) {
+				event.preventDefault();
+				page = parseInt($(this).attr('href'));
+				if(!$(this).parent().hasClass('active') && !$(this).parent().hasClass('active'))
+					getPagos();
+			});
+
+			$("html").on("mouseup", function (e) {
+				var l = $(e.target);
+				if (l[0].className.indexOf("popover") == -1) {
+					$(".popover").each(function () {
+						$(this).popover("hide");
+					});
+				}
+			});
+
+			$('#btnFolio').popover({
+				placement: 'top',
+				html:true,
+				sanitize: false, 
+				content:  '<div class="form"><div class="input-group"><input type="text" class="form-control form-control-sm" placeholder="Folio" id="buscafolioi"><div class="input-group-append"><button type="button" class="btn btn-secondary btn-sm" id="btn-busf"><i class="fa fa-search"></i></button></div></div></div>'
+			}).on('click', function(e) {
+				e.preventDefault();
+				$('#buscafolioi').keyup(function(e) { if(e.keyCode == 13) { buscaFolio(); } });
+				$('#btn-busf').click(function() { buscaFolio(); });
+			});
+			
+			$('#btnFolio').on('shown.bs.popover', function () { $('#buscafolioi').val('').focus(); });
+
+			function buscaFolio() {
+				folio = $.trim($('#buscafolioi').val());
+				if(folio != '') {
+					$('#filter-id').val(folio);
+					$('#btnFolio').popover('hide');
+					blockPage();
+					getPagos();
+					$.unblockUI();
+				}
+			}
+			
+			$('#btnCliente').popover({
+				placement: 'top',
+				html:true,
+				sanitize: false, 
+				content:  '<div class="form"><div class="input-group"><input type="text" class="form-control form-control-sm" placeholder="Nombre, RFC o razón social.." id="buscaclientei"><div class="input-group-append"><button type="button" class="btn btn-secondary btn-sm" id="btn-busc"><i class="fa fa-search"></i></button></div></div></div>'
+			}).on('click', function(e) {
+				e.preventDefault();
+				$('#buscaclientei').keyup(function(e) { if(e.keyCode == 13) { buscaCliente(); } });
+				$('#btn-busc').click(function() { buscaCliente(); });
+			});
+			$('#btnCliente').on('shown.bs.popover', function () { $('#buscaclientei').val('').focus(); });
+
+			function buscaCliente() {
+				cliente = $.trim($('#buscaclientei').val());
+				if(cliente != '') {
+					$('#btnCliente').popover('hide');
+					blockPage();
+					$('#filter-client .personalized').removeClass('hide').attr('selected', 'selected').attr('value', cliente).text("contenga: '"+cliente+"'");
+					getPagos();
+				}
+			}
+
+			<?php if(in_array(MOD_ACTION_CANCEL, $permisos)) : ?>
+				$('#tbl-items').on('click', '.btn-pago-cancel', function() {
+					id = $(this).parents('tr').data('ent');
+					swal({
+						title: "Cancelar pago",
+						text: "Esta acción es irreversible, ¿Desea Continuar?. \n",
+						type: "warning",
+						html: true,
+						showCancelButton: true,   
+						cancelButtonText: "No",
+						confirmButtonColor: "#DD6B55",   
+						confirmButtonText: "Si, continuar",
+						closeOnConfirm: true 
+					}, function() {
+						$.ajax({
+							url: $apartadoPagoApiUrl+'del/'+id,
+							type: 'PUT',
+							dataType: 'json',
+							data: {usuario: '<?= $_SESSION['usuario']->nombre.' '.$_SESSION['usuario']->apellidos ?>'},
+							success: function(resp) {
+								getPagos();
+							}
+						});
+					});
+				});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_ACTION_VALID, $permisos)) : ?>
+				lightbox.option({
+					'fitImagesInViewport': true,
+					// 'wrapAround': true
+				})
+
+				$('#tbl-items').on('click', '.btn-pago-down, .btn-pago-up', function() {
+					text = $(this).hasClass('btn-pago-down')? 'Invalidar': 'Validar';
+					id = $(this).parents('tr').data('ent');
+
+					$('#payment-id').val(id);
+					$('#frm-payment').modal('show');
+					$('#payment-title').text(text+' Pago');
+					$('#btn-save-payment').text(text);
+				});
+
+				$('#btn-save-payment').click(function() {
+					text = $(this).text();
+					comentario = $('#payment-comentario').val();
+					if(comentario == '' || comentario == null || comentario == undefined) {
+						swal({
+							type: "warning",
+							title: "Datos insuficientes",
+							text: "Debe especificar el motivo de la acción",
+							timer: 4000
+						});
+					} else {
+						data = {comentario: comentario, status: (text=='Invalidar'? 2: 1)};
+						id = $('#payment-id').val();
+						$.ajax({
+							url: $apartadoPagoApiUrl+'edit/'+id,
+							type: 'PUT',
+							async: false,
+							dataType: 'json',
+							data: data,
+							success: function(data) {
+								$('#frm-payment').modal('hide');
+								getPagos();
+							}
+						});
+					}
+				});
+
+				$('#frm-payment').on('shown.bs.modal', function() {
+					id = $('#payment-id').val();
+					$.get($apartadoPagoApiUrl+'get/'+id, function(resp) {
+						$('#payment-comentario').val(resp.result.comentario);
+					});
+				});
+
+				$('#frm-payment').on('hidden.bs.modal', function () { 
+					$('#payment-id').val(null);
+					$('#payment-comentario').val(null);
+				});
+			<?php endif; ?>
+		});
+		
+	</script>
+
+<?php 
+	else :
+		header('Location: '.URL_API.'403');
+		exit;
+	endif; 
+?>
+<?php else: include 'footer.phtml'; endif; ?>

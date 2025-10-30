@@ -1,0 +1,121 @@
+<?php 
+	include 'header.phtml';
+	if(isset($_SESSION['sucursal']) && (!isset($solicitudes) || count($solicitudes)==0)):
+?>
+	<div class="row page-titles">
+		<div class="col-md-5 align-self-center">
+			<h3 class="text-themecolor"><i class="fa fa-home"></i> Busqueda de productos</h3>
+		</div>
+	</div>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-12">
+				<div class="card">
+					<div class="card-body">
+						<div class="table-responsive">
+							<table id="tbl-busqueda" class="table table-hover table-striped">
+								<thead>
+									<tr>
+										<th class="text-center font-weight-bold">Producto</th>
+										<th class="text-center font-weight-bold">Categor&iacute;a</th>
+										<th class="text-center font-weight-bold">Precio</th>
+										<th class="text-center font-weight-bold">Stock General</th>
+										<?php $sucursales = $todo->model->sucursal->getAll()->result; foreach($sucursales as $sucursal): ?><th class="text-center font-weight-bold" id="sucursal-<?= $sucursal->id ?>"><small><?= ucfirst(mb_strtolower($sucursal->nombre)) ?></small></th><?php endforeach; ?>
+									</tr>
+								</thead>
+								<tbody></tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<?php include 'footer.phtml';?>
+	<script type="text/javascript">
+		$(function() {
+			getProductos();
+			function getProductos() { blockPage();
+				cleanTable('tbl-busqueda');
+				$('#tbl-busqueda tbody').empty();
+				$.get('<?= URL_API ?>producto/findProducto/<?= $_GET['q'] ?>/<?= $_SESSION['sucursal'] ?>', function(productos) {
+					$.each(productos, function(index, producto) { addProductoRow(producto); });
+					createTable('tbl-busqueda');
+					$.unblockUI();
+				});
+			}
+
+			function addProductoRow(producto) {
+				container = $('#tbl-busqueda tbody');
+				if(container.find('tr[data-id="'+producto.id+'"]').length == 0) {
+					tr = $('<tr data-id="'+producto.id+'"></tr>').appendTo(container);
+					tr.append('<td class="text-left"><small class="producto">'+producto.producto.toUpperCase()+'</small></td>');
+					tr.append('<td class="text-center"><small class="categoria">'+producto.categoria.toUpperCase()+'</small></td>');
+					tr.append('<td class="text-right"><small class="precio">$ '+parseFloat(producto.precio).toFixed(2)+'</small></td>');
+					tr.append('<td class="text-center"><small class="stock_general">'+producto.stock+'</small></td>');
+					<?php foreach($sucursales as $sucursal): ?>tr.append('<td class="text-center"><small class="stock_<?= $sucursal->id ?>"></small></td>');<?php endforeach; ?>
+
+					$.each(producto.stockSuc, function(index, stock) { 
+						tr.find('.stock_'+stock.sucursal_id).html(stock.final);
+					 });
+
+				} else {
+					container.find('tr[data-id="'+producto.id+'"] .stock_'+producto.sucursal_id).html(producto.final);
+				}
+			}
+
+			function cleanTable(tbl) {
+				if($.fn.dataTable.isDataTable('#'+tbl)) {
+					table = $('#'+tbl).DataTable();
+					table.destroy();
+				}
+				$("#nodata").remove();
+			}
+
+			function createTable(tbl) {
+				container = $('<div class="form-inline pull-right" style="overflow: visible"></div>');
+				counterFColumnas = 0; fColumnas = $('<select class="selectpicker" multiple data-container=".card-body" data-selected-text-format="static" id="columns-'+tbl+'" title="Mostrar/Ocultar columnas" data-width="fit"></select>').appendTo(container);
+				fColumnas.append('<option class="form-control-sm" value="'+(counterFColumnas++)+'">Producto</option>');
+				fColumnas.append('<option class="form-control-sm" value="'+(counterFColumnas++)+'">Categoría</option>');
+				fColumnas.append('<option class="form-control-sm" value="'+(counterFColumnas++)+'">Precio</option>');
+				fColumnas.append('<option class="form-control-sm" value="'+(counterFColumnas++)+'">Stock General</option>');
+
+				values = ['1', '2', '4', '5'];
+
+				counterFColumnas = 0; columnDefs = [
+					{"orderable": true, "targets": [counterFColumnas++], "visible": true},
+					{"orderable": true, "targets": [counterFColumnas++], "visible": true},
+					{"orderable": true, "targets": [counterFColumnas++], "visible": true},
+					{"orderable": true, "targets": [counterFColumnas++], 'visible': true},
+				];
+
+				<?php foreach($sucursales as $sucursal): ?> counterFColumnas++
+					fColumnas.append('<option class="form-control-sm" value="'+counterFColumnas+'">Stock <?= ucfirst(mb_strtolower($sucursal->nombre)) ?></option>');
+					values.push(counterFColumnas.toString());
+					columnDefs.push({"orderable": true, "targets": [], 'visible': true});
+				<?php endforeach; ?>
+
+				fColumnas.selectpicker('val', values);
+				fColumnas.on('changed.bs.select', function(e, index) { blockPage();
+					column = $('#'+tbl).DataTable().column(index);
+					column.visible(!column.visible());
+					$.unblockUI();
+				});
+				<?php foreach($sucursales as $sucursal): ?><?php endforeach; ?>
+
+
+				$('#'+tbl).dataTable({
+					scrollX: false,
+					paging: true,
+					pagingType: "full_numbers",
+					dom: 'Rl<"#toolbar-'+tbl+'">frtip',
+					columnDefs: columnDefs,
+					order: [0, 'asc']
+				});
+
+				$('#toolbar-'+tbl).html(container);
+				$("#"+tbl+"_filter label").hide();
+			}
+		});
+	</script>
+	<?php else: include 'footer.phtml'; endif; ?>

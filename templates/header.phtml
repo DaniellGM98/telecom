@@ -1,0 +1,139 @@
+<?php
+    include 'core/defines.php';
+	if(isset($_SESSION['usuario'])){
+        $user = $_SESSION['usuario'];
+		$username = explode(' ',$user->nombre)[0];
+		if(intval($user->usuario_tipo_id)==1 && !isset($_SESSION['sucursal'])) { $_SESSION['sucursal'] = 0; $_SESSION['usuario']['sucursal_id'] = 0; header("Refresh:0"); exit(); }
+	}else if(strlen(strstr($_SERVER['REQUEST_URI'], 'terminos_y_condiciones')) == 0) {
+        header('Location: '.URL_ROOT.'/login');
+		exit();
+	}
+
+    $urlImgUser = URL_ROOT.'/assets/images/user_profile.png';
+    if($user->foto) $urlImgUser = URL_ROOT.'/data/foto/'.md5($user->id).'.jpg';
+
+    $arrDay = array('','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo');
+	$arrMes = array('','enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre');
+	$fechaLarga = $arrDay[date('w')].date(', d \d\e ').$arrMes[date('n')].date(' \d\e Y');
+?>
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta name="description" content="">
+		<meta name="author" content="">
+		<link rel="icon" type="image/png" sizes="16x16" href="<?=URL_ROOT?>/assets/images/favicon.png">
+		<title><?= $vista . ' | ' . SITE_NAME ?></title>
+		<link href="<?=URL_ROOT?>/assets/plugins/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+		<link href="<?=URL_ROOT?>/assets/css/style.css" rel="stylesheet">
+		<link href="<?=URL_ROOT?>/assets/css/colors/blue.css" id="theme" rel="stylesheet">
+		<link href="<?=URL_ROOT?>/assets/plugins/sweetalert/sweetalert.css" rel="stylesheet" type="text/css">
+		<link href="<?=URL_ROOT?>/assets/plugins/datatables/jquery.dataTables.min.css" rel="stylesheet" type="text/css" />
+		<link href="<?=URL_ROOT?>/assets/plugins/bootstrap-select/css/bootstrap-select.min.css" rel="stylesheet" type="text/css" />
+		<link href="<?=URL_ROOT?>/assets/plugins/lightbox/css/lightbox.min.css" rel="stylesheet" type="text/css" />
+		<link href="<?=URL_ROOT?>/assets/plugins/bootstrap-daterangepicker/daterangepicker.css" rel="stylesheet">
+		<link href="<?=URL_ROOT?>/assets/plugins/typeahead.js-master/dist/typehead-min.css" rel="stylesheet">
+		<link href="<?=URL_ROOT?>/assets/plugins/select2/dist/css/select2.min.css" rel="stylesheet" type="text/css" />
+		<link href="<?=URL_ROOT?>/assets/plugins/lightbox/css/lightbox.css" rel="stylesheet" type="text/css" />
+		<meta http-equiv='cache-control' content='no-cache'>
+		<meta http-equiv='expires' content='0'>
+		<meta http-equiv='pragma' content='no-cache'>
+		<style>
+			.mdi-arrow-expand:hover { cursor: pointer; }
+			.tt-menu { max-height: 150px; overflow-y: auto; }
+		</style>
+		<script src="<?=URL_ROOT?>/assets/plugins/jquery/jquery.min.js"></script>
+	</head>
+	<body class="fix-header fix-sidebar card-no-border">
+		<?php
+			if(!isset($_SESSION['sucursal'])): include_once 'sucursal.phtml';
+			else: 
+				if($_SESSION['sucursal'] > 0){
+					include_once 'venta.phtml'; 
+					include_once 'recarga.phtml'; 
+					if(isset($solicitudes) && count($solicitudes)>0):
+						include_once 'solicitud_traspasos.phtml';
+					endif;
+				}
+			endif; 
+		?>
+		<div class="preloader">
+			<svg class="circular" viewBox="25 25 50 50">
+				<circle class="path" cx="50" cy="50" r="20" fill="none" stroke-width="2" stroke-miterlimit="10" /> </svg>
+		</div>
+		<div id="main-wrapper">
+			<header class="topbar">
+				<nav class="navbar top-navbar navbar-expand-md navbar-light">
+					<div class="navbar-header">
+						<a class="navbar-brand" href="<?= URL_ROOT ?>/ventas">
+							<b>
+								<img src="<?=URL_ROOT?>/assets/images/logo-icon.png" alt="Grupo Rivera" class="dark-logo" />
+								<img src="<?=URL_ROOT?>/assets/images/logo-light-icon.png" alt="Grupo Rivera" class="light-logo" />
+							</b>
+							<span>
+							<img src="<?=URL_ROOT?>/assets/images/logo-text.png" alt="Grupo Rivera" class="dark-logo m-t-10" />
+							<img src="<?=URL_ROOT?>/assets/images/logo-light-text.png" class="light-logo m-t-10" alt="Grupo Rivera" /></span> 
+						</a>
+					</div>
+					<div class="navbar-collapse">
+						<ul class="navbar-nav mr-auto mt-md-0">
+							<li class="nav-item"> <a class="nav-link nav-toggler hidden-md-up text-muted waves-effect waves-dark" href="javascript:void(0)"><i class="mdi mdi-menu"></i></a> </li>
+							<li class="nav-item m-l-10"> <a class="nav-link sidebartoggler hidden-sm-down text-muted waves-effect waves-dark" href="javascript:void(0)"><i class="ti-menu"></i></a> </li>
+							
+							<?php if($_SESSION['sucursal'] > 0) : ?>
+							<li class="nav-item show">
+								<a class="nav-link text-muted waves-effect waves-dark" href="javascript:void(0)">
+									<i class="mdi mdi-home fa-lg"></i> <span class="hidden-sm-down"><?= $_SESSION['sucNombre'] ?></span>
+								</a>
+							</li>
+							<li class="nav-item mnu-venta">
+								<a class="nav-link text-muted waves-effect waves-dark" href="javascript:void(0)" id="btnAddVenta-ext">
+									<i class="mdi mdi-cart fa-lg"></i> <span class="hidden-sm-down">NUEVA VENTA</span>
+								</a>
+							</li>
+							<li class="nav-item mnu-tae">
+								<a class="nav-link text-muted waves-effect waves-dark" href="javascript:void(0)" id="btnAddRecarga-ext">
+									<i class="mdi mdi-cellphone-android fa-lg"></i> <span class="hidden-sm-down">TIEMPO AIRE</span>
+								</a>
+							</li>
+							<?php endif; ?>
+							<!--li class="nav-item">
+								<a class="nav-link text-muted waves-effect waves-dark" href="<?= URL_ROOT ?>/reportes" >
+									<i class="mdi mdi-chart-pie fa-lg"></i> <span class="hidden-sm-down">REPORTES</span>
+								</a>
+							</li-->
+						</ul>
+						<ul class="navbar-nav my-lg-0">
+							<li class="nav-item search-box">
+								<a class="nav-link text-muted waves-effect waves-dark" href="javascript:void(0)"><i class="ti-search"></i></a>
+								<form class="app-search" method="GET" action="<?= URL_ROOT ?>/buscar">
+									<input type="text" class="form-control" placeholder="Buscar producto por marca, modelo o código..." name="q">
+									<a class="srh-btn"><i class="ti-close"></i></a>
+								</form>
+							</li>
+							<li class="nav-item dropdown">
+								<a class="nav-link dropdown-toggle text-muted waves-effect waves-dark" href="" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+									<img src="<?= $urlImgUser ?>" alt="Usuario" class="profile-pic" />
+								</a>
+								<div class="dropdown-menu dropdown-menu-right scale-up">
+									<ul class="dropdown-user">
+										<li>
+											<div class="dw-user-box">
+												<div class="u-text">
+													<h4><?= $user->nombre.' '.$user->apellidos ?></h4>
+													<p class="text-muted"><?= $user->email ?></p>
+												</div>
+											</div>
+										</li>
+										<li role="separator" class="divider"></li>
+										<li><a href="<?= URL_ROOT ?>/usuario/logout/"><i class="fa fa-power-off"></i> Cerrar Sesión</a></li>
+									</ul>
+								</div>
+							</li>
+						</ul>
+					</div>
+				</nav>
+			</header> <?php if(isset($_SESSION['sucursal'])): include 'sidebar.phtml'; endif; ?>
+		<div class="page-wrapper">

@@ -1,0 +1,128 @@
+<?php 
+	if(isset($_SESSION['sucursal']) && isset($solicitudes) && count($solicitudes)>0):
+?>
+	<div id="frm-sol-traspasos" class="modal" data-backdrop="static">
+		<div class="modal-dialog modal-lg">
+			<div class="modal-content d-flex p-2">
+				<div class="modal-header">
+					<div class="col-sm-12">
+						<h3 class="modal-title"><i class="fa fa-exchange"></i> Solicitudes de traspasos pendientes</h3>
+					</div>
+				</div>
+				<div class="modal-body">
+					<?php foreach($solicitudes as $solicitud): ?>
+						<div class="card text-center b-all" id="card<?= $solicitud->id ?>">
+							<div class="card-header" data-toggle="collapse" data-target="#sol<?= $solicitud->id ?>" aria-expanded="false">
+								<span class="mdi mdi-arrow-expand pull-right btn-toggle" data-toggle="tooltip" title="Mostrar detalles"></span>
+								<h4 class="card-title">
+								<?= $solicitud->suc_origen->nombre . " - " . $solicitud->empleado->nombre . " " . $solicitud->empleado->apellidos . " (Folio <strong>$solicitud->folio</strong>)" ?>
+								</h4>
+							</div>
+							<div class="card-body collapse show" id="sol<?= $solicitud->id ?>">
+								<div class="table-responsive">
+									<table class="table table-hover table-striped m-0 table-sm">
+										<thead>
+											<th class="text-left">Producto</th>
+											<th class="text-center">Categor&iacute;a</th>
+											<th class="text-center">Marca</th>
+											<th class="text-center">Cantidad</th>
+										</thead>
+										<tbody>
+											<?php foreach($solicitud->detalles as $detalle): ?>
+												<tr>
+													<td class="text-left"><small class="producto"><?= mb_strtoupper($detalle->producto) . (($detalle->sku!=null && strlen($detalle->sku)>0)? " - <strong>" . $detalle->sku ."</strong>": "") ?><small></td>
+													<td class="text-center"><small class="categoria"><?= ucfirst(mb_strtolower($detalle->categoria)) ?><small></td>
+													<td class="text-center"><small class="marca"><?= ucfirst(mb_strtolower($detalle->marca)) ?><small></td>
+													<td class="text-center"><small class="cantidad"><?= $detalle->cantidad ?><small></td>
+												</tr>
+											<?php endforeach; ?>
+										</tbody>
+									</table>
+								</div>
+							</div>
+							<div class="card-footer text-muted">
+								<div class="pull-right acciones" data-fecha="<?= $solicitud->fecha ?>">
+									<button class="btn btn-sm btn-info btnAceptar" data-id="<?= $solicitud->id ?>"><span class="fa fa-check" title="Aceptar" data-toggle="tooltip"></span></button>
+									<button class="btn btn-sm btn-danger btnRechazar" data-id="<?= $solicitud->id ?>"><span class="fa fa-close" title="Rechazar" data-toggle="tooltip"></span></button>
+								</div>
+
+								<?php 
+									$fecha = strtotime($solicitud->fecha); 
+									$time = time(); 
+									$diferencia = $time - $fecha; 
+									$segundosByDia = 86400; $dias = intdiv($diferencia, 86400); 
+									$segundosByHora = 3600; $diferencia = $diferencia - ($segundosByDia * $dias); $horas = intdiv($diferencia, $segundosByHora);
+									$segundosByMinuto = 60; $diferencia = $diferencia - ($segundosByHora * $horas); $minutos = intdiv($diferencia, $segundosByMinuto);
+									echo "<small>Hace " . ($dias>0? "$dias días, ": "") . ($horas>0? "$horas horas, ": "") . "$minutos minutos</small>";
+								?>
+							</div>
+						</div>
+					<?php endforeach; ?>
+				</div>
+				<div class="modal-footer d-flex justify-content-end">
+					<button type="submit" class="btn btn-inverse waves-effect waves-light m-r-20" id="btnLogout" data-dismiss="modal">Cerrar Sesi&oacute;n</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<?php include 'footer.phtml';?>
+	<script type="text/javascript">
+		window.addEventListener('load', function() {
+			$(function () {
+				$('#frm-sol-traspasos').modal('show');
+				$('#frm-sol-traspasos').submit(function () { return false; });
+
+				$(document).on('click', '.btn-toggle', function(e) {
+					e.stopImmediatePropagation();
+					element = $(this).parents('.card-header').next('.card-body');
+					element.collapse('toggle');
+				});
+
+				$(document).on('click', '.btnRechazar', function(e) { e.preventDefault(); blockPage();
+					element = $(this);
+					id = element.attr('data-id');
+					fecha = element.parents('.acciones').attr('data-fecha').split(' ');
+					dia = fecha[0]; hora = fecha[1];
+					swal({ title: "Rechazar traspaso", text: "Se rechazará el traspaso solicitado el día <strong>"+dia+"</strong>. ¿Deseas continuar?", type: "warning", html: true, showCancelButton: true, cancelButtonText: "No", confirmButtonColor: "#DD6B55", confirmButtonText: "Si, continuar", closeOnConfirm: false }, 
+						function(confirm) {
+							if(confirm) {
+								$.ajax({url: '<?= URL_API ?>traspaso/edit/'+id, type: 'PUT', dataType: 'json', data: {status: '3'}, success: function(resp) {
+									if(resp.response) {
+										if($('.card:not(#card'+id.replace('sol', '')+')').length == 0) { swal({ type: "success", title: "¡Listo!", text: "Se rechazó el traspaso" }, function() { location.reload(); }); }
+										else { 
+											element.parents('.card').remove();
+											swal({ type: "success", title: "¡Listo!", text: "Se rechazó el traspaso", timer: 4000 });
+										}
+
+										$.unblockUI();
+									} else { swal({ type: "warning", title: "Oops!", text: resp.message, timer: 4000 }); }
+								}});
+							} else { $.unblockUI(); }
+						}
+					);
+				});
+
+				$(document).on('click', '.btnAceptar', function(e) { e.preventDefault(); blockPage();
+					element = $(this);
+					id = element.attr('data-id');
+					$.ajax({url: '<?= URL_API ?>traspaso/aceptarTraspaso/'+id, type: 'PUT', success: function(resp) {
+						if(resp.response) {
+							if($('.card:not(#card'+id.replace('sol', '')+')').length == 0) { swal({ type: "success", title: "¡Listo!", text: "Se registraron todos los cambios" }, function() { location.reload(); }); }
+							else { 
+								element.parents('.card').remove();
+								swal({ type: "success", title: "¡Listo!", text: "Se registraron todos los cambios", timer: 4000 });
+							}
+						} else { swal({ type: "warning", title: "Oops!", text: resp.message, timer: 4000 }); }
+						$.unblockUI();
+					}});
+				});
+
+				$('#btnLogout').click(function(e) {
+					e.preventDefault();
+					window.location.href = '<?= URL_ROOT ?>/usuario/logout/';
+				});
+			});
+		});
+		
+	</script>
+<?php endif; ?>

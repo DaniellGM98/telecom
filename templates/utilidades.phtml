@@ -1,0 +1,359 @@
+<?php 
+	include 'header.phtml';
+
+	define('MOD_UTIL_ADD',		69);
+	define('MOD_UTIL_EDIT',		70);
+	define('MOD_UTIL_DEL',		71);
+
+	if($_SESSION['usuario']->usuario_tipo_id == 3) {
+		header('Location: '.URL_ROOT.'/tienda');
+		exit;
+	}
+
+	if(isset($_SESSION['sucursal']) && (!isset($solicitudes) || count($solicitudes)==0)):
+?>
+
+	<div class="row page-titles">
+		<div class="col-md-5 align-self-center">
+			<h3 class="text-themecolor"><i class="fa fa-dollar"></i> Utilidades</h3>
+		</div>
+	</div>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-12">
+				<div class="card">
+					<div class="card-body">
+						<?php if(in_array(MOD_UTIL_ADD, $permisos)) : ?>
+						<button class="btn btn-success pull-right" id="btnAdd"><i class="mdi mdi-plus"></i></button>
+						<?php endif; ?>
+						<!-- <div class="col-sm-3 pull-right form">
+							<div class="input-group">
+								<input type="text" id="bus" placeholder="Buscar por nombre" class="form-control">
+								<div class="input-group-append">
+									<button type="button" class="btn btn-secondary btn-sm" id="btn-bus"><i class="fa fa-search"></i></button>
+								</div>
+							</div>
+						</div> -->
+
+						<h4 class="card-title">Utilidades</h4>
+						<h6 class="card-subtitle">Crea, edita y elimina rangos de utilidades</h6>
+
+						<div class="table-responsive">
+							<table id="tbl-items" class="table table-hover table-striped">
+								<thead>
+									<tr>
+										<th class="text-center"><select class="form-control" id="marcas"></select></th>
+										<th class="text-center"><select class="form-control" id="categorias"></select></th>
+										<th class="text-center">Utilidad</th>
+										<th class="text-center">Acciones</th>
+									</tr>
+								</thead>
+								<tbody></tbody>
+							</table>
+						</div>
+						
+						<div class="row">
+							<div class="col-sm-6">
+								<div class="dataTables_length" id="editable-datatable_length">
+									<label>
+										<select name="editable-datatable_length" aria-controls="editable-datatable" class="form-control input-sm" id="cont">
+											<option value="10">Ver 10</option>
+											<option value="25">Ver 25</option>
+											<option value="50">Ver 50</option>
+											<option value="100">Ver 100</option>
+										</select>
+									</label>
+									<span id="reg" class="heading-text"></span>
+								</div>
+							</div>
+							<div class="col-sm-6">
+								<div class="card-body">
+									<nav aria-label="Page navigation example">
+										<ul id="pag" class="pagination pull-right"></ul>
+									</nav>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!--Modales -->
+		<div id="frm-item" class="modal" >
+			<div class="modal-dialog">
+				<div class="modal-content d-flex p-2">
+					<div class="modal-header">
+						<h3 class="modal-title">Datos de la utilidad</h3>
+					</div>
+					<div class="modal-body">
+						<form class="form p-t-20">
+							<div class="form-group">
+								<label for="item-marca_id">Marca</label>
+								<div class="input-group">
+									<select class="form-control" id="item-marca_id"></select>
+								</div>
+							</div>
+							<div class="form-group">
+								<label for="item-prod_categoria_id">Categoria</label>
+								<div class="input-group">
+									<select class="form-control" id="item-prod_categoria_id"></select>
+								</div>
+							</div>
+							<div class="form-group">
+								<label for="item-utilidad">Utilidad</label>
+								<div class="input-group">
+									<input type="text" class="form-control" id="item-utilidad" placeholder="Utilidad">
+								</div>
+							</div>
+							<input type="hidden" id="item-id" value="0">
+						</form>
+					</div>
+					<div class="modal-footer d-flex justify-content-end">
+						<button type="submit" class="btn btn-inverse waves-effect waves-light m-r-20" data-dismiss="modal">Cancelar</button>
+						<?php if(in_array(MOD_UTIL_ADD, $permisos) || in_array(MOD_UTIL_EDIT, $permisos)) : ?>
+						<button type="submit" class="btn btn-success waves-effect waves-light" id="btnSave">Guardar</button>
+					 	<?php endif; ?>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+	</div>
+	<?php include 'footer.phtml';?>
+	<script src="<?=URL_ROOT?>/assets/plugins/inputmask/dist/min/jquery.inputmask.bundle.min.js"></script>
+	<script src="<?=URL_ROOT?>/assets/js/mask.init.js"></script>
+
+	<script type="text/javascript">
+		$(function() {
+
+			$apiUrl = '<?= URL_API ?>marca_utilidad/';
+
+			getItems(0,10);
+
+			$('#categorias, #marcas').change(function() {
+				getItems(0, 10);
+			});
+
+			$("#item-utilidad").inputmask({ alias: "numeric", groupSeparator: ',', digits: 2, digitsOptional: false });
+			$.get($apiUrl.replace('marca_utilidad', 'prod_categoria')+'getAll/0/0', function(categorias) {
+				if(categorias.result.length > 0) {
+					$.each(categorias.result, function(index, item) {
+						$('#item-prod_categoria_id').append($('<option value="'+item.id+'">'+item.nombre+'</option>'));
+						$('#categorias').append($('<option value="'+item.id+'">'+item.nombre+'</option>'));
+					});
+				}
+				$('#categorias').prepend($('<option value="0" selected="selected">Todas las categorías</option>'));
+			}, 'json');
+
+			$.get($apiUrl.replace('marca_utilidad', 'marca')+'getAll/0/0', function(marcas) {
+				if(marcas.result.length > 0) {
+					$.each(marcas.result, function(index, item) {
+						$('#item-marca_id').append($('<option value="'+item.id+'">'+item.nombre+'</option>'));
+						$('#marcas').append($('<option value="'+item.id+'">'+item.nombre+'</option>'));
+					});
+				}
+				$('#marcas').prepend($('<option value="0" selected="selected">Todas las marcas</option>'));
+			}, 'json');
+
+			function getItems(pag, lim) {
+				blockPage();
+				$('#tbl-items tbody').empty();
+				bus ='';
+				bus = $.trim($('#bus').val());
+				if(bus == '') bus = 0;;
+
+				categorias = $('#categorias option:selected').val();
+				if(categorias == undefined) { categorias = 0; }
+				marcas = $('#marcas option:selected').val();
+				if(marcas == undefined) { marcas = 0; }
+				$.get($apiUrl+'getAll/'+pag+'/'+lim+'/'+categorias+'/'+marcas, function(resp) {
+					$.unblockUI();
+					if(resp.total > 0) {
+						$.each(resp.result, function(index, item) {
+							addRow(item);
+						});
+					}else{
+						$('#tbl-items tbody').append('<tr><td colspan="4">No existen utilidades registradas</td></tr>');
+					}
+					doPagination(resp.total, lim, pag);
+				}, 'json');
+			}
+
+			function addRow(item) {
+				tr = $('<tr data-id="'+item.id+'"></tr>');
+				if($('#tbl-items [data-id="'+item.id+'"]').length > 0) {
+					tr = $('#tbl-items [data-id="'+item.id+'"]').parents('tr');
+					tr.empty();
+				}
+
+				tr.append('<td class="text-center">'+item.marca+'</td>');
+				tr.append('<td class="text-center"> '+item.categoria+'</td>');
+				tr.append('<td class="text-center">$ '+item.utilidad+'%</td>');
+
+				tda = $('<td class="text-center"data-id="'+item.id+'"></td>');
+				<?php if(in_array(MOD_UTIL_EDIT, $permisos)) : ?>
+				tda.append('<a href="#" data-popup="tooltip" title="Editar" class="btnEdit"><i class="mdi mdi-pencil"></i></a> ');
+				<?php endif; ?>
+				<?php if(in_array(MOD_UTIL_DEL, $permisos)) : ?>
+				tda.append('<a href="#" data-popup="tooltip" title="Eliminar" class="btnDel"><i class="mdi mdi-delete" style="color:red;"></i></a>');
+				<?php endif; ?>
+				tr.append(tda);
+
+				$('#tbl-items tbody').append(tr);
+			}
+		
+			$('#cont').change(function() { cont = $(this).val(); getItems(0,cont); });
+
+			<?php if(in_array(MOD_UTIL_ADD, $permisos)) : ?>
+			$('#btnAdd').click(function(e) {
+				e.preventDefault();
+				clearData();
+				$('#frm-item').modal('show');
+			});
+			<?php endif; ?>
+
+			function clearData() {
+				$('.invalid-tooltip').remove();
+				$('#frm-item input').val('');
+				$('#item-id').val(0);
+			}
+
+			$('#frm-item').on('shown.bs.modal', function () { $('#item-utilidad').focus(); });
+			$('#frm-item').on('hidden.bs.modal', function () { });
+
+			$('tbody').on('click', '.btnEdit', function(event) {
+				event.preventDefault();
+				$('#frm-item .validation-error-label').remove();
+				id = $(this).parents('td').data('id');
+				blockPage();
+				clearData();
+				$.get($apiUrl+'get/'+id, function(data) {
+					$.each(data.result, function(index, val) {
+						$('#item-'+index).val(val).trigger('change');
+					});
+					
+					$.unblockUI();
+					$('#frm-item').modal('show');
+				});
+			});
+
+			<?php if(in_array(MOD_UTIL_DEL, $permisos)) : ?>
+			$('tbody').on('click', '.btnDel', function(event) {
+				event.preventDefault();
+				id = $(this).parents('td').data('id');
+				trp = $('#tbl-items [data-id="'+id+'"]').parents('tr');
+				nom = trp.find('td:eq(0)').text();
+				swal({   
+					title: "Eliminar utilidad",
+					text: "No podrá restaurar la utilidad <strong>"+nom+"</strong>",
+					type: "warning",   
+					html: true,
+					showCancelButton: true,   
+					cancelButtonText: "Cancelar",
+					confirmButtonColor: "#DD6B55",   
+					confirmButtonText: "Si, eliminar",
+					closeOnConfirm: false 
+				}, function() {
+					//data: {fk_usuario: 1, fk_session: 1}, 
+					blockPage();
+					$.ajax({
+						url: $apiUrl+'del/'+id,
+						type: 'PUT',
+						dataType: 'json',
+						success: function(resp) {
+							if(resp.response) {
+								getItems(0, 10);
+								swal({
+									type: "success",
+									title: "¡Listo!",   
+									text: "Se eliminó la utilidad",   
+									timer: 4000
+								});
+							}
+							$.unblockUI();
+						}
+					});
+				});
+			});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_UTIL_ADD, $permisos) || in_array(MOD_UTIL_EDIT, $permisos)) : ?>
+			$('#btnSave').click(function() {
+				$('.invalid-tooltip').remove();
+				id = parseInt($('#item-id').val());
+				data = {};
+
+				$.each($('#frm-item').find('input, select'), function(index, elem) {
+					ide = $(elem).attr('id').replace('item-','');
+					data[ide] = $.trim($(elem).val());
+				});
+
+				if(data.utilidad=='') { data.utilidad = 0; }
+				blockPage();
+				if(id == 0) {
+					$.post($apiUrl+'add/', data, function(resp) {
+						if(resp.response) {
+							data.id = resp.result;
+							// addRow(data);
+							getItems(0, 10);
+							$('#item-id').val(0);
+							$('#frm-item').modal('hide');									
+							swal({
+								type: "success",
+								title: "¡Listo!",   
+								text: "Se guardaron los datos correctamente.",   
+								timer: 4000
+							});
+						}else{
+							swal({
+								type: "warning",
+								title: "Oops!",   
+								text: resp.message,   
+								timer: 4000
+							});
+						}
+						$.unblockUI();
+					},'json');
+				} else {
+					$.ajax({
+						url: $apiUrl+'edit/'+id,
+						type: 'PUT',
+						dataType: 'json',
+						data: data, 
+					}).done(function(resp) {
+						if(resp.response) {
+							// addRow(data);
+							getItems(0, 10);
+							$('#item-id').val(0);
+							$('#frm-item').modal('hide');
+							swal({
+								type: "success",
+								title: "¡Listo!",   
+								text: "Se guardaron los datos correctamente.",   
+								timer: 4000
+							});
+						}else{
+							swal({
+								type: "warning",
+								title: "Oops!",   
+								text: resp.message,   
+								timer: 4000
+							});
+						}
+						$.unblockUI();
+					});
+				}
+			});
+			<?php endif; ?>
+
+			$('body').on('click', '#pag li a', function(event) {
+				event.preventDefault();
+				pag = parseInt($(this).attr('href'));
+				cont = parseInt($('#cont').val());
+				if(!$(this).parent().hasClass('active') && !$(this).parent().hasClass('active'))
+					getItems(pag, cont);
+			});
+		});
+		
+	</script>
+<?php else: include 'footer.phtml'; endif; ?>

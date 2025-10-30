@@ -1,0 +1,205 @@
+<?php 
+	if(!defined('MOD_RECARGAS_ADD')) {	define('MOD_RECARGAS_ADD',	92); }
+	if(!defined('MOD_RECARGAS_EDIT')) {	define('MOD_RECARGAS_EDIT',	94); }
+	if(!defined('MOD_RECARGAS_DEL')) {	define('MOD_RECARGAS_DEL',	93); }
+?>
+<?php if(in_array(MOD_RECARGAS_ADD, $permisos) || in_array(MOD_RECARGAS_EDIT, $permisos)) : ?>
+	<div id="frm-recarga" class="modal" >
+		<div class="modal-dialog modal-lg">
+			<div class="modal-content d-flex p-2">
+				<div class="modal-header">
+					<h3 class="modal-title">Datos de la Recarga</h3>
+				</div>
+				<div class="modal-body">
+					<form class="form p-t-20">
+						<div class="row">
+							<div class="col-sm-6" id="sucursal">
+								<div class="form-group">
+									<label for="recarga-sucursal_id">Sucursal</label>
+									<div class="input-group">
+										<div class="input-group-prepend">
+											<span class="input-group-text">
+												<i class="ti-money"></i>
+											</span>
+										</div>
+										<select id="recarga-sucursal_id" class="form-control"></select>
+									</div>
+								</div>
+							</div>
+							<div class="col-sm-6 hide" id="monto">
+								<div class="form-group">
+									<label for="recarga-recarga_costo_id">Monto</label>
+									<div class="input-group">
+										<div class="input-group-prepend">
+											<span class="input-group-text">
+												<i class="ti-money"></i>
+											</span>
+										</div>
+										<select id="recarga-recarga_costo_id" class="form-control"></select>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="row hide" id="telefonos">
+							<div class="col-sm-6">
+								<div class="form-group">
+									<label for="recarga-numero">Tel&eacute;fono</label>
+									<div class="input-group">
+										<div class="input-group-prepend">
+											<span class="input-group-text">
+												<i class="ti-mobile"></i>
+											</span>
+										</div>
+										<input type="text" class="form-control phone-inputmask" id="recarga-numero" placeholder="Tel&eacute;fono" required>
+									</div>
+								</div>
+							</div>
+							<div class="col-sm-6">
+								<div class="form-group">
+								<label for="recarga-repetir_numero">Confirma tu tel&eacute;fono</label>
+									<div class="input-group">
+										<div class="input-group-prepend">
+											<span class="input-group-text">
+												<i class="ti-mobile"></i>
+											</span>
+										</div>
+										<input type="text" class="form-control phone-inputmask" id="recarga-repetir_numero" placeholder="Confirma tu tel&eacute;fono" required>
+									</div>
+								</div>
+							</div>
+						</div>
+						<input type="hidden" id="recarga-id" value="0">
+					</form>
+				</div>
+				<div class="modal-footer d-flex justify-content-end">
+					<button type="submit" class="btn btn-inverse waves-effect waves-light m-r-20" data-dismiss="modal">Cancelar</button>
+					<button type="submit" class="btn btn-success waves-effect waves-light" id="btnSaveRecarga">Guardar</button>
+				</div>
+			</div>
+		</div>
+	</div>
+<?php endif; ?>
+<script type="text/javascript">
+	// window.onload = function() {
+	window.addEventListener('load', function() {
+		$(function() {
+			<?php if(in_array(MOD_RECARGAS_ADD, $permisos)): ?>
+				<?php if(intval($_SESSION['sucursal']) == 0): ?>
+					$.get('<?= URL_API ?>sucursal/getAll/', function(sucursales) {
+						$.each(sucursales.result, function(index, sucursal) { $('#recarga-sucursal_id').append('<option value="'+sucursal.id+'">'+sucursal.nombre.toUpperCase()+'</option>'); });
+						$('#recarga-sucursal_id').prepend('<option value="0" selected="selected">SELECCIONA LA SUCURSAL</option>');
+						$('#sucursal').removeClass('hide');
+					}, 'json');
+				<?php else: ?>
+					$.get('<?= URL_API ?>sucursal/get/<?= $_SESSION['sucursal'] ?>', function(sucursal) {
+						$('#recarga-sucursal_id').append('<option value="'+sucursal.result.id+'">'+sucursal.result.nombre.toUpperCase()+'</option>');
+						$('#sucursal').addClass('hide');
+						$('#monto').removeClass('hide');
+					}, 'json');
+				<?php endif; ?>
+
+
+				$('#btnAddRecarga, #btnAddRecarga-ext').click(function(e) { e.preventDefault();
+					$('#frm-recarga').modal('show');
+				});
+
+				$('#frm-recarga').on('shown.bs.modal', function () { 
+					<?php if(intval($_SESSION['sucursal']) == 0): ?>$('#recarga-sucursal_id').val(0).trigger('change');<?php else: ?>$('#recarga-recarga_costo_id').val(0).trigger('change');<?php endif; ?>
+					$.get('<?= URL_API ?>recarga_costo/getAll/', function(montos) {
+						container = $('#recarga-recarga_costo_id'); container.empty();
+						$.each(montos.result, function(index, item) { container.append('<option value="'+item.id+'">$ '+parseFloat(item.monto).toFixed(2)+'</option>'); });
+						container.prepend('<option value="0" selected="selected">SELECCIONA UNA OPCIÓN</option>')
+					}, 'json');
+				});
+				$('#frm-recarga').on('hidden.bs.modal', function () { $('#recarga-recarga_costo_id').val(0).trigger('change'); });
+
+				$('#recarga-sucursal_id').change(function() {
+					$('.invalid-tooltip').remove();
+					if(parseInt($(this).val()) > 0) {
+						$('#monto').removeClass('hide');
+					} else {
+						$('#monto').addClass('hide');
+					}
+					$('#recarga-recarga_costo_id').val(0).trigger('change');
+				});
+
+				$('#recarga-recarga_costo_id').change(function() {
+					$('.invalid-tooltip').remove();
+					if(parseInt($(this).val()) > 0) {
+						$('#telefonos').removeClass('hide');
+						$('#recarga-numero').val(undefined).focus();
+						$('#recarga-repetir_numero').val(undefined);
+					} else {
+						$('#telefonos').addClass('hide');
+					}
+				});
+
+				$('#btnSaveRecarga').click(function() {
+					$('.invalid-tooltip').remove();
+					id = parseInt($('#recarga-id').val());
+					data = {};
+
+					$.each($('#frm-recarga').find('input, select'), function(index, elem) {
+						ide = $(elem).attr('id').replace('recarga-','');
+						data[ide] = $.trim($(elem).val());
+					});
+					data.numero = data.numero.replace('(','').replace(')','').replace(' ','').replace('-','').replace(/_/g, '');
+					data.repetir_numero = data.repetir_numero.replace('(','').replace(')','').replace(' ','').replace('-','').replace(/_/g, '');
+
+					$errLabel = $('<div class="invalid-tooltip"></div>');
+					if(data.sucursal_id == 0) {
+						$errLabel.html('Debe seleccionar la sucursal de venta');
+						$('#recarga-sucursal_id').after($errLabel);
+						$errLabel.show();
+					} else if(data.recarga_costo_id == 0) {
+						$errLabel.html('Debe seleccionar el monto de la recarga');
+						$('#recarga-recarga_costo_id').after($errLabel);
+						$errLabel.show();
+					} else if(data.numero.length != 10) {
+						$errLabel.html('El número de teléfono debe ser a 10 dígitos');
+						$('#recarga-numero').focus().after($errLabel);
+						$errLabel.show();
+					} else if(data.repetir_numero.length != 10) {
+						$errLabel.html('El número de teléfono debe ser a 10 dígitos');
+						$('#recarga-repetir_numero').focus().after($errLabel);
+						$errLabel.show();
+					} else if(data.repetir_numero != data.numero) {
+						$errLabel.html('Los números deben de coincidir');
+						$('#recarga-numero').focus().after($errLabel).val('');
+						$('#recarga-repetir_numero').val('');
+						$errLabel.show();
+					} else {
+						blockPage();
+						if(id == 0) {
+							data.status = 1;
+							$.post('<?= URL_API ?>recarga/add/', data, 
+								function(resp) {
+									if(resp.response) {
+										data.id = resp.result;
+										// getRecargas();
+										$('#recarga-id').val(0);
+										$('#frm-recarga').modal('hide');
+										swal({ type: "success", title: "¡Listo!", text: "Se guardaron los datos correctamente.", timer: 4000 });
+									} else { swal({ type: "warning", title: "Oops!", text: resp.message, timer: 4000 }); }
+									$.unblockUI();
+							},'json');
+						} else {
+							$.ajax({ url:'<?= URL_API ?>recarga/edit/'+id, type:'PUT', dataType:'json', data:data, }).done(
+								function(resp) {
+									if(resp.response) {
+										// getRecargas();
+										$('#recarga-id').val(0);
+										$('#frm-recarga').modal('hide');
+										swal({ type: "success", title: "¡Listo!", text: "Se guardaron los datos correctamente.", timer: 4000 });
+									} else { swal({ type: "warning", title: "Oops!", text: resp.message, timer: 4000 }); }
+									$.unblockUI();
+								}
+							);
+						}
+					}
+				});
+			<?php endif; ?>
+		});
+	// }
+	});
+</script>

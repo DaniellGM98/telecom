@@ -1,0 +1,1154 @@
+<?php 
+	include 'header.phtml';
+
+	define('MOD_ACTION_ADD', 	26);
+	define('MOD_ACTION_EDIT', 	124);
+	define('MOD_ACTION_DEL', 	27);
+	define('MOD_PRODUCTO_ADD', 	17);
+	define('MOD_PROVEEDOR_ADD', 	114);
+	define('MOD_PROVEEDOR_EDIT', 	115);
+
+	if(isset($_SESSION['sucursal']) && (!isset($solicitudes) || count($solicitudes)==0)):
+?>
+	<link href="<?=URL_ROOT?>/assets/plugins/bootstrap-daterangepicker/daterangepicker.css" rel="stylesheet">
+	<link href="<?=URL_ROOT?>/assets/plugins/typeahead.js-master/dist/typehead-min.css" rel="stylesheet">
+
+	<div class="row page-titles">
+		<div class="col-md-5 align-self-center">
+			<h3 class="text-themecolor"><i class="mdi mdi-inbox-arrow-down"></i> Entrada de producto</h3>
+		</div>
+	</div>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-12">
+				<div class="card">
+					<div class="card-body">
+						<div class="pull-right">
+							<?php if(in_array(MOD_PROVEEDOR_ADD, $permisos)) : ?>
+								<button class="btn btn-info" id="btnAddProveedor"><i class="mdi mdi-account-circle"></i> Distribuidor</button>
+							<?php endif; ?>
+							<?php if(in_array(MOD_PRODUCTO_ADD, $permisos)) : ?>
+								<button class="btn btn-primary" id="btnAddProducto"><i class="fa fa-cube"></i> Producto</button>
+							<?php endif; ?>
+							<?php if(in_array(MOD_ACTION_ADD, $permisos)) : ?>
+								<button class="btn btn-success" id="btnAdd"><i class="mdi mdi-plus"></i> Entrada</button>
+							<?php endif; ?>
+						</div>
+
+						<h4 class="card-title">Entradas</h4>
+						<h6 class="card-subtitle">Entradas de producto al inventario</h6>
+
+						<div class="row">
+							<div class="col-sm-3">
+								<div class="form-group mb-0">
+									<div class="input-group">
+										<div class="input-group-prepend">
+											<span class="input-group-text"><i class="fa fa-calendar"></i></span>
+										</div>
+										<input class="form-control input-daterange-datepicker" type="text" id="fechas" value="<?= date("d/m/Y") . ' - ' . date('d/m/Y') ?>" />
+									</div>
+								</div>
+							</div>
+							<div class="col-sm-2">
+								<div class="input-group sucursal">
+									<div class="input-group-prepend"><span class="input-group-text"><i class="fa fa-home"></i></span></div>
+									<select class="form-control" id="busSuc">
+										<option value="-1">Sucursal</option>
+										<option value="0">Todas</option>
+									</select>
+								</div>
+							</div>
+							<div class="col-sm-2">
+								<div class="input-group">
+									<div class="input-group-prepend"><span class="input-group-text"><i class="fa fa-cubes"></i></span></div>
+									<select class="form-control" id="busCat">
+										<option value="0">Todas las categorías</option>
+										<?php foreach ($categorias as $cat) {
+											echo '<option value="'.$cat->id.'">'.$cat->nombre.'</option>';
+										}
+										?>
+									</select>
+								</div>
+							</div>
+							<div class="col-sm-5">
+								<div class="input-group">
+									<div class="input-group-prepend">
+										<span class="input-group-text"><i class="fa fa-cube"></i></span>
+									</div>
+									<input type="text" id="bus" placeholder="Buscar por nombre, modelo o SKU" class="form-control">
+									<div class="input-group-append">									
+										<button type="button" class="btn btn-secondary btn-sm" id="btn-bus"><i class="fa fa-search"></i></button>
+									</div>
+								</div>
+							</div>
+						</div>
+						<hr>
+
+						<div class="table-responsive">
+							<table id="tbl-items" class="table table-hover table-striped">
+								<thead>
+									<tr>
+										<th>Fecha</th>
+										<th>
+											Folio 
+											<a href="#" data-toggle="tooltip" title="Buscar por folio" class="pull-right text-primary" id="btnFolio">
+												<i class="mdi mdi-magnify"></i>
+											</a>
+										</th>
+										<th>Sucursal</th>
+										<th>Categoría</th>
+										<th>Producto</th>
+										<!-- <th>SKU</th> -->
+										<th class="text-center">Cantidad</th>
+										<th class="text-right">Costo</th>
+										<th class="text-right">Importe</th>
+										<!--th>Acciones</th-->
+									</tr>
+								</thead>
+								<tbody>
+									<tr><td colspan="8"><small>Seleccione la sucursal para ver las ventas del periodo</small></td></tr>
+								</tbody>
+							</table>
+						</div>
+						
+						<div class="row">
+							<div class="col-sm-6">
+								<div class="dataTables_length" id="editable-datatable_length">
+									<label>
+										<select name="editable-datatable_length" aria-controls="editable-datatable" class="form-control input-sm" id="cont">
+											<option value="10">Ver 10</option>
+											<option value="25">Ver 25</option>
+											<option value="50">Ver 50</option>
+											<option value="100">Ver 100</option>
+										</select>
+									</label>
+									<span id="reg" class="heading-text"></span>
+								</div>
+							</div>
+							<div class="col-sm-6">
+								<div class="card-body">
+									<nav aria-label="Page navigation example">
+										<ul id="pag" class="pagination pull-right"></ul>
+									</nav>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<?php if(in_array(MOD_ACTION_ADD, $permisos) || in_array(MOD_ACTION_EDIT, $permisos)) : ?>
+		<div id="frm-item" class="modal" data-backdrop="static">
+			<div class="modal-dialog modal-xl">
+				<div class="modal-content d-flex p-2">
+					<div class="modal-header">
+						<h3 class="modal-title"><i class="mdi mdi-inbox-arrow-down"></i> Nueva Entrada</h3>
+						<input type="hidden" id="item-id" value="0">
+					</div>
+					<div class="modal-body">
+						<div class="row">
+							<div class="col-sm-12">
+								<form class="form form-horizontal">
+									<div class="row">
+										<div class="col-sm-12">
+											<div class="form-group row">
+												<label for="item-sucursal_id" class="col-form-label text-right col-sm-2 sucursal">Sucursal</label>
+												<div class="col-sm-4 sucursal">
+													<select class="form-control" id="item-sucursal_id"></select>
+												</div>
+												<label for="item-proveedor_id" class="col-form-label text-right col-sm-2 proveedor">Proveedor</label>
+												<div class="col-sm-4 proveedor">
+													<select class="form-control" id="item-proveedor_id"></select>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="row">
+										<div class="col-sm-12">
+											<div class="form-group row mb-0">
+												<label for="item-folio" class="col-form-label text-right col-sm-2">Folio</label>
+												<div class="col-sm-4">
+													<input type="text" class="form-control" id="item-folio" placeholder="Folio" readonly="readonly">
+												</div>
+												<label for="item-prod_categoria_id" class="col-form-label text-right col-sm-2 ent-cat">Categor&iacute;a</label>
+												<div class="col-sm-4 ent-cat">
+													<select class="form-control" id="item-prod_categoria_id"></select>
+												</div>
+											</div>
+										</div>
+									</div>
+									<hr>
+									<table class="table table-hover table-striped table-sm" id="tbl-prods">
+										<thead>
+											<tr>
+												<th>Producto</th>
+												<th style="width:12%;" class="text-right">Cantidad</th>
+												<th style="width:15%;" class="text-right">Costo</th>
+												<th style="width:17%;" class="text-right">Importe</th>
+												<th style="width:40px;"></th>
+											</tr>
+										</thead>
+										<tbody>
+											
+										</tbody>
+										<tfoot>
+											<tr>
+												<td class="w-75"><input type="text" id="busProd" placeholder="Buscar por nombre, modelo o SKU" class="form-control form-control-sm"><input type="hidden" id="prod-id" value="0"></td>
+												<td><input type="text" class="form-control form-control-sm" id="prod-cantidad" placeholder="Cant" required maxlength="4"></td>
+												<td><input type="text" class="form-control form-control-sm" id="prod-costo" placeholder="0.00" inputmode="numeric" maxlength="10"></td>
+												<td><input type="text" class="form-control form-control-sm text-right" id="prod-importe" placeholder="0.00" inputmode="numeric" maxlength="10" readonly=""></td>
+												<td><button class="btn btn-sm btn-secondary pull-right" type="button" id="prodAdd"><i class="fa fa-check"></i></button></td>
+											</tr>
+											<tr class="hide" id="sku">
+												<td colspan="5"><textarea class="form-control" id="prod-imei" cols="30" rows="3"></textarea></td>
+											</tr>
+										</tfoot>
+									</table>
+									<hr>
+
+									<div class="row">
+										<div class="col-sm-12">
+											<div class="form-group row">
+												<small class="text-danger col-sm-6"></small>
+												<label for="item-total" class="col-form-label text-right col-sm-2">Total</label>
+												<div class="col-sm-4">
+													<input type="text" class="form-control text-right" id="item-total" placeholder="0.00" readonly="">
+												</div>
+											</div>
+										</div>
+									</div>
+								</form>                    			
+							</div>
+						</div>
+					</div>
+					<div class="modal-footer d-flex justify-content-end">
+						<button type="submit" class="btn btn-inverse waves-effect waves-light m-r-20" data-dismiss="modal">Cancelar</button>
+						<button type="submit" class="btn btn-success waves-effect waves-light" id="btnSave">Guardar</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<?php endif; ?>
+		<?php if(in_array(MOD_PRODUCTO_ADD, $permisos)) : ?>
+		<div id="frm-producto" class="modal" data-backdrop="static">
+			<div class="modal-dialog">
+				<div class="modal-content d-flex p-2">
+					<div class="modal-header">
+						<h3 class="modal-title"><i class="mdi mdi-inbox-arrow-down"></i> Nuevo producto</h3>
+					</div>
+					<div class="modal-body">
+						<div class="row">
+							<div class="col-sm-12">
+								<form class="form form-horizontal">
+									<div class="row">
+										<div class="col-sm-12">
+											<div class="form-group row">
+												<label for="producto-prod_categoria_id" class="col-form-label text-right col-sm-2 sucursal">Categoria</label>
+												<div class="col-sm-10 sucursal">
+													<select class="form-control" id="producto-prod_categoria_id"></select>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="row">
+										<div class="col-sm-12">
+											<div class="form-group row">
+												<label for="producto-nombre" class="col-form-label text-right col-sm-2">Nombre</label>
+												<div class="col-sm-10">
+													<input type="text" class="form-control" id="producto-nombre" placeholder="Nombre">
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="row">
+										<div class="col-sm-12">
+											<div class="form-group row">
+												<label for="producto-precio" class="col-form-label text-right col-sm-2">Precio</label>
+												<div class="col-sm-10">
+													<input type="text" class="form-control" id="producto-precio" placeholder="Precio">
+												</div>
+											</div>
+										</div>
+									</div>
+								</form>
+							</div>
+						</div>
+					</div>
+					<div class="modal-footer d-flex justify-content-end">
+						<button type="submit" class="btn btn-inverse waves-effect waves-light m-r-20" data-dismiss="modal">Cancelar</button>
+						<button type="submit" class="btn btn-success waves-effect waves-light" id="btnSaveProducto">Guardar</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<?php endif; ?>
+		<?php if(in_array(MOD_PROVEEDOR_ADD, $permisos) || in_array(MOD_PROVEEDOR_EDIT, $permisos)) : ?>
+		<div id="frm-proveedor" class="modal" >
+			<div class="modal-dialog">
+				<div class="modal-content d-flex p-2">
+					<div class="modal-header">
+						<h3 class="modal-title">Datos del Distribuidor</h3>
+					</div>
+					<div class="modal-body">
+						<form class="form p-t-20">
+							<div class="form-group">
+								<label for="proveedor-nombre">Nombre</label>
+								<div class="input-group">
+									<div class="input-group-prepend">
+										<span class="input-group-text" id="basic-addon1">
+											<i class="ti-user"></i>
+										</span>
+									</div>
+									<input type="text" class="form-control" id="proveedor-nombre" placeholder="Ingresa el Nombre" required>
+								</div>
+							</div>
+							<div class="form-group">
+								<label for="proveedor-telefono">Tel&eacute;fono</label>
+								<div class="input-group">
+									<div class="input-group-prepend">
+										<span class="input-group-text" id="basic-addon1">
+											<i class="fa fa-phone"></i>
+										</span>
+									</div>
+									<input type="text" class="form-control phone-inputmask" id="proveedor-telefono" placeholder="Tel&eacute;fono" required>
+								</div>
+							</div>
+							<div class="form-group">
+								<label for="proveedor-correo">Email</label>
+								<div class="input-group">
+									<div class="input-group-prepend">
+										<span class="input-group-text" id="basic-addon1">
+											<i class="ti-email"></i>
+										</span>
+									</div>
+									<input type="text" class="form-control email-inputmask" id="proveedor-correo" placeholder="Email" required>
+								</div>
+							</div>
+							<input type="hidden" id="proveedor-id" value="0">
+						</form>
+					</div>
+					<div class="modal-footer d-flex justify-content-end">
+						<button type="submit" class="btn btn-inverse waves-effect waves-light m-r-20" data-dismiss="modal">Cancelar</button>
+						<button type="submit" class="btn btn-success waves-effect waves-light" id="btnSaveProveedor">Guardar</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<?php endif; ?>
+		
+	</div>
+	<?php include 'footer.phtml';?>
+	<script src="<?=URL_ROOT?>/assets/plugins/inputmask/dist/min/jquery.inputmask.bundle.min.js"></script>
+	<script src="<?=URL_ROOT?>/assets/js/mask.init.js"></script>
+	<script src="<?=URL_ROOT?>/assets/plugins/bootstrap-daterangepicker/daterangepicker.js"></script>
+	<script src="<?=URL_ROOT?>/assets/plugins/typeahead.js-master/dist/typeahead.bundle.min.js"></script>
+
+	<script type="text/javascript">
+		$(function() {
+			$apiUrl = '<?= URL_API ?>prod_entrada/';
+			$categoria_id = 0;
+			$categoria_sku = '';
+			$('.input-daterange-datepicker').daterangepicker({
+				buttonClasses: ['btn', 'btn-sm'],
+				applyClass: 'btn-primary',
+				cancelClass: 'btn-inverse',
+				maxDate: '<?= date('d/m/Y') ?>',
+				locale: $dateRangeLocale,
+				ranges: $dateRanges,
+				alwaysShowCalendars: true,
+				autoApply: true
+			}, function(start, end, label) {
+				getItems(0,10);
+			});
+
+			$.get($apiUrl.replace('prod_entrada','sucursal')+'getAll/', function(data) {
+				$.each(data.result, function(index, item) {
+					$('#busSuc').append('<option value="'+item.id+'">'+item.nombre+'</option>');
+				});
+			},'json');
+
+			/*$.get($apiUrl.replace('prod_entrada','sucursal')+'getAll/', function(data) {
+				$.each(data.result, function(index, item) {
+					$('#item-sucursal_id, #busSuc').append('<option value="'+item.id+'">'+item.nombre+'</option>');
+				});
+				if(data.result.length == 1) $('.sucursal').addClass('hide');
+
+				$.get($apiUrl.replace('prod_entrada','proveedor')+'getAll/', function(data) {
+					$.each(data.result, function(index, item) {
+						$('#item-proveedor_id').append('<option value="'+item.id+'">'+item.nombre+'</option>');
+					});
+					if(data.result.length == 1) $('.proveedor').addClass('hide');
+					//getItems(0,10); 
+
+				},'json');
+			},'json');*/
+
+			function getItems(pag, lim) {
+				$('#btnFolio').popover('hide');
+				$('#tbl-items tbody').empty();
+				bus ='';
+				bus = $.trim($('#bus').val());
+				if(bus == '') bus = 0;;
+				suc = $('#busSuc').val();
+				if(suc == -1){
+					$('#tbl-items tbody').append('<tr><td colspan="8"><small>Seleccione la sucursal para ver las ventas del periodo</small></td></tr>');
+					return false;
+				}
+				blockPage();
+				prov = 0;//$('#lst-pre').val();
+				var fechas = $('#fechas').data('daterangepicker');
+				ini = fechas.startDate.format('YYYY-MM-DD');
+				fin = fechas.endDate.format('YYYY-MM-DD');
+				cat = $('#busCat').val();
+				$.get($apiUrl+'getAll/'+ini+'/'+fin+'/'+pag+'/'+lim+'/'+suc+'/'+prov+'/'+bus+'/'+cat, function(resp) {
+					$.unblockUI();
+					total = 0;
+					if(resp.total > 0) { 
+						$.each(resp.result, function(index, item) {
+							if(parseFloat(item.total) > 0) { addRow(item); total++; }
+						});
+					}else{
+						$('#tbl-items tbody').append('<tr data-ent="0"><td colspan="9"><small>No existen productos con ese termino</small></td></tr>');
+					}
+					doPagination(total, lim, pag);
+				});
+			}
+
+			function addRow(item) {
+				$('#tbl-items tbody tr[data-ent="0"]').remove();
+				tr = $('<tr data-ent="'+item.id+'"></tr>');
+				if($('#tbl-items [data-id="'+item.id+'"]').length > 0) {
+					tr = $('#tbl-items [data-id="'+item.id+'"]').parents('tr');
+					tr.empty();
+				}
+
+				rspan = item.detalles.length;
+				tr.append('<td rowspan="'+rspan+'"><small>'+item.fecha+'</small></td>');
+				btnCancel = '';
+				btnEdit = '';
+
+				if(/*moment().format('DD/MM/YYYY') == item.fecha &&*/ <?= in_array(MOD_ACTION_EDIT, $permisos)? 'true': 'false' ?>) {
+					btnEdit = '<a href="#" data-popup="tooltip" title="Editar" class="btnEdit pull-right"><i class="mdi mdi-pencil"></i></a>';
+				}
+				<?php if(in_array(MOD_ACTION_DEL, $permisos)) : ?>
+					btnCancel = '<a href="#" data-popup="tooltip" title="Cancelar" class="btnDel pull-right"><i class="mdi mdi-close-circle" style="color:red;"></i></a>';
+				<?php endif; ?>
+				tr.append('<td rowspan="'+rspan+' "data-id="'+item.id+'"><small>'+item.folio+btnCancel+btnEdit+'</small></td>');
+				suc = $('#busSuc option[value="'+item.sucursal_id+'"]').text();
+				tr.append('<td rowspan="'+rspan+'"><small>'+suc+'</small></td>');
+				$.each(item.detalles, function(index, det) {
+					tr.append('<td class="text-center"><small>'+det.categoria+'</small></td>');
+					tr.append('<td><small>'+det.marca+' '+det.nombre+' '+(det.tamano==null? '': det.tamano)+(det.sku!=null? ' - <strong>'+det.sku+'</strong>': '')+'</small></td>');
+					// tr.append('<td><small>'+det.sku+'</small></td>');
+					tr.append('<td class="text-center"><small>'+det.cantidad+'</small></td>');
+					tr.append('<td class="text-right"><small>$ '+det.costo+'</small></td>');
+					tr.append('<td class="text-right"><small>$ '+det.importe+'</small></td>');
+					
+					$('#tbl-items tbody').append(tr);
+					tr = $('<tr data-ent="'+item.id+'"></tr>');
+				});
+			}
+		
+			$('#bus').keyup(function(e) { if(e.keyCode == 13) { getItems(0, $('#cont').val()); } });
+			$('#btn-bus').click(function(e) { getItems(0, $('#cont').val()); });
+			$('#cont').change(function() { cont = $(this).val(); getItems(0,cont); });
+			$('#busSuc').change(function() { getItems(0,$('#cont').val()); });
+			$('#busCat').change(function() { getItems(0,$('#cont').val()); });
+
+			$('#btnFolio').popover({
+				placement: 'top',
+				html:true,
+				sanitize: false, 
+				content:  '<div class="form"><div class="input-group"><input type="text" class="form-control form-control-sm" placeholder="Folio" id="buscafolioi"><div class="input-group-append"><button type="button" class="btn btn-secondary btn-sm" id="btn-busf"><i class="fa fa-search"></i></button></div></div></div>'
+			}).on('click', function(e) {
+				e.preventDefault();
+				$('#buscafolioi').keyup(function(e) { if(e.keyCode == 13) { buscaFolio(); } });
+				$('#btn-busf').click(function() { buscaFolio(); });
+			});
+			$('#btnFolio').on('shown.bs.popover', function () { $('#buscafolioi').val('').focus(); });
+
+			function buscaFolio() {
+				folio = $.trim($('#buscafolioi').val());
+				if(folio != '') {
+					$('#btnFolio').popover('hide');
+					blockPage();
+					$('#tbl-items tbody').empty();
+					$.get($apiUrl+'buscaFolio/'+folio, function(resp) {
+						$.unblockUI();
+						if(resp.total > 0) {
+							$.each(resp.result, function(index, item) {
+								addRow(item);
+							});
+						}else{
+							$('#tbl-items tbody').append('<tr><td colspan="7"><small>No existen entradas con ese folio</small></td></tr>');
+						}
+						doPagination(resp.total, 10, 0);
+					});
+				}
+			}
+
+			$('#frm-item').on('show.bs.modal', function() {
+				$('#item-sucursal_id, #item-proveedor_id, #item-prod_categoria_id').empty();
+				$.get('<?= URL_API ?>venta/getInfoVenta/', function(info) {
+					$('#item-sucursal_id').empty().append('<option value="0">SELECCIONA</option>');
+					$.each(info.sucursales, function(id, sucursal) { $('#item-sucursal_id').append('<option value="'+sucursal.id+'">'+sucursal.nombre.toUpperCase()+'</option>'); });
+					if(info.sucursales.length == 1) $('.sucursal').addClass('hide');
+
+					$.each(info.proveedores, function(id, proveedor) { $('#item-proveedor_id').append('<option value="'+proveedor.id+'">'+proveedor.nombre.toUpperCase()+'</option>'); });
+					if(info.proveedores.length == 1) { $('.proveedor').addClass('hide'); }
+
+					$('#item-prod_categoria_id').append('<option value="0">TODAS</option>');
+					$.each(info.categorias, function(index, categoria) { $('#item-prod_categoria_id').append('<option value="'+categoria.id+'">'+categoria.nombre.toUpperCase()+'</option>'); });
+				}, 'json');
+			});
+
+			$('#item-prod_categoria_id').change(function() {
+				clearDataProd();
+			});
+
+			<?php if(in_array(MOD_PRODUCTO_ADD, $permisos)): ?>
+				$('#frm-producto').on('show.bs.modal', function() {
+					$('#producto-prod_categoria_id').empty().append('<option value="0">--- SELECCIONE UNA CATEGORÍA ---</option>');
+					$.get('<?= URL_API ?>prod_categoria/getAll/', function(categorias) {
+						$.each(categorias.result, function(index, categoria) { $('#producto-prod_categoria_id').append('<option value="'+categoria.id+'">'+categoria.nombre.toUpperCase()+'</option>'); });
+						$('#producto-prod_categoria_id option:first').prop('selected', true);
+						$('#producto-prod_categoria_id').trigger('change');
+					}, 'json');
+				});
+
+				$('#btnAddProducto').click(function(e) {
+					e.preventDefault();
+					$('#frm-producto').modal('show');
+				});
+
+				$('#producto-prod_categoria_id').change(function() {
+					value = $(this).val();
+					if(parseInt(value) > 0) { $('#producto-nombre, #producto-precio').val('').closest('.row').removeClass('hide'); }
+					else { $('#producto-nombre, #producto-precio').val('').closest('.row').addClass('hide'); }
+				});
+
+				$("#producto-precio").inputmask({ alias: "numeric", groupSeparator: ',', digits: 2, digitsOptional: false, placeholder: '0' });
+
+				$('#btnSaveProducto').click(function(e) { e.preventDefault();
+					$('.invalid-tooltip').remove();
+					$errLabel = $('<div class="invalid-tooltip"></div>');
+
+					data = { prod_categoria_id: parseInt($('#producto-prod_categoria_id').val()), nombre: $.trim($('#producto-nombre').val()), precio: parseFloat($('#producto-precio').val()) };
+					if(data.prod_categoria_id == 0) {
+						$errLabel.html('Debe seleccionar una categoría de la lista');
+						$('#producto-prod_categoria_id').after($errLabel).focus();
+						$errLabel.show();
+					} else if(data.nombre.length == 0) {
+						$errLabel.html('Debe ingresar el nombre del producto');
+						$('#producto-nombre').after($errLabel);
+						$errLabel.show();
+					} else if(data.precio == 0) {
+						$errLabel.html('Debe ingresar el precio del producto');
+						$('#producto-precio').after($errLabel);
+						$errLabel.show();
+					} else {
+						blockPage();
+						$.post('<?= URL_API ?>producto/add/', data, function(resp) {
+							if(resp.response) {
+								$('#frm-producto').modal('hide');
+								swal({ type: "success", title: "¡Listo!", text: "Se registro el producto exitosamente.", timer: 4000 });
+							} else { swal({ type: "warning", title: "Oops!", text: resp.message, timer: 4000 }); }
+							$.unblockUI();
+						},'json');
+					}
+				});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_ACTION_EDIT, $permisos)) : ?>
+				$('tbody').on('click', '.btnEdit', function(e) {
+					e.preventDefault();
+					// clearData();
+					clearDataProd();
+					tr = $(this).parents('tr');
+					id = tr.attr('data-ent');
+					$('#item-id').val(id);
+					$.get('<?= URL_API ?>prod_entrada/get/'+id, function(data) { data = data.result;
+						$('#item-sucursal_id').val(data.sucursal_id).prop('disabled', true);
+						$('#item-proveedor_id').val(data.proveedor_id).prop('disabled', true);
+						$('#item-folio').val(data.folio);
+
+						container = $('#tbl-prods tbody'); container.empty();
+						$.each(data.detalles, function(index, item) {
+							tr = $('<tr data-id="'+item.id+'"></tr>').appendTo(container);
+							tr.append('<td class="text-left"><small class="producto">'+item.producto+'</small></td>');
+							tr.append('<td class="text-right"><small class="cantidad">'+item.cantidad+'</small></td>');
+							tr.append('<td class="text-right"><small class="costo">'+item.costo+'</small></td>');
+							tr.append('<td class="text-right importe"><small class="importe">'+item.importe+'</small></td>');
+							tr.append('<td><div class="pull-rigth"><button class="btn btn-sm btn-danger pull-right prodDel" type="button"><i class="fa fa-trash"></i></button></div></td>');
+							if(item.codigo!=undefined && item.codigo.length>0) { container.append('<tr class="sku" data-id="'+item.id+'"><td colspan="5"><textarea disabled="disabled" class="form-control">'+item.codigo+'</textarea></td></tr>'); }
+						});
+						$('#btnSave').hide('hide');
+						$('#btnSave').prev('button').html('Cerrar');
+						$('#item-total').val(parseFloat(data.total).toFixed(2));
+
+						if(moment().format('YYYY-MM-DD') != data.fecha.substring(0,10)){
+							$('#tbl-prods tfoot, .ent-cat').addClass('hide');
+						}
+						
+						$('#frm-item').modal('show');
+					}, 'json');
+
+					$('#frm-item .modal-title').html('<i class="mdi mdi-inbox-arrow-down"></i> Actualizar Entrada');
+				});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_ACTION_ADD, $permisos)) : ?>
+			$('#btnAdd').click(function(e) {
+				e.preventDefault();
+				clearData();
+				clearDataProd();
+
+				$('#frm-item .modal-title').html('<i class="mdi mdi-inbox-arrow-down"></i> Nueva Entrada');
+				$('#item-sucursal_id, #item-proveedor_id').prop('disabled', false);
+
+				$('#tbl-prods tbody').empty();
+				$('#btnSave').show();
+				$('#btnSave').prev('button').html('Cancelar');
+				$('#item-total').val('0.00');
+
+				$('#tbl-prods tfoot, .ent-cat').removeClass('hide');
+
+				$('#frm-item').modal('show');
+				// getSigFolio();
+			});
+
+			$('#item-sucursal_id').change(function() {
+				getSigFolio();
+			});
+
+			function getSigFolio() {
+				if($('#item-sucursal_id').val() > 0){
+					$.get('<?= URL_ROOT ?>/prod_entrada/sigFolio/'+$('#item-sucursal_id').val(), function(folio) {
+						clearDataProd();
+						$('#item-folio').val(folio);
+					},'json');
+				}
+			}
+
+			var fndProds = new Bloodhound({
+				initialize: false,
+				datumTokenizer: Bloodhound.tokenizers.obj.whitespace('value'),
+				queryTokenizer: Bloodhound.tokenizers.whitespace,
+				remote: {
+					wildcard: '%QUERY',
+					url: '<?= URL_API ?>producto/find/%QUERY',
+					replace: function(url, uriEncodedQuery) {
+						prod_categoria_id = $('#item-prod_categoria_id').val();
+						if(!prod_categoria_id) return url.replace('%QUERY', uriEncodedQuery);
+						return url.replace('%QUERY', uriEncodedQuery) + '/0/' + encodeURIComponent(prod_categoria_id);
+					}
+				}
+			});
+			// var fndProds = new Bloodhound({
+			//   datumTokenizer: Bloodhound.tokenizers.obj.whitespace('value'),
+			//   queryTokenizer: Bloodhound.tokenizers.whitespace,
+			//   remote: {
+			// 	url: $apiUrl.replace('prod_entrada', 'producto')+'find/%QUERY',
+			// 	wildcard: '%QUERY'
+			//   }
+			// });
+
+			$('#busProd').typeahead({
+					hint: true,
+					highlight: true,
+			  		minLength: 3
+			  	}, 
+			  	{
+				  limit: 60,
+				  //name: 'id',
+				  display: 'producto',
+				  source: fndProds
+			});
+
+			$('#busProd').change(function() { 
+				$('.invalid-tooltip').remove();
+				$('#frm-item small.text-danger').html('');
+				if($.trim($(this).val()) == '') {
+					$('#prod-id').val(0);
+					$categoria_id = 0;
+					$categoria_sku = '';
+				}
+			});
+
+			$('#busProd').bind('typeahead:select', function(ev, suggestion) {
+				$('.invalid-tooltip').remove();
+				$('#frm-item small.text-danger').html('');
+				$('#prod-id').val(suggestion.id);
+				if(!prodExists(suggestion.id)) {
+					$.get($apiUrl.replace('prod_entrada', 'prod_categoria')+'get/'+suggestion.prod_categoria_id, function(categoria) {
+						if(categoria.response) {
+							$('#prod-id').data('cat',categoria.result.nombre);
+							$categoria_id = categoria.result.prod_categoria_id;
+							$categoria_sku = categoria.result.sku_nombre!=null? categoria.result.sku_nombre.toUpperCase(): '';
+							if(parseInt(categoria.result.tiene_sku)==1) { 
+								$('tr#sku').removeClass('hide').find('textarea').attr('placeholder', categoria.result.sku_nombre.toUpperCase()).val('');
+								$('#prod-cantidad').prop('readonly', true);
+								$('#prod-costo').focus();
+							} else {
+								$('tr#sku').addClass('hide');
+								$('#prod-cantidad').prop('readonly', false).focus();
+							}
+						}
+					}, 'json');
+				}
+			});
+
+			$('#busProd').keyup(function(event) {
+				if(event.keyCode == 8 || event.keyCode == 46)
+					$('#prod-id').val(0);
+			});
+
+			function prodExists(prod) {
+				if($('#tbl-prods [data-id="'+prod+'"]').length > 0) {
+				  	$errLabel = $('<div class="invalid-tooltip">Ya existe el producto</div>');
+				  	$('#frm-item small.text-danger').html('Ya existe el producto');
+				  	$('#busProd').after($errLabel).select().focus();
+					$errLabel.show();
+					return true;
+				}
+				return false;
+			}
+
+			$("#prod-cantidad").inputmask({ alias: "numeric"});
+			$("#prod-costo").inputmask({
+				alias: "numeric", groupSeparator: ',', digits: 2, digitsOptional: false, placeholder: '0'
+			});
+
+			$("#prod-cantidad, #prod-costo, #prod-imei").change(function() {
+				calcImporte();
+			});
+
+			function calcImporte() {
+				if(!$('#prod-cantidad').prop('readonly')) { cant = parseInt($('#prod-cantidad').val()); }
+				else { cant = 0; $.each($.trim($('#prod-imei').val()).split('\n'), function(index, item) { if(item.length>0) { cant++; } }); }
+				if(isNaN(cant)) cant = 0;
+				costo = parseFloat($('#prod-costo').val());
+				if(isNaN(costo)) costo = 0;
+				importe = cant * costo;
+				$('#prod-importe').val(importe.toFixed(2));
+			}
+
+			$("#prod-cantidad, #prod-costo").keyup(function(event) { if(event.keyCode == 13) addProducto(); });
+			$('#prodAdd').click(function() { addProducto(); });
+
+			function addProducto() {
+				global = [];
+				$.each($('tr.imei:visible'), function(){
+					varriable = $(this).find('textarea').val().split(', ');
+					$.each(varriable, function(index, item){
+						global.push(item);
+					}); 
+				});
+				$('#frm-item small.text-danger').html('');
+				prod_id = $('#prod-id').val();
+				prod_cat = $('#prod-id').data('cat');
+				prod = $.trim($('#busProd').val());
+				cant = $.trim($('#prod-cantidad').val());
+				costo = $.trim($('#prod-costo').val());
+				imp = $.trim($('#prod-importe').val());
+				arrImeiLinea = $.trim($('#prod-imei').val()).split('\n');
+				arrImei = [];
+
+				$.each(arrImeiLinea, function(index, item) {
+									if($.trim(item).length>0){
+										arrImei.push($.trim(item));
+									}
+								});
+
+				if(!prodExists(prod_id) && (prod.length == 0 || prod_id == 0)) {
+				  	$('#frm-item small.text-danger').html('Debe elegir un producto de la lista');
+				  	$('#busProd').focus();
+					return;
+				}else if(cant.length==0 && !$('#prod-cantidad').prop('readonly')) {
+				  	$('#frm-item small.text-danger').html('Debe ingresar la cantidad');
+				  	$('#prod-cantidad').focus();
+					return;
+				}else if(costo.length == 0) {
+				  	$('#frm-item small.text-danger').html('Debe ingresar el costo');
+				  	$('#prod-costo').focus();
+					return;
+				} else if($('tr#sku').is(':visible') && arrImei.length==0) {
+					$('#frm-item small.text-danger').html('Debe proporcionar todos los '+$('#prod-imei').attr('placeholder')+' de los productos');
+					$('#prod-imei').focus();
+					return;
+				}
+
+				sucursal_id = parseInt($('#item-sucursal_id').val());
+				data = {id: prod_id, nombre: prod, cantidad: cant, costo: costo, importe: imp, categoria: prod_cat};
+				if(prod.length > 0 && (cant.length>0 || $('#prod-cantidad').prop('readonly')) && costo.length > 0 && imp.length > 0 && $('#prod-id').val() > 0) {
+					if(!prodExists($('#prod-id').val())) {
+						if($('#sku:visible').length>0) { errores = [];
+							data.importe = data.costo;
+							$('#prod-imei').val('');
+							arrSku = []; agregar = true;
+							blockPage();
+							$.get('<?= URL_API ?>/prod_entrada_detalle/getListaSkuDisp/'+prod_id, function(disponibles) { disp = disponibles.skuDisponibles; 
+								// ent = disponibles.entradas;
+								$.each(arrImei, function(index, item) {
+									if((disp.length==0 || !disp.includes(item)) && !arrSku.includes(item)) {
+										// if(ent.length==0 || !ent.includes(item)) {
+											arrSku.push(item);
+										// } else { agregar = false; errores.push(item); }
+									} else { agregar = false; errores.push(item); }
+								});
+
+								var sku_duplicate_add = [];
+								$.each(arrSku, function (index, item) {
+								  if ($.inArray(item, global) != -1) {
+								    sku_duplicate_add.push(item);
+								  }
+								});
+								
+								// FILTRO QUITAR
+								difference_add = arrSku.filter((x) => !sku_duplicate_add.includes(x));
+								//global = global.concat(arrSku);
+								global = global.concat(difference_add);
+								
+								// QUITAR DUPLICADOS
+								Array.prototype.unique = (function (a) {
+								  return function () {
+								    return this.filter(a);
+								  };
+								})(function (a, b, c) {
+								  return c.indexOf(a, b + 1) < 0;
+								});
+								
+								// COMPARAR EN LA BASE
+								var data_without_filter = JSON.stringify(Object.assign({}, difference_add));
+								var difference;
+								var sku_duplicate_database = [];
+								if(difference_add.length > 0){
+								$.ajax({
+								  url: "<?= URL_API ?>/prod_entrada/getsku",
+								  type: "POST",
+								  dataType: "json",
+								  contentType: "application/json; charset=utf-8",
+								  data: data_without_filter,
+								  success: function (datos) {
+									if (datos != null && datos.length != 0) {
+										$.each(datos, function (index, item) {
+											if (difference_add.includes(item.sku)) {
+											sku_duplicate_add.push(item.sku);
+											}
+										});
+										$cadena = sku_duplicate_add.join("\n");
+										if (datos.length != 0) {
+											$("#frm-item small.text-danger").html(
+											$categoria_sku +
+												" REGISTRADOS PREVIAMENTE: \n" +
+												sku_duplicate_add.join("<br>")
+											);
+										}
+										// FILTRO QUITAR
+										difference = arrImei.filter((x) => !sku_duplicate_add.includes(x));
+										difference = difference.unique();
+										$("#prod-imei").val(difference.join("\n") + "\n");
+									} else if (datos.length == 0) {
+										difference_add = difference_add.unique();
+										$("#prod-imei").val(difference_add.join("\n") + "\n");
+										if (agregar) {
+											data.arrImei = difference_add;
+											agregarProducto(data);
+										} else {
+											errores = errores.concat(sku_duplicate_add);
+											$("#frm-item small.text-danger").html(
+											$categoria_sku + " REGISTRADOS PREVIAMENTE: \n" + errores.join("<br>")
+											);
+										}
+									}
+									$.unblockUI();
+								  },
+								});
+							}else{ $("#frm-item small.text-danger").html(
+											$categoria_sku +
+												" REGISTRADOS PREVIAMENTE: \n" +
+												errores.join("<br>")
+											);
+									$.unblockUI();
+										}
+							}, 'json');
+						} else { 
+							agregarProducto(data);
+						}
+					}
+				}
+			}
+			function agregarProducto(data) {
+				if($('#btnSave').is(':visible')) {
+					container = $('#tbl-prods tbody');
+					tr = $('<tr data-id="'+data.id+'"></tr>').appendTo(container);
+					tr.append('<td data-cat="'+data.categoria+'"><small class="producto">'+data.nombre+'</small></td>');
+					tr.append('<td class="text-right"><small class="cantidad">'+(data.arrImei==undefined? data.cantidad: data.arrImei.length)+'</small></td>');
+					tr.append('<td class="text-right"><small class="costo">'+data.costo+'</small></td>');
+					tr.append('<td class="text-right importe"><small class="importe">'+(data.arrImei==undefined? data.importe: parseFloat(data.arrImei.length*parseFloat(data.importe)).toFixed(2))+'</small></td>');
+					tr.append('<td><div class="pull-rigth"><button class="btn btn-sm btn-danger pull-right prodDel" type="button"><i class="fa fa-trash"></i></button></div></td>');
+					if(data.arrImei != undefined) { container.append('<tr class="imei" data-id="'+data.id+'"><td colspan="5"><textarea disabled="disabled" class="form-control">'+data.arrImei.join(', ')+'</textarea></td></tr>'); }
+					calcTotal();
+					clearDataProd();
+					$('#busProd').focus();
+				} else {
+					data = { prod_entrada_id: $('#item-id').val(), producto_id: $('#prod-id').val(), cantidad: $('#prod-cantidad').val(), costo: $('#prod-costo').val(), importe: $('#prod-importe').val() };
+					if($('#prod-imei').is(':visible')) { data.arrSku = $('#prod-imei').val().split('\n').filter(imei => $.trim(imei).length > 0); }
+					$.post('<?= URL_API ?>prod_entrada_detalle/add/', data, function(resp) {
+						if(resp.response) {
+							getItems(0,$('#cont').val());
+							$('#frm-item').modal('hide');
+							swal({ type:"success", title:"¡Listo!", text:"Se agregó el registro", timer:4000 });
+						} else { swal({ type: "warning", title: "Oops!", text: resp.message, timer: 4000 }); }
+					}, 'json');
+				}
+			}
+
+			$('tbody').on('click', '.prodDel', function(event) {
+				event.preventDefault();
+				tr = $(this).parents('tr');
+				id = tr.attr('data-id');
+				if($('#btnSave').is(':visible')) {
+					$('#tbl-prods tbody tr[data-id="'+id+'"]').remove();
+				} else {
+					prod = tr.find('td:eq(0)').text();
+					swal({ title:"Cancelar detalle", text:"Se eliminará de la entrada el detalle <strong>"+prod+"</strong> y se restaran los productos del inventario, ¿Desea continuar?", type:"warning", html:true, showCancelButton:true, cancelButtonText:"No", confirmButtonColor:"#DD6B55", confirmButtonText:"Si, continuar", closeOnConfirm:false }, function() {
+						$.ajax({ url:'<?= URL_API ?>prod_entrada_detalle/del/'+id, type:'PUT', dataType:'json', success:function(resp) {
+							if(resp.response) {
+								getItems(0,$('#cont').val());
+								$('#frm-item').modal('hide');
+								swal({ type:"success", title:"¡Listo!", text:"Se eliminó la entrada", timer:4000 });
+							} else { swal({ type: "warning", title: "Oops!", text: resp.message, timer: 4000 }); }
+						}});
+					});
+				}
+				calcTotal();
+				$('#busProd').focus();
+			});
+
+			function calcTotal() {
+				tot = 0;
+				$.each($('#tbl-prods tbody small.importe'), function(index, elem) {
+					imp = parseFloat($(elem).text());
+					tot += imp;
+				});
+				$('#item-total').val(tot.toFixed(2));
+			}
+
+			function clearDataProd() {
+				$('.invalid-tooltip').remove();
+				$('#tbl-prods input').val('');
+				$('#busProd').typeahead('val','');
+				$('#prod-id').val(0);
+				$('tr#sku').addClass('hide');
+				$('#prod-imei').val('');
+			}
+
+			function clearData() {
+				$('.invalid-tooltip').remove();
+				$('#frm-item input').val('');
+				$('#item-id').val(0);
+				$('#prod-id').val(0);
+				$('#tbl-prods tbody').empty();
+				$('#item-sucursal_id option:first').prop('selected', true).trigger('change')
+				$("#frm-item small.text-danger").html("");
+			}
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_PROVEEDOR_ADD, $permisos)) : ?>
+			$('#btnAddProveedor').click(function(e) { e.preventDefault();
+				clearDataProveedor();
+				$('#frm-proveedor').modal('show');
+			});
+
+			$('#proveedor-nombre').change(function() {
+				$('.invalid-tooltip').remove();
+				$.get('<?= URL_API ?>proveedor/getByNombreMD5/'+$.md5($.trim($(this).val().toLowerCase())), function(proveedor) { if(proveedor.result.length > 0) { proveedor = proveedor.result;
+					if(proveedor.length>1 || proveedor[0].id!=parseInt($('#proveedor-id').val())) {
+						$errLabel = $('<div class="row invalid-tooltip">Ya existe un proveedor con el mismo nombre</div>');
+						$('#proveedor-nombre').after($errLabel);
+						$errLabel.show();
+						// setTimeout(() => { $('.invalid-tooltip').remove(); }, 4000);
+					}
+				}}, 'json');
+			});
+
+			$('#btnSaveProveedor').click(function() {
+				$('.invalid-tooltip').remove();
+				id = parseInt($('#proveedor-id').val());
+				data = {};
+
+				$.each($('#frm-proveedor').find('input, select'), function(index, elem) {
+					ide = $(elem).attr('id').replace('proveedor-','');
+					data[ide] = $.trim($(elem).val());
+				});
+				data.telefono = data.telefono.replace('(','').replace(')','').replace(' ','').replace('-','').replace(/_/g, '');
+
+				$errLabel = $('<div class="invalid-tooltip"></div>');
+				if(data.nombre == '') {
+					$errLabel.html('Debe ingresar el nombre');
+					$('#proveedor-nombre').focus().after($errLabel);
+					$errLabel.show();
+				} else if(data.telefono != '' && data.telefono.length != 10) {
+					$errLabel.html('El teléfono debe ser a 10 dígitos');
+					$('#proveedor-telefono').after($errLabel);
+					$errLabel.show();
+				} else {
+					blockPage();
+					data.status = 1;
+					$.post('<?= URL_API ?>proveedor/add/', data, function(resp) {
+						if(resp.response) {
+							data.id = resp.result;
+							$('#proveedor-id').val(0);
+							$('#frm-proveedor').modal('hide');
+							swal({ type: "success", title: "¡Listo!", text: "Se guardaron los datos correctamente.", timer: 4000 });
+						} else { swal({ type: "warning", title: "Oops!", text: resp.message, timer: 4000 }); }
+						$.unblockUI();
+					},'json');
+				}
+			});
+
+			function clearDataProveedor() {
+				$('.invalid-tooltip').remove();
+				$('#frm-proveedor input').val('');
+				$('#proveedor-id').val(0);
+			}
+			<?php endif; ?>
+
+			// $('#frm-item').on('shown.bs.modal', function () { $('#item-folio').focus(); });
+
+			<?php if(in_array(MOD_ACTION_DEL, $permisos)) : ?>
+			$('tbody').on('click', '.btnDel', function(event) {
+				event.preventDefault();
+				id = $(this).parents('td').data('id');
+				trp = $('#tbl-items [data-id="'+id+'"]').parents('tr');
+				folio = trp.find('td:eq(1)').text();
+				swal({   
+					title: "Cancelar entrada",
+					text: "Se eliminará la entrada <strong>"+folio+"</strong> y se restaran los productos del inventario, ¿Continuar?",
+					type: "warning",   
+					html: true,
+					showCancelButton: true,   
+					cancelButtonText: "No",
+					confirmButtonColor: "#DD6B55",   
+					confirmButtonText: "Si, continuar",
+					closeOnConfirm: false 
+				}, function() {
+					//data: {fk_usuario: 1, fk_session: 1}, 
+					$.ajax({
+						url: $apiUrl+'del/'+id,
+						type: 'PUT',
+						dataType: 'json',
+						success: function(resp) {
+							if(resp.response) {
+								$('#tbl-items [data-ent="'+id+'"]').remove();
+								swal({
+									type: "success",
+									title: "¡Listo!",   
+									text: "Se eliminó la entrada",   
+									timer: 4000
+								});
+							}
+						}
+					});
+				});
+			});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_ACTION_ADD, $permisos)) : ?>
+			$('#btnSave').click(function() {
+				$('.invalid-tooltip').remove();
+				id = parseInt($('#item-id').val());
+				
+				data = {folio: $.trim($('#item-folio').val()), 
+						subtotal: $('#item-total').val(), 
+						total: $('#item-total').val(), 
+						proveedor_id: $('#item-proveedor_id').val(), 
+						sucursal_id: parseInt($('#item-sucursal_id').val())};
+
+				data.detalles = [];
+				preciotbl = '';
+				$.each($('#tbl-prods tbody tr:not(.imei)'), function(index, elem) {
+					prodtd = $(elem).find('td:eq(0)').text();
+					cat = $(elem).find('td:eq(0)').data('cat');
+					/*sku = prodtd.substring(1,prodtd.indexOf(']'));
+					//prod = prodtd.substring(sku.length+2);
+					prod = prodtd;
+					sku = sku.replace('[','').replace(']','');
+					det = {producto_id: $(elem).data('id'), cantidad: $(elem).find('td:eq(1)').text(), costo: $(elem).find('td:eq(2)').text(), importe: $(elem).find('td:eq(3)').text(), nombre: prod, sku: sku, modelo: '', tamano: ''};*/
+					det = {producto_id: $(elem).data('id'), cantidad: $(elem).find('td:eq(1)').text(), costo: $(elem).find('td:eq(2)').text(), importe: $(elem).find('td:eq(3)').text(), 
+						nombre: prodtd, modelo: '', tamano: '', categoria: cat, marca: ''};
+					if($(elem).next().hasClass('imei')) { det.arrImei = $.trim($(elem).next().find('textarea').val()).split(', '); }
+					data.detalles.push(det);
+				});
+
+				$errLabel = $('<div class="invalid-tooltip"></div>');
+				if(data.sucursal_id == 0) {
+					$errLabel.html('Debe seleccionar la sucursal');
+					$('#item-sucursal_id').after($errLabel).focus();
+					$errLabel.show();
+				}else if(data.folio == '') {
+					$errLabel.html('Debe ingresar el folio');
+					$('#item-folio').after($errLabel).focus();
+					$errLabel.show();
+				}else if(data.detalles.length == 0) {
+					$errLabel.html('Debe agregar productos a la entrada');
+					$('#tbl-prods').after($errLabel);
+					$errLabel.show();
+				}else{
+					blockPage();
+					$.post($apiUrl+'add/', data, 
+						function(resp) {
+							if(resp.response) {
+								$.each(data.detalles, function(idDetalle, detalle) {
+									if(detalle.arrImei != undefined) {
+										$.each(detalle.arrImei, function(idImei, imei) {
+											copia = Object.assign({}, detalle);
+											copia.sku = imei;
+											copia.cantidad = 1;
+											delete copia.arrImei;
+											data.detalles.push(copia);
+										});
+										
+										data.detalles.splice(idDetalle, 1);
+									} else {
+										detalle.sku = 'N/A';
+									}
+								});
+								data.id = resp.result;
+								d = new Date();
+								data.fecha = d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();
+								if([0, parseInt($('#item-sucursal_id').val())].includes(parseInt($('#busSuc').val()))) { addRow(data); }
+								$('#frm-item').modal('hide');
+								swal({
+									type: "success",
+									title: "¡Listo!",
+									text: "Se guardaron los datos correctamente.",
+									timer: 4000
+								});
+							}else{
+								swal({
+									type: "warning",
+									title: "Oops!",
+									text: resp.message,
+									timer: 4000
+								});
+							}
+							$.unblockUI();
+					},'json');
+				}
+			});
+			<?php endif; ?>
+
+			$('body').on('click', '#pag li a', function(event) {
+				event.preventDefault();
+				pag = parseInt($(this).attr('href'));
+				cont = parseInt($('#cont').val());
+				if(!$(this).parent().hasClass('active') && !$(this).parent().hasClass('active'))
+					getItems(pag, cont);
+			});
+		});
+		
+	</script>
+<?php else: include 'footer.phtml'; endif; ?>

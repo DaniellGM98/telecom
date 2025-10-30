@@ -1,0 +1,216 @@
+<?php 
+	include 'header.phtml';
+
+	if(!defined('MOD_RECARGAS_ADD')) {	define('MOD_RECARGAS_ADD',	107); }
+	if(!defined('MOD_RECARGAS_EDIT')) {	define('MOD_RECARGAS_EDIT',	108); }
+	if(!defined('MOD_RECARGAS_DEL')) {	define('MOD_RECARGAS_DEL',	109); }
+
+	if($_SESSION['usuario']->usuario_tipo_id == 3) {
+		header('Location: '.URL_ROOT.'/tienda');
+		exit;
+	}
+
+	if(isset($_SESSION['sucursal']) && (!isset($solicitudes) || count($solicitudes)==0)):
+?>
+	<div class="row page-titles">
+		<div class="col-md-5 align-self-center">
+			<h3 class="text-themecolor"><i class="fa fa-mobile"></i> Recargas</h3>
+		</div>
+		<div class="col-md-7 align-self-center <?= $_SESSION['sucursal'] == 0 ? '' : 'hide' ?>">
+			<div class="form-inline pull-right">
+                <div class="input-group input-group-sm">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text"><i class="fa fa-calendar"></i></span>
+                    </div>
+                    <input class="form-control form-control-sm input-daterange-datepicker" type="text" id="fechas" value="<?= date("d/m/Y",strtotime(date("d-m-Y"))) . ' - ' . date('d/m/Y') ?>" />
+                </div>
+                <div class="input-group input-group-sm m-l-10 sucursal">
+                    <div class="input-group-prepend"><span class="input-group-text"><i class="fa fa-home"></i></span></div>
+                    <select class="form-control form-control-sm" id="busSuc">
+                        <option value="0">Sucursal</option>
+                        <?php foreach ($sucursales as $suc) {
+							if($_SESSION['sucursal'] == 0){
+								echo '<option value="'.$suc->id.'">'.$suc->nombre.'</option>';
+							}else{
+								if($suc->id == $_SESSION['sucursal']){
+									echo '<option value="'.$suc->id.'" selected>'.$suc->nombre.'</option>';
+									break;
+								}
+							}
+                        }
+                        ?>
+                    </select>
+                </div>
+            </div>
+		</div>
+	</div>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-12">
+				<div class="card">
+					<div class="card-body">
+						<?php if(in_array(MOD_RECARGAS_ADD, $permisos) && $_SESSION['sucursal'] > 0) : ?>
+						<button class="btn btn-success pull-right" id="btnAddRecarga"><i class="mdi mdi-plus"></i> Agregar</button>
+						<?php endif; ?>
+
+						<h4 class="card-title">Recargas</h4>
+						<h6 class="card-subtitle">Registra, edita y elimina recargas de saldo</h6>
+
+						<div id="tbl-toolbar"></div>
+						<div class="table-responsive">
+							<table id="tbl-recarga" class="table table-hover table-striped table-sm">
+								<thead>
+									<tr>
+										<th class="text-center font-weight-bold">Fecha</th>
+										<?php if(intval($_SESSION['sucursal']) == 0): ?><th class="text-center font-weight-bold">Sucursal</th><?php endif; ?>
+										<th class="text-center font-weight-bold">Tel&eacute;fono</th>
+										<th class="text-center font-weight-bold">Confirmaci&oacute;n tel&eacute;fono</th>
+										<th class="text-center font-weight-bold">Monto</th>
+										<th class="text-center font-weight-bold">Acciones</th>
+									</tr>
+								</thead>
+								<tbody></tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<?php include 'footer.phtml';?>
+	<script type="text/javascript">
+		$(function() {
+			$('#mnu-ven').addClass('active');
+			$apiUrl = '<?= URL_API ?>recarga/';
+
+			$('#fechas').daterangepicker({ 
+				buttonClasses:['btn','btn-sm'], 
+				applyClass:'btn-primary', 
+				cancelClass:'btn-inverse', 
+				maxDate:'<?= date('d/m/Y') ?>', 
+				locale:$dateRangeLocale, ranges:$dateRanges, 
+				alwaysShowCalendars:true, 
+				autoApply:true 
+			});
+
+			$('#fechas, #busSuc').change(function(){ getRecargas(); });
+
+			getRecargas();
+			function getRecargas() { 
+				blockPage();
+				var fechas = $('#fechas').data('daterangepicker');
+				ini = fechas.startDate.format('YYYY-MM-DD');
+				fin = fechas.endDate.format('YYYY-MM-DD');
+				suc = $('#busSuc').val();
+				selectedColumns = $('#columns-tbl-recarga').val(); cleanTable('tbl-recarga'); $('#tbl-recarga tbody').empty();
+				$.get($apiUrl+'getByDateSuc/'+ini+'/'+fin+'/'+suc, 
+					function (data, textStatus, jqXHR) {
+						$.each(data, function (index, item) { 
+							addRecargaRow(item); 
+						});
+						createTable('tbl-recarga', true, selectedColumns); $.unblockUI();
+					},
+					"json"
+				);
+			}
+
+			function addRecargaRow(item) {
+				$('#tbl-recarga [data-id="'+item.id+'"]').remove();
+				tr = $('<tr data-id="'+item.id+'" data-sucursal="'+item.sucursal_id+'" data-fecha="'+item.fecha+'"></tr>').appendTo($('#tbl-recarga tbody'));
+
+				tr.append('<td class="text-center"><small class="fecha">'+moment(item.fecha).format('DD/MM/YYYY hh:mm:ss')+'</small></td>');
+				<?php if(intval($_SESSION['sucursal']) == 0): ?>tr.append('<td><small class="sucursal">'+item.sucursal+'</small></td>');<?php endif; ?>
+				tr.append('<td class="text-center"><small class="numero">'+item.numero+'</small></td>');
+				tr.append('<td class="text-center"><small class="repetir_numero">'+item.repetir_numero+'</small></td>');
+				tr.append('<td class="text-center"><small class="monto">$ '+parseFloat(item.monto).toFixed(2)+'</small></td>');
+
+				tda = $('<td class="text-center"></td>').appendTo(tr);
+				// < ?php if(in_array(MOD_RECARGAS_EDIT, $permisos)) : ?> tda.append('<a href="#" data-popup="tooltip" title="Editar" class="btnEditRecarga"><i class="mdi mdi-pencil"></i></a> ');  < ?php endif; ?>
+				<?php if(in_array(MOD_RECARGAS_DEL, $permisos)) : ?> tda.append('<a href="#" data-popup="tooltip" title="Eliminar" class="btnDelRecarga"><i class="mdi mdi-delete" style="color:red;"></i></a>'); <?php endif; ?>
+			}
+
+			<?php if(in_array(MOD_RECARGAS_ADD, $permisos)) : ?>
+			$('#frm-recarga').on('hide.bs.modal', function () { getRecargas(); });
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_RECARGAS_DEL, $permisos)) : ?>
+			$('tbody').on('click', '.btnDelRecarga', function(event) { event.preventDefault(); blockPage();
+				id = $(this).parents('tr').data('id');
+				trp = $('#tbl-recarga tr[data-id="'+id+'"]');
+				fecha = trp.find('td:eq(0)').text();
+				swal({ title:"Eliminar recarga", text:"No podrá restaurar la recarga del <strong>"+fecha+"</strong>", type:"warning", html:true, showCancelButton:true, cancelButtonText:"Cancelar", confirmButtonColor:"#DD6B55", confirmButtonText:"Si, eliminar", closeOnConfirm:false  }, 
+					function(resp) {
+						if(resp) {
+							$('#tbl-recarga tbody').empty();
+							$.ajax({ url:$apiUrl+'del/'+id, type:'PUT', dataType:'json',
+								success: function(resp) {
+									if(resp.response) {
+										getRecargas();
+										swal({ type:"success", title:"¡Listo!", text:"Se eliminó la recarga", timer:4000 });
+									} else { swal({ type:"warning", title:"Oops!", text:resp.message, timer:4000 });  }
+								}
+							});
+						} else { $.unblockUI(); }
+					}
+				);
+			});
+			<?php endif; ?>
+
+			function cleanTable(tbl) {
+				if($.fn.dataTable.isDataTable('#'+tbl)) {
+					table = $('#'+tbl).DataTable();
+					table.destroy();
+				}
+				$("#nodata").remove();
+			}
+
+			function createTable(tbl, paging) {
+				container = $('<div class="form-inline d-flex justify-content-end" style="width: auto; overflow: visible;"></div>');
+
+				columnas = ['Fecha', 'Sucursal', 'Teléfono', 'Confirmación teléfono', 'Monto']; 
+				<?php if(intval($_SESSION['sucursal']) > 0): ?> columnas.splice(1, 1); <?php endif; ?>
+				value = [];
+				fColumnas = $('<select class="selectpicker" multiple data-selected-text-format="static" id="columns-'+tbl+'" title="Mostrar/Ocultar columnas" data-width="fit"></select>').appendTo(container);
+				$.each(columnas, function(index, item) {
+					fColumnas.append('<option class="form-control-sm" value="'+index+'">'+item+'</option>');
+					value.push(index.toString());
+				});
+				fColumnas.selectpicker('val', value);
+				fColumnas.on('changed.bs.select', function(e, index) { blockPage();
+					column = $('#'+tbl).DataTable().column(index);
+					column.visible(!column.visible());
+					$.unblockUI();
+				});
+
+				searchContainer = $('<div class="input-group"></div>').appendTo(container);
+				search = $('<input type="text" id="bus" placeholder="Buscar por fecha o número de teléfono" class="form-control">').appendTo(searchContainer);
+				icon = $('<div class="input-group-append"></div>').appendTo(searchContainer);
+				icon.append('<button type="button" class="btn btn-secondary btn-sm" id="btn-bus"><i class="fa fa-search"></i></button>');
+				search.keyup(function(e) { $("#"+tbl+"_filter label input").val($.trim($(this).val())).trigger('keyup'); });
+				search.on("search", function(evt) { $("#"+tbl+"_filter label input").val(undefined).trigger('keyup'); });
+				search.find("#btn-bus").click(function(evt) { evt.preventDefault(); $("#"+tbl+"_filter label input").val($.trim($('#bus').val())).trigger('keyup'); });
+
+				columnDefs = [];
+				$.each(columnas, function(index, item) {
+					columnDefs.push({'orderable': true, 'targets': [index], 'visible': true});
+				});
+				columnDefs.push({'orderable': false, 'targets': [4]});
+
+				$('#'+tbl+'_length').remove();
+				$('#'+tbl).dataTable({
+					scrollX: false,
+					paging: paging,
+					pagingType: "full_numbers",
+					dom: 'Rl<"#toolbar-'+tbl+'">frtip',
+					columnDefs: columnDefs,
+					order: [0, 'asc']
+				});
+
+				$('#toolbar-'+tbl).html(container).appendTo('#tbl-toolbar');
+				$("#"+tbl+"_filter label").hide();
+				$('#'+tbl+'_length').appendTo('#tbl-toolbar');
+				$('#'+tbl+'_filter').appendTo('#tbl-toolbar');
+			}
+		});
+	</script>
+	<?php else: include 'footer.phtml'; endif; ?>

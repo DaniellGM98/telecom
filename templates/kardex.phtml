@@ -1,0 +1,250 @@
+<?php 
+	define('MOD_PROD_KARDEX', 22);
+	/*if(!in_array(MOD_PROD_KARDEX, $permisos))
+		$todo->render('403.phtml', [], 403); */
+	include 'header.phtml'; 
+
+	if(isset($_SESSION['sucursal']) && (!isset($solicitudes) || count($solicitudes)==0)):
+?>
+	<div class="row page-titles">
+		<div class="col-md-5 align-self-center">
+			<h3 class="text-themecolor"><i class="mdi mdi-playlist-check"></i> Kardex de producto <small>Inventario y movimientos</small></h3>
+		</div>
+		<div class="col-md-7">
+			<div class="col-md-12 form-inline pull-right px-0">
+				<div class="col-md-4 px-0">
+					<div class="input-group input-group-sm p-r-10">
+						<div class="input-group-prepend">
+							<span class="input-group-text"><i class="fa fa-calendar"></i></span>
+						</div>
+						<input type="text" class="form-control form-control-sm input-daterange-datepicker" id="fechas" value="<?= "01/".date('m/Y').' - '.date('d/m/Y') ?>">
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-12">
+				<div class="card">
+					<div class="card-body">
+						<h4 class="card-title">Kardex de productos</h4>
+						<h6 class="card-subtitle">Entradas y salidas de producto.</h6>
+
+						<div id="tbl-toolbar"></div>
+						<div class="table-responsive">
+							<table id="tbl-kardex" class="table table-hover table-striped">
+								<thead>
+									<tr>
+										<th class="text-center font-weight-bold">Fecha</th>
+										<th class="text-center font-weight-bold">Folio</th>
+										<?php if(intval($_SESSION['usuario']->sucursal_id) == 0): ?><th class="text-center font-weight-bold">Sucursal</th> <?php endif; ?>
+										<th class="text-center font-weight-bold">Entrada</th>
+										<th class="text-center font-weight-bold">Salida</th>
+										<th class="text-center font-weight-bold">Existencia</th>
+										<th class="text-center font-weight-bold">Usuario</th>
+									</tr>
+								</thead>
+								<tbody></tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<?php include 'footer.phtml';?>
+	<script type="text/javascript">
+		$(function(){
+			$apiUrl = '<?= URL_API ?>prod_kardex/';
+			$('#mnu-prod').addClass('active');
+
+			$('#fechas').daterangepicker({ buttonClasses:['btn','btn-sm'], applyClass:'btn-primary', cancelClass:'btn-inverse', maxDate:'<?= date('d/m/Y') ?>', locale:$dateRangeLocale, ranges:$dateRanges, alwaysShowCalendars:true, autoApply:true },
+				function(start, end, label) {
+					console.log(start, end, label)
+					getItems();
+				}
+			);
+
+			createTable('tbl-kardex');
+			setTimeout(function(){ getItems(); }, 3000);
+			function getItems(){
+				prod = $('#prod-id').val(); arrColumnas = $('#columnas-tbl-kardex').val(); arrFechas = $('#fechas').val(); arrSucursal = $('#sucursal-tbl-kardex').val();
+				console.log($('#fechas').val(), arrColumnas, arrFechas, arrSucursal)
+				fechas = $('#fechas').data('daterangepicker');
+				ini = fechas.startDate.format('YYYY-MM-DD');
+				fin = fechas.endDate.format('YYYY-MM-DD');
+				cleanTable('tbl-kardex'); $('#tbl-kardex tbody').empty();
+				if(prod!=0 && prod!=undefined) { blockPage();
+					$.get($apiUrl+'getByProducto/'+prod+'/'+ini+'/'+fin, function(resp) {
+						$.each(resp.result, function(index, item) {
+							arrSucursales = [0]; arrSucursales.push(parseInt(item.sucursal_id));
+							if(arrSucursales.includes(parseInt('<?= $_SESSION['usuario']->sucursal_id ?>'))) {
+								addRow(item);
+							}
+						});
+						createTable('tbl-kardex', arrColumnas, arrFechas, arrSucursal);
+						$.unblockUI();
+					});
+				} else {
+					createTable('tbl-kardex', arrColumnas, arrFechas, arrSucursal);
+					$.unblockUI();
+				}
+			}
+
+			function addRow(item){
+				container = $('#tbl-kardex tbody');
+				container.find('tr[data-id="'+item.id+'"]').remove();
+				tr = $('<tr data-id="'+item.id+'" data-sucursal="'+item.sucursal_id+'"></tr>').appendTo(container);
+
+				tr.append('<td class="text-center"><small class="fecha">'+item.fecha+'</small></td>');
+				if(item.origen_tipo == 3){
+					tipo = '<i class="mdi mdi-playlist-play"></i> ';
+					folio = tipo+' Alta producto';
+				}else{
+					tipo = '<i class="mdi mdi-playlist-plus"></i> ';
+					if(item.tipo == -1) tipo = '<i class="mdi mdi-playlist-minus"></i> ';
+					switch(item.origen_tipo) {
+						case '1': origen = item.tipo==1? 'Entrada ': 'Cancelación Entrada'; break;
+						case '2': origen = item.tipo==-1? 'Salida ': 'Cancelación Salida '; break;
+						case '4': origen = 'Salida por traspaso '; break;
+						case '5': origen = 'Entrada por traspaso '; break;
+						case '6': origen = 'Salida por cancelación de traspaso '; break;
+						case '7': origen = 'Entrada por cancelación de traspaso '; break;
+					}
+					folio = tipo+origen+item.folio;
+				}
+				tr.append('<td class="text-center"><small class="folio">'+folio+'</small></td>');
+				<?php if(intval($_SESSION['usuario']->sucursal_id) == 0): ?>tr.append('<td class="text-center"><small class="sucursal">'+item.sucursal+'</small></td>');<?php endif; ?>
+				tr.append('<td class="text-center">'+(item.tipo == 1 ? item.cantidad : '')+'</td>');
+				tr.append('<td class="text-center">'+(item.tipo == -1 ? item.cantidad : '')+'</td>');
+				tr.append('<td class="text-center">'+item.final+'</td>');
+				tr.append('<td><small>'+item.nombre+'</small></td>');
+
+				$('#tbl-kardex tbody').append(tr);
+			}
+		
+			function cleanTable(tbl) {
+				if($.fn.dataTable.isDataTable('#'+tbl)) {
+					table = $('#'+tbl).DataTable();
+					table.destroy();
+				}
+				$("#nodata").remove();
+			}
+
+			function createTable(tbl, arrColumnas=null, arrFechas=null, arrSucursal=null) {
+				console.log(tbl, arrColumnas, arrFechas, arrSucursal)
+				container = $('<div class="form-inline pull-right" style="overflow: visible"></div>');
+				fColumnas = $('<select class="selectpicker" data-container="body" multiple data-selected-text-format="static" id="columns-'+tbl+'" title="Mostrar/Ocultar columnas" data-width="fit"></select>').appendTo(container);
+				fColumnas.append('<option class="form-control-sm" value="0">Fecha</option>');
+				fColumnas.append('<option class="form-control-sm" value="1">Folio</option>');
+				<?php if(intval($_SESSION['usuario']->sucursal_id) == 0): ?>fColumnas.append('<option class="form-control-sm" value="2">Sucursal</option>');<?php endif; ?>
+				fColumnas.append('<option class="form-control-sm" value="3">Entrada</option>');
+				fColumnas.append('<option class="form-control-sm" value="4">Salida</option>');
+				fColumnas.append('<option class="form-control-sm" value="5">Existencia</option>');
+				fColumnas.append('<option class="form-control-sm" value="6">Usuario</option>');
+				fColumnas.selectpicker('val', arrColumnas!=null? arrColumnas: ['0', '1', '3', '4', '5']);
+				fColumnas.on('changed.bs.select', function(e, index) { blockPage();
+					column = $('#'+tbl).DataTable().column(index);
+					column.visible(!column.visible());
+					$.unblockUI();
+				});
+
+				fFechas = $('<div class="input-group"></div>').appendTo(container);
+				fFechas.append('<div class="input-group-prepend"><span class="input-group-text"><i class="fa fa-calendar"></i></span></div>');
+				fFechas.append('<input type="text" class="form-control input-daterange-datepicker" id="fechas-'+tbl+'">');
+				//if(arrFechas==null) { fFechas.find('#fechas-'+tbl).val('<?= date("d/m/Y", strtotime(date('01-m-Y'))).' - '.date('d/m/Y') ?>'); }
+				//else { fFechas.find('#fechas-'+tbl).val(arrFechas); }
+				fFechas.find('#fechas-'+tbl).daterangepicker({ buttonClasses:['btn','btn-sm'], applyClass:'btn-primary', cancelClass:'btn-inverse', maxDate:'<?= date('d/m/Y') ?>', locale:$dateRangeLocale, ranges:$dateRanges, alwaysShowCalendars:true, autoApply:true },
+					function(start, end, label) {
+						console.log(start, end, label)
+						getItems();
+					}
+				);
+
+<?php if(intval($_SESSION['usuario']->sucursal_id) == 0): ?>
+				fSucursal = $('<select class="selectpicker" id="sucursal-'+tbl+'" title="Sucursal" data-width="fit"></select>').appendTo(container);
+				fSucursal.append('<option class="form-control-sm" value="0">Todas</option>');
+<?php $sucursales = $todo->model->sucursal->getAll()->result; foreach($sucursales as $sucursal): ?>
+				fSucursal.append('<option class="form-control-sm" value="<?= $sucursal->id ?>"><?= ucfirst(mb_strtolower($sucursal->nombre)) ?></option>');
+<?php endforeach; ?>
+				if(arrSucursal!=null) { fSucursal.selectpicker('val', arrSucursal); }
+				else if(fSucursal.find('option:not(.bs-title-option)').length > 0) { fSucursal.selectpicker('val', fSucursal.find('option:not(.bs-title-option):first').val()); }
+				fSucursal.on('changed.bs.select', function(e, index) { blockPage();
+					$.fn.dataTable.ext.search.pop();
+					index--; if(index > 0) {
+						$.fn.dataTable.ext.search.push(
+							function(settings, data, dataIndex) {
+								console.log($($('#'+tbl).DataTable().row(dataIndex).node()).attr('data-sucursal'), fSucursal.find('option:eq('+(index+1)+')').attr('value'))
+								if(settings.nTable.id === 'tbl-kardex') {
+									return $($('#'+tbl).DataTable().row(dataIndex).node()).attr('data-sucursal') == fSucursal.find('option:eq('+(index+1)+')').attr('value');
+								}
+
+								return true;
+							}
+						);
+					}
+					$('#'+tbl).DataTable().draw();
+					$.unblockUI();
+				});
+<?php endif; ?>
+
+				searchContainer = $('<div class="input-group"></div>').appendTo(container);
+				search = $('<input type="text" id="bus" placeholder="Buscar por nombre" class="form-control">').appendTo(searchContainer);
+				searchContainer.append('<input type="hidden" id="prod-id" value="0">');
+				// icon = $('<div class="input-group-append"></div>').appendTo(searchContainer);
+				// icon.append('<button type="button" class="btn btn-secondary btn-sm" id="btn-bus"><i class="fa fa-search"></i></button>');
+				// search.keyup(function(e) { $("#"+tbl+"_filter label input").val($.trim($(this).val())).trigger('keyup'); });
+				// search.on("search", function(evt) { $("#"+tbl+"_filter label input").val(undefined).trigger('keyup'); });
+				// search.find("#btn-bus").click(function(evt) { evt.preventDefault(); $("#"+tbl+"_filter label input").val($.trim($('#bus').val())).trigger('keyup'); });
+				var fndProds = new Bloodhound({
+					datumTokenizer: Bloodhound.tokenizers.obj.whitespace('value'),
+					queryTokenizer: Bloodhound.tokenizers.whitespace,
+					remote: {
+						url: $apiUrl.replace('prod_kardex', 'producto')+'find/%QUERY',
+						wildcard: '%QUERY'
+					}
+				});
+				search.typeahead({ hint: true, highlight: true, minLength: 3 }, { limit: 20, display: 'producto', source: fndProds });
+				search.bind('typeahead:select', function(ev, suggestion) { $('#prod-id').val(suggestion.id); getItems(); });
+
+				columnDefs = [
+					{"orderable": true, "targets": [0], "visible": true},
+					{"orderable": true, "targets": [1], "visible": true},
+<?php if(intval($_SESSION['usuario']->sucursal_id) == 0): ?>
+					{"orderable": true, "targets": [2], "visible": false},
+<?php else: ?>
+					{"orderable": true, "targets": [2], "visible": true},
+<?php endif; ?>
+					{"orderable": true, "targets": [3], "visible": true},
+					{"orderable": true, "targets": [4], "visible": true},
+<?php if(intval($_SESSION['usuario']->sucursal_id) == 0): ?>
+					{"orderable": true, "targets": [5], "visible": true},
+					{"orderable": true, "targets": [6], "visible": false},
+<?php else: ?>
+					{"orderable": true, "targets": [5], "visible": false},
+<?php endif; ?>
+				];
+				order = [2, 'ASC', 0, 'ASC'];
+
+				
+				$('#'+tbl+'_length').remove();
+				$('#'+tbl).dataTable({
+					// scrollY: false,
+					scrollX: false,
+					paging: true,
+					searching: true,
+					pagingType: "full_numbers",
+					dom: 'Rl<"#toolbar-'+tbl+'">frtip',
+					"columnDefs": columnDefs,
+					'order': order
+				});
+
+				$('#toolbar-'+tbl).html(container).appendTo('#tbl-toolbar');
+				//$("#"+tbl+"_filter label").hide();
+				$('#'+tbl+'_length').appendTo('#tbl-toolbar');
+				$('#'+tbl+'_filter').appendTo('#tbl-toolbar');
+			}
+		});
+	</script>
+<?php else: include 'footer.phtml'; endif; ?>

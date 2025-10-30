@@ -1,0 +1,605 @@
+<?php 
+	include 'header.phtml';
+
+	define('MOD_SERVICIO_ADD',		73);
+	define('MOD_SERVICIO_EDIT',		74);
+	define('MOD_SERVICIO_DEL',		75);
+	define('MOD_PAQUETE_ADD',		76);
+	define('MOD_PAQUETE_EDIT',		77);
+	define('MOD_PAQUETE_DEL',		78);
+
+	if($_SESSION['usuario']->usuario_tipo_id == 3) {
+		header('Location: '.URL_ROOT.'/tienda');
+		exit;
+	}
+
+	if(isset($_SESSION['sucursal']) && (!isset($solicitudes) || count($solicitudes)==0)):
+?>
+	<div class="row page-titles">
+		<div class="col-md-5 align-self-center">
+			<h3 class="text-themecolor"><i class="fa fa-tags"></i> Servicios / Paquetes</h3>
+		</div>
+	</div>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-12">
+				<div class="card">
+					<div class="card-body">
+						<?php if(in_array(MOD_SERVICIO_ADD, $permisos) || in_array(MOD_PAQUETE_ADD, $permisos)) : ?>
+						<button class="btn btn-success pull-right" id="btnAdd"><i class="mdi mdi-plus"></i> Agregar</button>
+						<?php endif; ?>
+
+						<h4 class="card-title">Servicios / Paquetes</h4>
+						<h6 class="card-subtitle">Crea, edita y elimina servicios o paquetes</h6>
+
+						<div class="table-responsive">
+							<table id="tbl-servicio" class="table table-hover table-striped table-sm">
+								<thead>
+									<tr>
+										<th class="text-center">Tipo</th>
+										<th class="text-center">Nombre</th>
+										<th class="text-center">Precio</th>
+										<th class="text-center">Mano de Obra</th>
+										<th class="text-center">Acciones</th>
+									</tr>
+								</thead>
+								<tbody></tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!--Modales -->
+		<?php if(in_array(MOD_SERVICIO_ADD, $permisos) || in_array(MOD_PAQUETE_ADD, $permisos) || in_array(MOD_SERVICIO_EDIT, $permisos) || in_array(MOD_PAQUETE_EDIT, $permisos)) : ?>
+		<div id="frm-servicio" class="modal" >
+			<div class="modal-dialog modal-lg">
+				<div class="modal-content d-flex p-2">
+					<div class="modal-header">
+						<div class="col-sm-12">
+							<div class="row">
+								<h3 class="modal-title">Datos del <span class="tipo">Servicio</span></h3>
+							</div>
+							<div class="row hide" style="margin-top: 10px;">
+								<ul class="nav nav-tabs" id="myTab" role="tablist" style="border-bottom: 0px; margin-bottom: 0px;">
+									<li class="nav-item">
+										<a class="nav-link active" id="home-tab" data-toggle="tab" href="#home" role="tab" aria-controls="home" aria-selected="true"><span class="tipo">Servicio</span></a>
+									</li>
+									<li class="nav-item">
+										<a class="nav-link" id="detalle-tab" data-toggle="tab" href="#detalle" role="tab" aria-controls="detalle" aria-selected="false">Detalle <span class="tipo">Servicio</span></a>
+									</li>
+								</ul>
+							</div>
+						</div>
+					</div>
+					<div class="modal-body">
+						<div class="tab-content" id="myTabContent">
+							<div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
+								<form class="form p-t-20">
+									<div class="form-group">
+										<label for="servicio-nombre">Nombre</label>
+										<div class="input-group">
+											<div class="input-group-prepend">
+												<span class="input-group-text">
+													<i class="ti-home"></i>
+												</span>
+											</div>
+											<input type="text" class="form-control" id="servicio-nombre" placeholder="Ingresa el Nombre" required>
+										</div>
+									</div>
+									<div class="form-group">
+										<label for="servicio-tipo">Tipo</label>
+										<div class="input-group">
+											<div class="input-group-prepend">
+												<span class="input-group-text">
+													<i class="mdi mdi-wrench"></i>
+													<i class="mdi mdi-box-shadow hide"></i>
+												</span>
+											</div>
+											<select id="servicio-tipo" class="form-control">
+												<?php if(in_array(MOD_SERVICIO_ADD, $permisos)): ?>
+												<option value="1" selected="selected">Servicio</option>
+												<?php endif; ?>
+												<?php if(in_array(MOD_PAQUETE_ADD, $permisos)): ?>
+												<option value="2">Paquete</option>
+												<?php endif; ?>
+											</select>
+										</div>
+									</div>
+									<div class="form-group">
+										<label for="servicio-precio">Precio</label>
+										<div class="input-group">
+											<div class="input-group-prepend">
+												<span class="input-group-text">
+													<i class="fa fa-dollar"></i>
+												</span>
+											</div>
+											<input type="text" class="form-control" id="servicio-precio" placeholder="Ingresa el Precio" required>
+										</div>
+									</div>
+									<input type="hidden" id="servicio-id" value="0">
+								</form>
+							</div>
+							<div class="tab-pane fade" id="detalle" role="tabpanel" aria-labelledby="detalle-tab">
+								<button class="btn btn-success pull-right" id="btnAddDetalle"><i class="mdi mdi-plus"></i></button>
+								<div class="table-responsive">
+									<table id="tbl-detalle" class="table table-hover table-striped">
+										<thead>
+											<tr>
+												<th class="text-center">SKU</th>
+												<th class="text-center">Producto</th>
+												<th class="text-center">Cantidad</th>
+												<th class="text-right">Precio Unit</th>
+												<th class="text-center"></th>
+											</tr>
+										</thead>
+										<tbody></tbody>
+									</table>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="modal-footer d-flex justify-content-end">
+						<button type="submit" class="btn btn-inverse waves-effect waves-light m-r-20" data-dismiss="modal">Cancelar</button>
+						<button type="submit" class="btn btn-success waves-effect waves-light" id="btnSaveServicio">Guardar</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div id="frm-detalle" class="modal" >
+			<div class="modal-dialog">
+				<div class="modal-content d-flex p-2">
+					<div class="modal-header">
+						<h3 class="modal-title">Datos del Producto</h3>
+					</div>
+					<div class="modal-body">
+						<form class="form p-t-20">
+							<input type="hidden" id="detalle-producto_id" value="0">
+							<div class="form-group">
+								<label for="busProd">Nombre</label>
+								<div class="input-group">
+									<div class="input-group-prepend">
+										<span class="input-group-text" id="basic-addon1">
+											<i class="ti-home"></i>
+										</span>
+									</div>
+									<input type="text" id="busProd" placeholder="Buscar por nombre, modelo o SKU" class="form-control">
+								</div>
+							</div>
+							<div class="form-group">
+								<label for="detalle-cantidad">Cantidad</label>
+								<div class="input-group">
+									<div class="input-group-prepend">
+										<span class="input-group-text" id="basic-addon1">
+											<i class="ti-money"></i>
+										</span>
+									</div>
+									<input type="text" class="form-control" id="detalle-cantidad" placeholder="Cantidad">
+								</div>
+							</div>
+							<input type="hidden" id="detalle-id">
+						</form>
+					</div>
+					<div class="modal-footer d-flex justify-content-end">
+						<button type="submit" class="btn btn-inverse waves-effect waves-light m-r-20" data-dismiss="modal">Cancelar</button>
+						<button type="submit" class="btn btn-success waves-effect waves-light" id="btnSaveDetalle">Guardar</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<?php endif; ?>
+	</div>
+	<?php include 'footer.phtml';?>
+	<script type="text/javascript">
+		$(function() {
+			$apiUrl = '<?= URL_API ?>servicio/';
+			$('#mnu-prod').addClass('active');
+
+			getServicios();
+			function getServicios(arrColumns=null, filterTypes=null) { blockPage();
+				cleanTable('tbl-servicio'); $('#tbl-servicio tbody').empty();
+				$.get($apiUrl+'getAll/', function(servicios) {
+					if(servicios.total > 0) { $.each(servicios.result, function(index, info) { 
+						if(filterTypes==null || filterTypes==0 || info.tipo==filterTypes) {
+							addRowServicio(info); 
+						}
+					}); }
+					createTable('tbl-servicio', true, arrColumns, filterTypes); $.unblockUI();
+				});
+			}
+
+			function addRowServicio(item) {
+				$('#tbl-servicio [data-id="'+item.id+'"]').remove();
+				tr = $('<tr data-id="'+item.id+'" data-tipo="'+item.tipo+'"></tr>').appendTo($('#tbl-servicio tbody'));
+
+				tr.append('<td class="text-center">'+(item.tipo==1? 'SERVICIO': 'PAQUETE')+'</td>');
+				tr.append('<td>'+item.nombre.toUpperCase()+'</td>');
+				tr.append('<td class="text-right">$ '+item.precio+'</td>');
+				tr.append('<td class="text-right">'+(item.tipo==1? '$ '+item.mano_obra: 'No aplica')+'</td>');
+
+				tda = $('<td class="text-center"data-id="'+item.id+'"></td>').appendTo(tr);
+				if((item.tipo==1 && <?= in_array(MOD_SERVICIO_EDIT, $permisos) ?>) || (item.tipo==2 && <?= in_array(MOD_PAQUETE_EDIT, $permisos) ?>)) {
+					tda.append('<a href="#" data-popup="tooltip" title="Editar" class="btnEdit"><i class="mdi mdi-pencil"></i></a> ');
+				}
+				if((item.tipo==1 && <?= in_array(MOD_SERVICIO_EDIT, $permisos) ?>) || (item.tipo==2 && <?= in_array(MOD_PAQUETE_EDIT, $permisos) ?>)) {
+					tda.append('<a href="#" data-popup="tooltip" title="Eliminar" class="btnDel"><i class="mdi mdi-delete" style="color:red;"></i></a>');
+				}
+			}
+
+			<?php if(in_array(MOD_SERVICIO_ADD, $permisos) || in_array(MOD_PAQUETE_ADD, $permisos)) : ?>
+			$('#btnAdd').click(function(e) { e.preventDefault();
+				clearData();
+				$('#btnSaveServicio').addClass('add').removeClass('update');
+				$('#frm-servicio').modal('show');
+			});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_SERVICIO_ADD, $permisos) || in_array(MOD_PAQUETE_ADD, $permisos) || in_array(MOD_SERVICIO_EDIT, $permisos) || in_array(MOD_PAQUETE_EDIT, $permisos)) : ?>
+			$('#frm-servicio').on('shown.bs.modal', function () { 
+				header = $(this).find('.modal-header');
+				if($('#btnSaveServicio').hasClass('add')) {
+					header.css('padding-bottom', '');
+					header.find('.row').last().addClass('hide');
+				} else if($('#btnSaveServicio').hasClass('update')) {
+					header.css('padding-bottom', 0);
+					header.find('.row').last().removeClass('hide');
+				}
+				$('#servicio-nombre').focus();
+				if(!$.fn.dataTable.isDataTable('#tbl-detalle')) createTable('tbl-detalle')
+				else $('#tbl-detalle').DataTable().columns.adjust().draw();
+			});
+
+			$('#frm-servicio').on('hidden.bs.modal', function () { $('#btnSaveServicio').removeClass('add').removeClass('update'); $('#servicio-tipo').prop('disabled', false) });
+
+			$('#servicio-nombre').change(function() {
+				$('.invalid-tooltip').remove();
+				$.get($apiUrl+'getByNombreMD5/'+$.md5($.trim($(this).val().toLowerCase())), function(servicio) { if(servicio.result.length > 0) { servicio = servicio.result;
+					if(servicio.length>1 || servicio[0].id!=parseInt($('#servicio-id').val())) {
+						$errLabel = $('<div class="row invalid-tooltip">Ya existe un '+(servicio[0].tipo==1? 'servicio': 'paquete')+' con el mismo nombre</div>');
+						$('#servicio-nombre').after($errLabel);
+						$errLabel.show();
+						// setTimeout(() => { $('.invalid-tooltip').remove(); }, 4000);
+					}
+				}}, 'json');
+			});
+
+			$('#servicio-tipo').change(function() {
+				$('#frm-servicio span.tipo').html($(this).find('option:selected').text())
+				if($(this).val() == 1)  {
+					$(this).parents('.form-group').find('i.mdi-wrench').removeClass('hide');
+					$(this).parents('.form-group').find('i.mdi-box-shadow').addClass('hide');
+					$('#servicio-precio').parents('.form-group').removeClass('hide');
+				} else {
+					$(this).parents('.form-group').find('i.mdi-wrench').addClass('hide');
+					$(this).parents('.form-group').find('i.mdi-box-shadow').removeClass('hide');
+					$('#servicio-precio').parents('.form-group').addClass('hide');
+				}
+			});
+
+			$("#servicio-precio").inputmask({ alias: "numeric", groupSeparator: ',', digits: 2, digitsOptional: false });
+
+			$('#btnSaveServicio').click(function() {
+				$('.invalid-tooltip').remove();
+				id = parseInt($('#servicio-id').val());
+				data = {};
+
+				$.each($('#frm-servicio #home').find('input, select'), function(index, elem) {
+					ide = $(elem).attr('id').replace('servicio-','');
+					data[ide] = $.trim($(elem).val());
+				});
+
+				if(data.tipo == 1) { if(data.precio=='') { data.precio = 0 } }
+				else { delete data.precio; }
+				$errLabel = $('<div class="invalid-tooltip"></div>');
+				if(data.nombre == '') {
+					$errLabel.html('Debe ingresar el nombre');
+					$('#servicio-nombre').focus().after($errLabel);
+					$errLabel.show();
+				} else if($('#servicio-tipo').val() == 1 && $('#servicio-precio').val()==0) {
+					$errLabel.html('Debe ingresar el precio total del servicio');
+					$('#servicio-precio').focus().after($errLabel);
+					$errLabel.show();
+				} else {
+					blockPage();
+					if(id == 0) {
+						data.status = 1;
+						$.post($apiUrl+'add/', data, function(resp) {
+							if(resp.response) {
+								data.id = resp.result;
+								$('#servicio-id').val(data.id);
+								$('#servicio-tipo').prop('disabled', true)
+								$('#btnSaveServicio').removeClass('add').addClass('update');
+								$('#frm-servicio .modal-header').css('padding-bottom', 0);
+								$('#frm-servicio .modal-header').find('.row').last().removeClass('hide');
+								$('#detalle-tab').click();
+								
+								cleanTable('tbl-detalle'); $('#tbl-detalle tbody').empty(); createTable('tbl-detalle'); 
+								swal({ type:"success", title:"¡Listo!", text:"Se guardaron los datos correctamente.", timer:4000 });
+
+								getServicios($('#columns-tbl-servicio').val(), $('#filter-tipo-tbl-detalle').val());
+							} else { swal({ type:"warning", title:"Oops!", text:resp.message, timer:4000 }); }
+							$.unblockUI();
+						},'json');
+					} else {
+						$.ajax({ url:$apiUrl+'edit/'+id, type:'PUT', dataType:'json', data:data,  }).done(
+							function(resp) {
+								if(resp.response) {
+									$('#servicio-id').val(0);
+									$('#frm-servicio').modal('hide');
+									swal({ type:"success", title:"¡Listo!", text:"Se guardaron los datos correctamente.", timer:4000 });
+
+									getServicios($('#columns-tbl-servicio').val(), $('#filter-tipo-tbl-detalle').val());
+								} else { swal({ type:"warning", title:"Oops!", text:resp.message, timer:4000 }); }
+								$.unblockUI();
+							}
+						);
+					}
+				}
+			});
+
+			$('#frm-detalle').on('hidden.bs.modal', function() { 
+				$(this).find('input').val('').prop('disabled', false);
+				$('#servicio-tipo').prop('disabled', true)
+				$('#btnSaveServicio').addClass('update'); 
+				$('#btnSaveDetalle').removeClass('add').removeClass('update'); 
+				$('#frm-servicio').modal('show');
+			});
+
+			function getDetalleServicio(detalles) {
+				container = $('#tbl-detalle tbody'); cleanTable('tbl-detalle'); container.empty();
+				$.each(detalles, function(index, item) { addDetalleRow(item); });
+
+				createTable('tbl-detalle');
+			}
+
+			function addDetalleRow(detalle) {
+				container = $('#tbl-detalle tbody');
+
+				container.find('tr[data-id="'+detalle.id+'"]').remove();
+				tr = $('<tr data-id="'+detalle.id+'"></tr>').appendTo(container);
+
+				tr.append('<td class="text-center"><small>'+detalle.sku+'</small></td>');
+				tr.append('<td><small>'+detalle.producto.toUpperCase()+'</small></td>');
+				tr.append('<td class="text-center"><small>'+detalle.cantidad+'</small></td>');
+				tr.append('<td class="text-center"><small>'+detalle.cantidad+'</small></td>');
+
+				tda = $('<td class="text-center" data-id="'+detalle.id+'"></td>').appendTo(tr);
+				tda.append('<a href="#" data-popup="tooltip" title="Editar" class="btnEditDetalle"><i class="mdi mdi-pencil"></i></a> ');
+				tda.append('<a href="#" data-popup="tooltip" title="Eliminar" class="btnDelDetalle"><i class="mdi mdi-delete" style="color:red;"></i></a>');
+			}
+
+			$('#btnAddDetalle').click(function(evt) { evt.preventDefault();
+				$('#btnSaveDetalle').addClass('add').removeClass('update');
+				$('#frm-detalle').modal('show');
+				$('#frm-servicio').modal('hide');
+			});
+
+			var fndProds = new Bloodhound({
+				datumTokenizer: Bloodhound.tokenizers.obj.whitespace('value'),
+				queryTokenizer: Bloodhound.tokenizers.whitespace,
+				remote: {
+					url: $apiUrl.replace('servicio', 'producto')+'find/%QUERY',
+					wildcard: '%QUERY'
+				}
+			});
+
+			$('#busProd').typeahead(
+				{ hint: true, highlight: true, minLength: 3},
+				{ display: 'producto', source: fndProds }
+			);
+
+			$('#busProd').bind('typeahead:select', function(ev, suggestion) {
+				$('#detalle-producto_id').val(suggestion.id);
+			});
+
+			$("#detalle-cantidad").inputmask({ alias: "numeric", groupSeparator: ',', digits: 0, digitsOptional: false });
+
+			$('#btnSaveDetalle').click(function(evt) { evt.preventDefault(); blockPage();
+				data = { 'producto_id':$.trim($('#detalle-producto_id').val()), 'cantidad':$.trim($('#detalle-cantidad').val()), };
+				if($(this).hasClass('add')) {
+					data.servicio_id = $('#servicio-id').val();
+					$.post($apiUrl.replace('servicio', 'prod_servicio')+'add/', data, function(resp) {
+						if(resp.response) {
+							$.get($apiUrl.replace('servicio', 'prod_servicio')+'getByServicio/'+data.servicio_id, function(productos) {
+								getDetalleServicio(productos.result);
+								getServicios($('#columns-tbl-servicio').val(), $('#filter-tipo-tbl-detalle').val());
+								
+								swal({ type:"success", title:"¡Listo!", text:"Se agregó exitosamente el producto", timer:4000 });
+								$('#frm-detalle').modal('hide');
+							}, 'json');
+						} else { swal({ type:"warning", title:"Oops!", text:resp.message, timer:4000 }); }
+						$.unblockUI();
+					}, 'json');
+				} else if($(this).hasClass('update')) {
+					$.ajax({ url:$apiUrl.replace('servicio', 'prod_servicio')+'edit/'+$('#detalle-id').val(), type:'PUT', dataType:'json', data:data, success:
+						function(resp) {
+							if(resp.response) {
+								$.get($apiUrl.replace('servicio', 'prod_servicio')+'getByServicio/'+$('#servicio-id').val(), function(resp) {
+									getDetalleServicio(resp.result);
+									getServicios($('#columns-tbl-servicio').val(), $('#filter-tipo-tbl-detalle').val());
+									$('#frm-detalle').modal('hide');
+									
+									swal({ type:"success", title:"¡Listo!", text:"Se modificó el detalle", timer:4000 });
+								}, 'json');
+							} else { swal({ type:"warning", title:"Oops!", text:resp.message, timer:4000 }); }
+							$.unblockUI();
+						}
+					});
+				}
+			});
+
+			function clearData() {
+				$('.invalid-tooltip').remove();
+				$('#frm-servicio input').val('');
+				$('#servicio-tipo').val('1').trigger('change');
+				$('#servicio-id').val(0);
+				$('#home-tab').click();
+			}
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_SERVICIO_EDIT, $permisos) || in_array(MOD_PAQUETE_EDIT, $permisos)) : ?>
+			$('tbody').on('click', '.btnEdit', function(event) { event.preventDefault(); blockPage();
+				clearData();
+				$('#frm-servicio .validation-error-label').remove();
+				id = $(this).parents('tr').data('id');
+				$.get($apiUrl+'get/'+id, function(servicio) { servicio = servicio.result;
+					$.each(servicio, function(index, val) { $('#servicio-'+index).val(val).trigger('change'); });
+					$('#btnSaveServicio').removeClass('add').addClass('update');
+					$('#servicio-tipo').prop('disabled', true);
+					$('#servicio-id').val(id);
+					$('#frm-servicio').modal('show');
+					$('#detalle-tab').click();
+
+					getDetalleServicio(servicio.productos);
+					$.unblockUI();
+				});
+			});
+
+			$('tbody').on('click', '.btnEditDetalle', function(e) { e.preventDefault();
+				$.get($apiUrl.replace('servicio', 'prod_servicio')+'get/'+$(this).parents('tr').data('id'), function(detalle) { detalle = detalle.result;
+					$.each(detalle, function(index, item) { $('#detalle-'+index).val(item); });
+					$('#busProd').val(detalle.producto).prop('disabled', true);
+
+					$('#btnSaveDetalle').addClass('update').removeClass('add');
+					$('#frm-servicio').modal('hide');
+					$('#frm-detalle').modal('show');
+				}, 'json');
+			});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_SERVICIO_DEL, $permisos) || in_array(MOD_PAQUETE_DEL, $permisos)) : ?>
+			$('tbody').on('click', '.btnDel', function(event) {
+				event.preventDefault();
+				id = $(this).parents('td').data('id');
+				trp = $('#tbl-servicio [data-id="'+id+'"]').parents('tr');
+				nom = trp.find('td:eq(0)').text();
+				text = $(this).parents('tr').find('td:eq(0)').text();
+				swal({ title:"Eliminar "+text, text:"No podrá restaurar el "+text+" <strong>"+nom+"</strong>", type:"warning", html:true, showCancelButton:true, cancelButtonText:"Cancelar", confirmButtonColor:"#DD6B55", confirmButtonText:"Si, eliminar", closeOnConfirm:false }, 
+					function() {
+						//data: {fk_usuario: 1, fk_session: 1}, 
+						blockPage();
+						$.ajax({ url:$apiUrl+'del/'+id, type:'PUT', dataType:'json', success:
+							function(resp) {
+								if(resp.response) {
+									getServicios($('#columns-tbl-servicio').val(), $('#filter-tipo-tbl-detalle').val());
+									swal({ type:"success", title:"¡Listo!", text:"Se eliminó el "+text, timer:4000 });
+								} else { swal({ type: "warning", title: "Oops!", text: resp.message, timer: 4000 }); }
+								$.unblockUI();
+							}
+						});
+					}
+				);
+			});
+
+			$('tbody').on('click', '.btnDelDetalle', function(e) { e.preventDefault();
+				id = $(this).parents('tr').data('id');
+				swal({ title:"Eliminar Producto", text:"No podrá restaurar el producto <strong>"+$(this).parents('tr').find('td:eq(1)').text()+"</strong>", type:"warning", html:true, showCancelButton:true, cancelButtonText:"Cancelar", confirmButtonColor:"#DD6B55", confirmButtonText:"Si, eliminar", closeOnConfirm:false }, 
+					function() { blockPage();
+						$.ajax({ url:$apiUrl.replace('servicio', 'prod_servicio')+'del/'+id, type:'PUT', dataType:'json', success:
+							function(resp) {
+								if(resp.response) {
+									$.get($apiUrl.replace('servicio', 'prod_servicio')+'getByServicio/'+$('#servicio-id').val(), function(resp) {
+										getDetalleServicio(resp.result);
+										getServicios($('#columns-tbl-servicio').val(), $('#filter-tipo-tbl-detalle').val());
+										$('#frm-detalle').modal('hide');
+										
+										swal({ type: "success", title: "¡Listo!", text: "Se eliminó el producto", timer: 4000 });
+									}, 'json');
+								} else { swal({ type: "warning", title: "Oops!", text: resp.message, timer: 4000 }); }
+								$.unblockUI();
+							}
+						});
+					}
+				);
+			});
+			<?php endif; ?>
+
+			function cleanTable(tbl) {
+				if($.fn.dataTable.isDataTable('#'+tbl)) {
+					table = $('#'+tbl).DataTable();
+					table.destroy();
+				}
+				$("#nodata").remove();
+			}
+
+			function createTable(tbl, paging, arrColumns=null, filterTipo=null) {
+				container = $('<div class="form-inline pull-right" style="overflow: visible"></div>');
+				if(tbl == 'tbl-servicio') {
+					select = $('<select class="selectpicker" multiple data-selected-text-format="static" id="columns-'+tbl+'" title="Mostrar/Ocultar columnas" data-width="fit"></select>').appendTo(container);
+					select.append('<option class="form-control-sm" value="0">Tipo</option>');
+					select.append('<option class="form-control-sm" value="1">Nombre</option>');
+					select.append('<option class="form-control-sm" value="2">Precio</option>');
+					select.append('<option class="form-control-sm" value="3">Mano de obra</option>');
+					select.selectpicker('val', arrColumns!=null? arrColumns: ['0', '1', '2', '3']);
+					tipo = $('<select class="selectpicker" id="filter-tipo-'+tbl+'" title="Tipo" data-width="fit"></select>').appendTo(container);
+					tipo.append('<option class="form-control-sm" value="0">Todos</option>');
+					tipo.append('<option class="form-control-sm" value="1">Servicios</option>');
+					tipo.append('<option class="form-control-sm" value="2">Paquetes</option>');
+					tipo.selectpicker('val', filterTipo!=null? filterTipo: 0);
+
+					columnDefs = [
+						{"orderable": true, "targets": [0], "visible": ($.inArray("0", select.val())>=0)},
+						{"orderable": true, "targets": [1], "visible": ($.inArray("1", select.val())>=0)},
+						{"orderable": true, "targets": [2], "visible": ($.inArray("2", select.val())>=0)},
+						{"orderable": true, "targets": [3], "visible": ($.inArray("3", select.val())>=0)},
+						{"orderable": false, "targets": [4]}
+					];
+					dom = 'Rl<"#toolbar-'+tbl+'">frtip';
+					order = [1, 'ASC'];
+				} else if(tbl == 'tbl-detalle') {
+					columnDefs = [ {"orderable": true, "targets": [0, 1, 2, 3]}, {"orderable": false, "targets": [4]} ];
+					dom = 'R<"#toolbar-'+tbl+'">ft';
+					order = [0, 'ASC'];
+				}
+
+				searchContainer = $('<div class="input-group"></div>').appendTo(container);
+				search = $('<input type="text" id="bus" placeholder="Buscar por nombre" class="form-control">').appendTo(searchContainer);
+				icon = $('<div class="input-group-append"></div>').appendTo(searchContainer);
+				icon.append('<button type="button" class="btn btn-secondary btn-sm" id="btn-bus"><i class="fa fa-search"></i></button>');
+
+				$('#'+tbl).dataTable({
+					// scrollY: false,
+					scrollX: false,
+					paging: paging,
+					pagingType: "full_numbers",
+					dom: dom,
+					"columnDefs": columnDefs,
+					'order': order,
+				});
+
+				$('#toolbar-'+tbl).html(container);
+				$('#toolbar-'+tbl+' #bus').keyup(function(e) { $("#"+tbl+"_filter label input").val($.trim($(this).val())).trigger('keyup'); });
+				$("#toolbar-"+tbl+" #bus").on("search", function(evt) { $("#"+tbl+"_filter label input").val(undefined).trigger('keyup'); });
+				$("#toolbar-"+tbl+" #btn-bus").click(function(evt) { evt.preventDefault(); $("#"+tbl+"_filter label input").val($.trim($('#bus').val())).trigger('keyup'); });
+				if(tbl == 'tbl-servicio') {
+					select.on('changed.bs.select', function(e, index) { blockPage();
+						column = $('#'+tbl).DataTable().column(index);
+						column.visible(!column.visible());
+						$.unblockUI();
+					});
+					tipo.on('changed.bs.select', function(e, index) { blockPage();
+						$.fn.dataTable.ext.search.pop();
+						$('#'+tbl).DataTable().draw();
+
+						index--; if(index > 0) {
+							$.fn.dataTable.ext.search.push(
+								function(settings, data, dataIndex) {
+									if(settings.nTable.id === 'tbl-servicio') {
+										return $($('#'+tbl).DataTable().row(dataIndex).node()).attr('data-tipo') == index;
+									}
+	
+									return true;
+								}
+							);
+							$('#'+tbl).DataTable().draw();
+						}
+						$.unblockUI();
+					});
+					// tipo.change(function() { getServicios($("#columns-"+tbl).val(), $("#filter-tipo-"+tbl).val()); });
+				}
+
+				$("#"+tbl+"_filter label").hide();
+			}
+		});
+	</script>
+<?php else: include 'footer.phtml'; endif; ?>

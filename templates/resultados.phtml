@@ -1,0 +1,891 @@
+<?php 
+	include 'header.phtml';
+
+	define('MOD_ACTION_RESULT', 		49);
+	define('MOD_ACTION_RESULT_ADD', 	50);
+	define('MOD_ACTION_RESULT_EDIT', 	51);
+	define('MOD_ACTION_REPORTS', 		4);
+
+	if(in_array(MOD_ACTION_RESULT, $permisos)):
+
+?>
+	<link href="<?=URL_ROOT?>/assets/plugins/bootstrap-daterangepicker/daterangepicker.css" rel="stylesheet">
+	<link href="<?=URL_ROOT?>/assets/plugins/typeahead.js-master/dist/typehead-min.css" rel="stylesheet">
+	<link href="<?=URL_ROOT?>/assets/plugins/select2/dist/css/select2.min.css" rel="stylesheet" type="text/css" />
+
+	<div class="row page-titles">
+		<div class="col-md-5 align-self-center">
+			<h3 class="text-themecolor"><i class="mdi mdi-chart-histogram"></i> Estado de Resultados</h3>
+		</div>
+	</div>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-12">
+				<div class="card">
+					<div class="card-body">
+						<div class="actions pull-right">
+							<?php if(in_array(MOD_ACTION_REPORTS, $permisos)): ?>
+							<button class="btn btn-link" id="btnExport"><i class="mdi mdi-file-excel" style="color: green"></i></button>
+							<?php endif; ?>
+							<?php if(in_array(MOD_ACTION_RESULT_ADD, $permisos)) : ?>
+							<button class="btn btn-success" id="btnAdd"><i class="mdi mdi-plus"></i></button>
+							<?php endif; ?>
+						</div>
+
+						<h4 class="card-title">Estado de Resultados</h4>
+						<!-- <h6 class="card-subtitle">Venta y facturación</h6> -->
+
+						<div class="row">
+							<div class="col-sm-4">
+								<div class="form-group mb-0">
+									<div class="input-group">
+										<div class="input-group-prepend">
+											<span class="input-group-text"><i class="fa fa-calendar"></i></span>
+										</div>
+										<input class="form-control input-daterange-datepicker" type="text" id="fechas" value="<?= date('F Y', mktime(0, 0, 0, 1, 1, date('Y'))).' - '.date('F Y') ?>" />
+									</div>
+								</div>
+							</div>
+						</div>
+						<hr>
+
+						<div class="table-responsive">
+							<table id="tbl-items" class="table table-hover table-striped">
+								<thead>
+									<tr>
+										<th class="text-center" rowspan="2" style="vertical-align: middle;">Fecha</th>
+										<th class="text-center" colspan="3" style="border-bottom: 1px solid black; padding: 0; padding-bottom: 3px;">Gastos</th>
+										<th class="text-center" colspan="3" style="border-bottom: 1px solid red; padding: 0; padding-bottom: 3px;">Utilidad</th>
+										<th class="text-center" rowspan="2" style="vertical-align: middle;">ISR</th>
+										<th class="text-center" rowspan="2" style="vertical-align: middle;">Editado</th>
+									</tr>
+									<tr>
+										<th class="text-center">Operativos</th>
+										<th class="text-center">Administrativos</th>
+										<th class="text-center">Financieros</th>
+										<th class="text-center">Bruta</th>
+										<th class="text-center">Antes de Impuestos</th>
+										<th class="text-center">Neta</th>
+									</tr>
+								</thead>
+								<tbody>
+									<?php if($historial_total != '0'): foreach($historial as $row): ?>
+									<tr data-id="<?= $row->id ?>">
+										<td class="form-control-sm">
+											<span class="d-inline-block">
+												<?= date('F Y', mktime(0, 0, 0, $row->mes, 1, $row->anio)) ?>
+											</span>
+											<div class="actions pull-rigth d-inline-block">
+												<?php if(in_array(MOD_ACTION_RESULT_EDIT, $permisos)) : ?>
+												<a href="#" data-popup="tooltip" title="Modificar" class="btnUpdate"><i class=" mdi mdi-table-edit"></i></a>
+												<?php endif; ?>
+											</div>
+										</td>
+										<td class="text-right form-control-sm">$ <?= number_format($row->sum_operativos, 2) ?></td>
+										<td class="text-right form-control-sm">$ <?= number_format($row->sum_administrativos, 2) ?></td>
+										<td class="text-right form-control-sm">$ <?= number_format($row->sum_financieros, 2) ?></td>
+										<td class="text-right form-control-sm">$ <?= number_format($row->util_bruta, 2) ?></td>
+										<td class="text-right form-control-sm">$ <?= $antes_impuestos = number_format($row->util_bruta - ($row->sum_operativos + $row->sum_administrativos + $row->sum_financieros), 2) ?></td>
+										<td class="text-right form-control-sm">$ <?= number_format($row->utilidad_neta, 2) ?></td>
+										<td class="text-right form-control-sm">$ <?= number_format($row->uti_isr_descuento, 2) ?></td>
+										<td class="text-center form-control-sm"> <?= $row->editado ?></td>
+									</tr>
+									<?php endforeach; else: ?>
+									<tr>
+										<td colspan="9" class="text-center form-control-sm">No existen registros en ese periodo de tiempo</td>
+									</tr>
+									<?php endif; ?>
+								</tbody>
+							</table>
+						</div>
+						
+						<div class="row">
+							<div class="col-sm-6">
+								<div class="dataTables_length" id="editable-datatable_length">
+									<label>
+										<select name="editable-datatable_length" aria-controls="editable-datatable" class="form-control form-control-sm" id="cont">
+											<option value="10" selected="selected">Ver 10</option>
+											<option value="25">Ver 25</option>
+											<option value="50">Ver 50</option>
+											<option value="100">Ver 100</option>
+										</select>
+									</label>
+									<span id="reg" class="heading-text"></span>
+								</div>
+							</div>
+							<div class="col-sm-6">
+								<div class="card-body">
+									<nav aria-label="Page navigation example">
+										<ul id="pag" class="pagination pull-right"></ul>
+									</nav>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<?php if(in_array(MOD_ACTION_RESULT_ADD, $permisos)) : ?>
+		<div id="frm-item" class="modal" data-backdrop="static" data-keyboard="false">
+			<div class="modal-dialog modal-xl">
+				<div class="modal-content">
+					<div class="modal-header" style="padding-bottom: 0px;">
+						<div class="row">
+							<div class="col-sm-12">
+								<div class="row" style="padding: 10px;">
+									<h4 class="modal-title">Agregar estado de resultados mensual <?= date('F Y') ?></h4>
+								</div>
+								<div class="row">
+									<ul class="nav nav-tabs" id="tab-data-asign" role="tablist" >
+										<li class="nav-item">
+											<a class="nav-link" id="info-utilidad" data-toggle="tab" href="#data-utilidad" role="tab" aria-controls="utilidad" aria-selected="true">Ingresos</a>
+										</li>
+										<li class="nav-item dropdown d-block d-lg-none">
+											<a class="nav-link dropdown-toggle" data-toggle="dropdown" href="" role="button" aria-haspopup="true" aria-expanded="false">Gastos</a>
+											<div class="dropdown-menu">
+												<a class="nav-link" id="info-administrativos" data-toggle="tab" href="#data-gastos" role="tab" aria-controls="administrativos" aria-selected="true">Administrativos</a>
+												<a class="nav-link" id="info-operativos" data-toggle="tab" href="#data-gastos" role="tab" aria-controls="operativos" aria-selected="true">Operativos</a>
+												<a class="nav-link" id="info-financieros" data-toggle="tab" href="#data-gastos" role="tab" aria-controls="financieros" aria-selected="true">Financieros</a>
+											</div>
+										</li>
+										<li class="nav-item d-none d-lg-block">
+											<a class="nav-link" id="info-gastos" data-toggle="tab" href="#data-gastos" role="tab" aria-controls="gastos" aria-selected="false">Gastos</a>
+										</li>
+										<li class="nav-item">
+											<a class="nav-link" id="info-resultados" data-toggle="tab" href="#data-resultados" role="tab" aria-controls="resultados" aria-selected="false">Utilidad</a>
+										</li>
+									</ul>
+								</div>
+							</div>
+						</div>
+						<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+					</div>
+
+					<div class="modal-body">
+						<div class="row">
+							<div class="col-sm-12">
+								<div class="form form-horizontal">
+									<input type="hidden" id="resultados-id" data-form="id">
+									<input type="hidden" id="tab" value="utilidad">
+									<div class="tab-content">
+										<div class="tab-pane fade" id="data-utilidad" role="tabpanel" aria-labellebdy="home-tab">
+											<div class="row">
+												<div class="offset-0 offset-xl-1 col-12 col-lg-6 col-xl-5 d-block d-lg-inline-block">
+													<h4 class="modal-title text-center"><b>INGRESOS</b></h4>
+													<hr>
+													<div class="row">
+														<label for="utilidad-ing_ventas_brutas" class="col-5 col-sm-4 control-label form-control-sm text-right" style="vertical-align: middle;">Ventas Brutas:</label>
+														<div class="col-7">
+															<div class="input-group input-group-sm">
+																<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																<input type="text" id="utilidad-ing_ventas_brutas" disabled="disabled" class="form-control form-control-sm to-init data-ingresos data-resultados text-right numeric" value="<?= $total_ventas ?>" data-form="ing_ventas_brutas">
+															</div>
+														</div>
+													</div>
+													<div class="row">
+														<label for="utilidad-ing_devoluciones" class="col-5 col-sm-4 control-label form-control-sm text-right">Devoluciones:</label>
+														<div class="col-7">
+															<div class="input-group input-group-sm">
+																<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																<input type="text" id="utilidad-ing_devoluciones" class="form-control form-control-sm to-clean data-utilidad data-ingresos data-resultados text-right numeric" placeholder="0.00" value="0.00" required="required" inputmode="numeric" data-form="ing_devoluciones">
+															</div>
+														</div>
+													</div>
+													<div class="row">
+														<label for="utilidad-ing_descuentos" class="col-5 col-sm-4 control-label form-control-sm text-right">Descuentos:</label>
+														<div class="col-7">
+															<div class="input-group input-group-sm">
+																<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																<input type="text" id="utilidad-ing_descuentos" class="form-control form-control-sm to-clean data-utilidad data-ingresos data-resultados text-right numeric" placeholder="0.00" value="0.00" required="required" data-form="ing_descuentos">
+															</div>
+														</div>
+													</div>
+													<br>
+													<div class="row">
+														<label for="utilidad-ing_ventas_netas" class="col-5 col-sm-4 control-label form-control-sm text-right"><b>Ventas Netas:</b></label>
+														<div class="col-7">
+															<div class="input-group input-group-sm">
+																<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																<input type="text" id="utilidad-ing_ventas_netas" disabled="disabled" class="form-control form-control-sm to-init text-right numeric" value="0.00" data-form="ing_ventas_netas">
+															</div>
+														</div>
+													</div>
+													<br class="d-block d-lg-none">
+												</div>
+												<div class="col-12 col-lg-6 col-xl-5 d-block d-lg-inline-block">
+													<h4 class="modal-title text-center"><b>UTILIDAD BRUTA</b></h4>
+													<hr>
+													<div class="row">
+														<label for="utilidad-ing_costo_ventas" class="col-5 col-sm-4 control-label form-control-sm text-right">Costo Ventas:</label>
+														<div class="col-7">
+															<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="utilidad-ing_costo_ventas" class="form-control form-control-sm to-clean data-utilida data-utilidad_bruta data-resultados text-right numeric" placeholder="0.00" value="0.00" required="required" data-form="ing_costo_ventas">
+																</div>
+														</div>
+													</div>
+													<br><br class="d-none d-lg-block"><br class="d-none d-lg-block"><br class="d-none d-lg-block">
+													<div class="row">
+														<label for="resultados-ing_utilidad_bruta" class="col-5 col-sm-4 control-label form-control-sm text-right" style="vertical-align: middle;"><b>Utilidad Bruta:</b></label>
+														<div class="col-7">
+															<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="resultados-ing_utilidad_bruta" disabled="disabled" class="form-control form-control-sm to-init text-right numeric data-results" value="0.00" data-form="ing_utilidad_bruta">
+																</div>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									
+										<div class="tab-pane fade" id="data-gastos" role="tabpanel" aria-labellebdy="gastos-tab">
+											<div class="row">
+												<div class="offset-0 offset-xl-1 col-12 col-lg-6 col-xl-5 d-block d-lg-inline-block">
+													<div class="gastos administrativos d-none d-lg-inline-block col-12">
+														<h4 class="modal-title text-center"><b>ADMINISTRATIVOS</b></h4>
+														<hr class="">
+														<div class="row">
+															<label for="resultados-gto_admin_salarios" class="col-5 col-sm-4 control-label form-control-sm text-right">Salarios:</label>
+															<div class="col-7">
+																<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="resultados-gto_admin_salarios" class="form-control form-control-sm to-clean data-administrativos data-resultados text-right numeric" placeholder="0.00" value="0.00" required="required" data-form="gto_admin_salarios">
+																</div>
+															</div>
+														</div>
+														<div class="row">
+															<label for="resultados-gto_admin_compensaciones" class="col-5 col-sm-4 control-label form-control-sm text-right">Compensaciones:</label>
+															<div class="col-7">
+																<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="resultados-gto_admin_compensaciones" class="form-control form-control-sm to-clean data-administrativos data-resultados text-right numeric" placeholder="0.00" value="0.00" required="required" data-form="gto_admin_compensaciones">
+																</div>
+															</div>
+														</div>
+														<div class="row">
+															<label for="resultados-gto_admin_isn" class="col-5 col-sm-4 control-label form-control-sm text-right">ISN:</label>
+															<div class="col-7">
+																<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="resultados-gto_admin_isn" class="form-control form-control-sm to-clean data-administrativos data-resultados text-right numeric" placeholder="0.00" value="0.00" required="required" data-form="gto_admin_isn">
+																</div>
+															</div>
+														</div>
+														<div class="row">
+															<label for="resultados-gto_admin_seguros" class="col-5 col-sm-4 control-label form-control-sm text-right">Seguros:</label>
+															<div class="col-7">
+																<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="resultados-gto_admin_seguros" class="form-control form-control-sm to-clean data-administrativos data-resultados text-right numeric" placeholder="0.00" value="0.00" required="required" data-form="gto_admin_seguros">
+																</div>
+															</div>
+														</div>
+														<div class="row">
+															<label for="resultados-gto_admin_renta" class="col-5 col-sm-4 control-label form-control-sm text-right">Renta:</label>
+															<div class="col-7">
+																<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="resultados-gto_admin_renta" class="form-control form-control-sm to-clean data-administrativos data-resultados text-right numeric" placeholder="0.00" value="0.00" required="required" data-form="gto_admin_renta">
+																</div>
+															</div>
+														</div>
+														<div class="row">
+															<label for="resultados-gto_admin_electricidad" class="col-5 col-sm-4 control-label form-control-sm text-right">Electricidad:</label>
+															<div class="col-7">
+																<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="resultados-gto_admin_electricidad" class="form-control form-control-sm to-clean data-administrativos data-resultados text-right numeric" placeholder="0.00" value="0.00" required="required" data-form="gto_admin_electricidad">
+																</div>
+															</div>
+														</div>
+														<div class="row">
+															<label for="resultados-gto_admin_telefono" class="col-5 col-sm-4 control-label form-control-sm text-right">Tel&eacute;fono:</label>
+															<div class="col-7">
+																<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="resultados-gto_admin_telefono" class="form-control form-control-sm to-clean data-administrativos data-resultados text-right numeric" placeholder="0.00" value="0.00" required="required" data-form="gto_admin_telefono">
+																</div>
+															</div>
+														</div>
+														<div class="row">
+															<label for="resultados-gto_admin_agua" class="col-5 col-sm-4 control-label form-control-sm text-right">Agua:</label>
+															<div class="col-7">
+																<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="resultados-gto_admin_agua" class="form-control form-control-sm to-clean data-administrativos data-resultados text-right numeric" placeholder="0.00" value="0.00" required="required" data-form="gto_admin_agua">
+																</div>
+															</div>
+														</div>
+														<div class="row">
+															<label for="resultados-gto_admin_celular" class="col-5 col-sm-4 control-label form-control-sm text-right">Tel&eacute;fono celular:</label>
+															<div class="col-7">
+																<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="resultados-gto_admin_celular" class="form-control form-control-sm to-clean data-administrativos data-resultados text-right numeric" placeholder="0.00" value="0.00" required="required" data-form="gto_admin_celular">
+																</div>
+															</div>
+														</div>
+														<div class="row">
+															<label for="resultados-gto_admin_papeleria" class="col-5 col-sm-4 control-label form-control-sm text-right">Papeler&iacute;a:</label>
+															<div class="col-7">
+																<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="resultados-gto_admin_papeleria" class="form-control form-control-sm to-clean data-administrativos data-resultados text-right numeric" placeholder="0.00" value="0.00" required="required" data-form="gto_admin_papeleria">
+																</div>
+															</div>
+														</div>
+														<div class="row">
+															<label for="resultados-gto_admin_mensajeria" class="col-5 col-sm-4 control-label form-control-sm text-right">Mensajer&iacute;a:</label>
+															<div class="col-7">
+																<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="resultados-gto_admin_mensajeria" class="form-control form-control-sm to-clean data-administrativos data-resultados text-right numeric" placeholder="0.00" value="0.00" required="required" data-form="gto_admin_mensajeria">
+																</div>
+															</div>
+														</div>
+														<div class="row">
+															<label for="resultados-gto_admin_soporte" class="col-5 col-sm-4 control-label form-control-sm text-right">Soporte:</label>
+															<div class="col-7">
+																<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="resultados-gto_admin_soporte" class="form-control form-control-sm to-clean data-administrativos data-resultados text-right numeric" placeholder="0.00" value="0.00" required="required" data-form="gto_admin_soporte">
+																</div>
+															</div>
+														</div>
+														<div class="row">
+															<label for="resultados-gto_admin_membresias" class="col-5 col-sm-4 control-label form-control-sm text-right">Membres&iacute;as:</label>
+															<div class="col-7">
+																<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="resultados-gto_admin_membresias" class="form-control form-control-sm to-clean data-administrativos data-resultados text-right numeric" placeholder="0.00" value="0.00" required="required" data-form="gto_admin_membresias">
+																</div>
+															</div>
+														</div>
+														<div class="row">
+															<label for="resultados-gto_admin_mobiliario" class="col-5 col-sm-4 control-label form-control-sm text-right">Mobiliario:</label>
+															<div class="col-7">
+																<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="resultados-gto_admin_mobiliario" class="form-control form-control-sm to-clean data-administrativos data-resultados text-right numeric" placeholder="0.00" value="0.00" required="required" data-form="gto_admin_mobiliario">
+																</div>
+															</div>
+														</div>
+														<br>
+														<div class="row">
+															<label for="resultados-gastos_administrativos" class="col-5 col-sm-4 control-label form-control-sm text-right" style="vertical-align: middle;"><b>Total:</b></label>
+															<div class="col-7">
+																<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="resultados-gastos_administrativos" disabled="disabled" class="form-control form-control-sm to-clean text-right numeric data-results" value="0.00" data-form="gastos_administrativos">
+																</div>
+															</div>
+														</div>
+													</div>
+												</div>
+												<div class="col-12 col-lg-6 col-xl-5 d-block d-lg-inline-block">
+													<div class="gastos operativos d-none d-lg-inline-block col-12">
+														<h4 class="modal-title text-center"><b>OPERATIVOS</b></h4>
+														<hr class="">
+														<div class="row">
+															<label for="resultados-gto_op_ventas" class="col-5 col-sm-4 control-label form-control-sm text-right">De venta:</label>
+															<div class="col-7">
+																<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="resultados-gto_op_ventas" class="form-control form-control-sm to-clean data-operativos data-resultados text-right numeric" placeholder="0.00" value="0.00" required="required" data-form="gto_op_ventas">
+																</div>
+															</div>
+														</div>
+														<div class="row">
+															<label for="resultados-gto_op_sueldos" class="col-5 col-sm-4 control-label form-control-sm text-right">Sueldos:</label>
+															<div class="col-7">
+																<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="resultados-gto_op_sueldos" class="form-control form-control-sm to-clean data-operativos data-resultados text-right numeric" placeholder="0.00" value="0.00" required="required" data-form="gto_op_sueldos">
+																</div>
+															</div>
+														</div>
+														<div class="row">
+															<label for="resultados-gto_op_comisiones" class="col-5 col-sm-4 control-label form-control-sm text-right">Comisiones:</label>
+															<div class="col-7">
+																<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="resultados-gto_op_comisiones" class="form-control form-control-sm to-clean data-operativos data-resultados text-right numeric" placeholder="0.00" value="0.00" required="required" data-form="gto_op_comisiones">
+																</div>
+															</div>
+														</div>
+														<div class="row">
+															<label for="resultados-gto_op_entrega" class="col-5 col-sm-4 control-label form-control-sm text-right">Entrega/fletes:</label>
+															<div class="col-7">
+																<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="resultados-gto_op_entrega" class="form-control form-control-sm to-clean data-operativos data-resultados text-right numeric" placeholder="0.00" value="0.00" required="required" data-form="gto_op_entrega">
+																</div>
+															</div>
+														</div>
+														<div class="row">
+															<label for="resultados-gto_op_mercadotecnia" class="col-5 col-sm-4 control-label form-control-sm text-right">Mercadotecnia:</label>
+															<div class="col-7">
+																<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="resultados-gto_op_mercadotecnia" class="form-control form-control-sm to-clean data-operativos data-resultados text-right numeric" placeholder="0.00" value="0.00" required="required" data-form="gto_op_mercadotecnia">
+																</div>
+															</div>
+														</div>
+														<div class="row">
+															<label for="resultados-gto_op_viajes" class="col-5 col-sm-4 control-label form-control-sm text-right">Viajes:</label>
+															<div class="col-7">
+																<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="resultados-gto_op_viajes" class="form-control form-control-sm to-clean data-operativos data-resultados text-right numeric" placeholder="0.00" value="0.00" required="required" data-form="gto_op_viajes">
+																</div>
+															</div>
+														</div>
+														<div class="row">
+															<label for="resultados-gto_op_viaticos" class="col-5 col-sm-4 control-label form-control-sm text-right">Viaticos:</label>
+															<div class="col-7">
+																<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="resultados-gto_op_viaticos" class="form-control form-control-sm to-clean data-operativos data-resultados text-right numeric" placeholder="0.00" value="0.00" required="required" data-form="gto_op_viaticos">
+																</div>
+															</div>
+														</div>
+														<div class="row">
+															<label for="resultados-gto_op_otros" class="col-5 col-sm-4 control-label form-control-sm text-right">Otros Gastos:</label>
+															<div class="col-7">
+																<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="resultados-gto_op_otros" class="form-control form-control-sm to-clean data-operativos data-resultados text-right numeric" placeholder="0.00" value="0.00" required="required" data-form="gto_op_otros">
+																</div>
+															</div>
+														</div>
+														<br>
+														<div class="row">
+															<label for="resultados-gastos_operativos" class="col-5 col-sm-4 control-label form-control-sm text-right" style="vertical-align: middle;"><b>Total:</b></label>
+															<div class="col-7">
+																<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="resultados-gastos_operativos" disabled="disabled" class="form-control form-control-sm to-clean text-right numeric data-results" value="0.00" data-form="gastos_operativos">
+																</div>
+															</div>
+														</div>
+														<br><br>
+													</div>
+													<div class="gastos financieros d-none d-lg-inline-block col-12">
+														<h4 class="modal-title text-center"><b>FINANCIEROS</b></h4>
+														<hr class="">
+														<div class="row">
+															<label for="resultados-gto_finan_financieros" class="col-5 col-sm-4 control-label form-control-sm text-right">Financieros:</label>
+															<div class="col-7">
+																<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="resultados-gto_finan_financieros" class="form-control form-control-sm to-clean data-financieros data-resultados text-right numeric" placeholder="0.00" value="0.00" required="required" data-form="gto_finan_financieros">
+																</div>
+															</div>
+														</div><br>
+														<div class="row">
+															<label for="resultados-gastos_financieros" class="col-5 col-sm-4 control-label form-control-sm text-right" style="vertical-align: middle;"><b>Total:</b></label>
+															<div class="col-7">
+																<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="resultados-gastos_financieros" disabled="disabled" class="form-control form-control-sm to-clean text-right numeric data-results" value="0.00" data-form="gastos_financieros">
+																</div>
+															</div>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+
+										<div class="tab-pane fade" id="data-resultados" role="tabpanel" aria-labellebdy="adicional-tab">
+											<div class="row">
+												<div class="offset-0 offset-lg-6 col-12 col-lg-6 d-block d-lg-inline-block">
+													<h4 class="modal-title text-center"><b>UTILIDAD ANTES DE IMPUESTOS</b></h4>
+													<hr>
+													<div class="row">
+														<label for="resultados-uti_antes_impuestos" class="col-5 col-sm-4 control-label form-control-sm text-right">Utilidad:</label>
+														<div class="col-7">
+															<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="resultados-uti_antes_impuestos" disabled="disabled" class="form-control form-control-sm to-init data-resultados text-right numeric" value="0.00" data-form="uti_antes_impuestos">
+																</div>
+														</div>
+													</div>
+													<br><br>
+													<h4 class="modal-title text-center"><b>IMPUESTOS</b></h4>
+													<hr>
+													<div class="row">
+														<label for="resultados-uti_isr_porcentaje" class="col-5 col-sm-4 control-label form-control-sm text-right">% ISR:</label>
+														<div class="col-7">
+															<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="resultados-uti_isr_porcentaje" class="form-control form-control-sm data-resultados text-right" value="16" data-form="uti_isr_porcentaje">
+																</div>
+														</div>
+														<br>
+														<label for="resultados-uti_isr_descuento" class="col-5 col-sm-4 control-label form-control-sm text-right">Impuestos:</label>
+														<div class="col-7">
+															<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="resultados-uti_isr_descuento" disabled="disabled" class="form-control form-control-sm data-resultados text-right numeric" value="0.00" data-form="uti_isr_descuento">
+																</div>
+														</div>
+													</div>
+													<br><br>
+													<h4 class="modal-title text-center"><b>UTILIDAD NETA</b></h4>
+													<hr>
+													<div class="row">
+														<label for="resultados-utilidad_neta" class="col-5 col-sm-4 control-label form-control-sm text-right">Utilidad Neta:</label>
+														<div class="col-7">
+															<div class="input-group input-group-sm">
+																	<div class="input-group-prepend"><span class="input-group-text">$</span></div>
+																	<input type="text" id="resultados-utilidad_neta" disabled="disabled" class="form-control form-control-sm text-right numeric" value="0.00" data-form="utilidad_neta">
+																</div>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div class="modal-footer">
+						<button type="button" id="btn-cancel" class="btn btn-danger" class="close" data-dismiss="modal">Cancelar</button>
+						<button type="button" id="btn-save" class="btn btn-primary">Siguiente</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<?php endif; ?>
+	</div>
+	<?php include 'footer.phtml';?>
+	<script src="<?=URL_ROOT?>/assets/plugins/inputmask/dist/min/jquery.inputmask.bundle.min.js"></script>
+	<script src="<?=URL_ROOT?>/assets/js/mask.init.js"></script>
+	<script src="<?=URL_ROOT?>/assets/plugins/bootstrap-daterangepicker/daterangepicker.js"></script>
+	<script src="<?=URL_ROOT?>/assets/plugins/typeahead.js-master/dist/typeahead.bundle.min.js"></script>
+	<script src="<?=URL_ROOT?>/assets/plugins/select2/dist/js/select2.full.min.js" type="text/javascript"></script>
+	<script src="<?=URL_ROOT?>/assets/plugins/moment/min/moment.min.js" type="text/javascript"></script>
+	<script src="<?=URL_ROOT?>/assets/plugins/number-format/jquery.number.min.js" type="text/javascript"></script>
+
+	<script type="text/javascript">
+		$(function() {
+			$apiUrl = '<?= URL_API ?>edo_resultados/';
+			$('.input-daterange-datepicker').daterangepicker({
+				changeMonth: true,
+				changeYear: true,
+				format: 'MMMM YYYY',
+				showDropdowns: true,
+				minDate: '<?= date('F Y', mktime(0, 0, 0, 1, 1, date('Y'))) ?>',
+				maxDate: '<?= date('F Y') ?>',
+				applyClass: 'btn-primary',
+				cancelClass: 'btn-inverse',
+				locale: {
+					format: 'MMMM YYYY',
+					separator: ' - ',
+					fromLabel: 'Desde',
+					toLabel: 'Hasta',
+					customRangeLabel: 'Personalizada',
+					daysOfWeek: ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'],
+					monthNames: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiempre', 'Octubre', 'Noviembre', 'Diciembre'],
+					firstDay: 1,
+				},
+				ranges: $dateRanges,
+				// alwaysShowCalendars: true,
+				autoApply: true
+			}, function(start, end, label) {
+				getItems(0,10);
+			});
+
+			blockPage();
+			$(document).ready(function() {
+				doPagination(<?= $historial_total ?>, $('#cont').val(), 0);
+				$.unblockUI();
+			});
+
+			function getItems(pag, lim) {
+				blockPage();
+				$('#tbl-items tbody').empty();
+				var fechas = $('#fechas').data('daterangepicker');
+				ini = fechas.startDate.format('MM-YYYY');
+				fin = fechas.endDate.format('MM-YYYY');
+				$.get($apiUrl+'getAll/'+pag+'/'+lim+'/'+ini+'/'+fin, function(resp) {
+					if(resp.total > 0) {
+						$.each(resp.result, function(index, item) {
+							addRow(item);
+						});
+					}else{
+						$('#tbl-items tbody').append('<tr><td colspan="9"><small>No existen registros en ese periodo de tiempo</small></td></tr>');
+					}
+					doPagination(resp.total, lim, pag);
+					$.unblockUI();
+				});
+			}
+
+			function addRow(item) {
+				$('#tbl-items tbody tr[data-id="'+item.id+'"]').remove();
+				tr = $('<tr data-id="'+item.id+'"></tr>');
+
+				months = ['', 'January', 'Febrary', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+				$('<td class="form-control-sm"><span>'+months[item.mes]+' '+item.anio+'</span></td>').appendTo(tr);
+				<?php if(in_array(MOD_ACTION_RESULT_EDIT, $permisos)) : ?>
+					tr.find('td').first().append($('<div class="actions pull-right d-inline-block"><a href="#" data-popup="tooltip" title="Modificar" class="btnUpdate"><i class=" mdi mdi-table-edit"></i></a></div>'));
+				<?php endif; ?>
+				tr.append('<td class="text-right form-control-sm">$ '+$.number(item.sum_operativos, 2)+'</td>');
+				tr.append('<td class="text-right form-control-sm">$ '+$.number(item.sum_administrativos, 2)+'</td>');
+				tr.append('<td class="text-right form-control-sm">$ '+$.number(item.sum_financieros, 2)+'</td>');
+				tr.append('<td class="text-right form-control-sm">$ '+$.number(item.util_bruta, 2)+'</td>');
+				tr.append('<td class="text-right form-control-sm">$ '+$.number(item.uti_antes_impuestos, 2)+'</td>');
+				tr.append('<td class="text-right form-control-sm">$ '+$.number(item.utilidad_neta, 2)+'</td>');
+				tr.append('<td class="text-right form-control-sm">$ '+$.number(item.uti_isr_descuento, 2)+'</td>');
+				tr.append('<td class="text-right form-control-sm">'+item.editado+'</td>');
+
+				$('#tbl-items tbody').append(tr);
+			}
+		
+			<?php if(in_array(MOD_ACTION_RESULT_ADD, $permisos)) : ?>
+			$('#btnExport').click(function(e) {
+				e.preventDefault();
+				
+				fechas = $('#fechas').data('daterangepicker');
+				ini = fechas.startDate.format('MM-YYYY');
+				fin = fechas.endDate.format('MM-YYYY');
+				window.open($apiUrl+'exportToExcel/'+ini+'/'+fin, '_blank');
+			});
+
+			$('#btnAdd').click(function(e) {
+				e.preventDefault();
+				blockPage();
+				$.get($apiUrl+'getByDate/<?= date('Y/m') ?>', function(resp) {
+					if(resp.response) {
+						swal({   
+							title: "Ya existe un registro para el mes actual",
+							text: "¿Deseas continuar? Se editará la información de dicho registro",
+							type: "warning",
+							html: true,
+							showCancelButton: true,
+							cancelButtonText: "Cancelar",
+							confirmButtonColor: "#DD6B55",   
+							confirmButtonText: "Si, continuar",
+						}, function() {
+							$('#tbl-items tbody .btnUpdate').first().trigger('click');
+						});
+					} else {
+						$('#frm-item .modal-header .modal-title').html('Agregar estado de resultados mensual <?= date('F Y') ?>');
+						// $('#frm-item #utilidad-ing_ventas_brutas').val('<?= $total_ventas ?>').trigger('change');
+						$('#btn-save').addClass('add').removeClass('update');
+						$('#frm-item').modal('show');
+						$('.to-clean').val('0.00');
+						$('.to-init').val('<?= $total_ventas ?>');
+						$('#resultados-uti_isr_porcentaje').val('16').trigger('change');
+					}
+
+					$.unblockUI();
+				}, 'json');
+			});
+
+			$('#tbl-items').on('click', '.btnUpdate', function() {
+				fecha = moment($.trim($(this).parents('tr').find('td:eq(0)').text()), 'MMMM YYYY');
+				$('#frm-item .modal-header .modal-title').html('Actualizar estado de resultados mensual '+fecha.format('MMMM YYYY'));
+				$.get($apiUrl+'getByDate/'+fecha.format('YYYY/MM'), function(resp) {
+					if(resp.response) {
+						$('#btn-save').addClass('update').removeClass('add');
+						$.each(resp.result, function(id, value) {
+							element = $('input[data-form="'+id+'"]');
+							if(element.length > 0) {
+								if(value == '0.00') element.attr('value', '0.00');
+								else element.val(value);
+							}
+						});
+						$.get($apiUrl.replace('edo_resultados', 'venta')+'getTotalVentas/'+fecha.format('MM/YYYY'), function(response) {
+							if(response.result > 0) {
+								$('#utilidad-ing_ventas_brutas').val(response.result);
+							}
+							$('.data-ingresos').first().trigger('change');
+							$('.data-administrativos').first().trigger('change');
+							$('.data-operativos').first().trigger('change');
+							$('.data-financieros').first().trigger('change');
+						}, 'json');
+					}
+				}, 'json');
+				$('#frm-item').modal('show');
+			});
+
+			$('#frm-item').on('show.bs.modal', function(e) {
+				$('#info-utilidad').click();
+				$('.data-ingresos').first().trigger('change');
+			});
+
+			$('#frm-item').on('hidden.bs.modal', function() {
+				$('#resultados-id').val(null);
+			});
+
+			$('.nav-link').on('click', function(e) {
+				e.preventDefault();
+				tab = $(this).attr('id').replace('info-', '');
+				pane = $('.'+tab);
+
+				$(this).show();
+				$('#tab').val(tab);
+				if(pane.hasClass('d-none') && pane.length==1) {
+					$('.gastos').addClass('d-none');
+					$('.'+tab).removeClass('d-none');
+				}
+
+				if($('#info-'+tab).parents('.nav-item').next().length == 0) {
+					$('#btn-save').html('Guardar');
+				} else {
+					$('#btn-save').html('Siguiente');
+				}
+			});
+
+			$(".numeric").inputmask({
+				alias: "numeric", groupSeparator: ',', digits: 2, digitsOptional: false, placeholder: '0'
+			});
+
+			$('.data-ingresos, .data-utilidad_bruta').change(function() {
+				ingresos = sumArrayValues(getInputData('ingresos'));
+				$('#utilidad-ing_ventas_netas').val(ingresos);
+				
+				utilidadBruta = sumArrayValues(getInputData('utilidad_bruta'));
+				$('#resultados-ing_utilidad_bruta').val(parseFloat(ingresos) - parseFloat(utilidadBruta)).trigger('change');
+			});
+
+			$('.data-administrativos').change(function() {
+				gastos = sumArrayValues(getInputData('administrativos'));
+				$('#resultados-gastos_administrativos').val(gastos).trigger('change');
+			});
+
+			$('.data-operativos').change(function() {
+				data = getInputData('operativos');
+				$('#resultados-gastos_operativos').val(sumArrayValues(data)).trigger('change');
+			});
+
+			$('.data-financieros').change(function() {
+				data = getInputData('financieros');
+				$('#resultados-gastos_financieros').val(sumArrayValues(data)).trigger('change');
+			});
+
+			$('.data-results[disabled="disabled"]').change(function() {
+				data = {
+					util_bruta: parseFloat($.trim($('#resultados-ing_utilidad_bruta').val())),
+					gtos_administrativos: parseFloat($.trim($('#resultados-gastos_administrativos').val())),
+					gtos_operativos: parseFloat($.trim($('#resultados-gastos_operativos').val())),
+					gtos_financieros: parseFloat($.trim($('#resultados-gastos_financieros').val()))
+				};
+
+				antes_impuestos = $('#resultados-uti_antes_impuestos');
+				antes_impuestos.val(data.util_bruta - (data.gtos_administrativos + data.gtos_operativos + data.gtos_financieros)).trigger('change');
+			});
+
+			$('#resultados-uti_antes_impuestos, #resultados-uti_isr_porcentaje').change(function() {
+				utilidad = parseFloat($('#resultados-uti_antes_impuestos').val());
+				isr = parseInt($('#resultados-uti_isr_porcentaje').val());
+
+				impuestos = utilidad * isr / 100;
+				$('#resultados-uti_isr_descuento').val(impuestos);
+				$('#resultados-utilidad_neta').val(utilidad - impuestos);
+			});
+			
+			$('#btn-save').click(function(e) {
+				e.preventDefault();
+
+				tab = $('#tab').val();
+				emptyField = validateFieldsNotEmpty('resultados');
+				if(emptyField == null) {
+					if($(this).text() == 'Siguiente') {
+						items = $('#frm-item .nav-item:visible .nav-link[data-toggle="tab"]');
+						$.each(items, function(index, item) {
+							element = $(this);
+							if(element.attr('id').replace('info-', '') == tab) {
+								$(items[index+1]).click();
+								tab = $(items[index+1]).attr('id').replace('info-', '');
+								return false
+							}
+						});
+
+						if($('#info-'+tab).parents('.nav-item').next().length == 0) {
+							$('#btn-save').html('Guardar');
+						}
+					} else if($(this).text() == 'Guardar') {
+						data = getInputData('resultados');
+						if($(this).hasClass('add')) {
+							addEdoResultados(data);
+						} else if($(this).hasClass('update')) {
+							editEdoResultados(data, $('#resultados-id').val());
+						}
+					}
+				} else {
+					emptyField.focus();
+				}
+			});
+
+			function addEdoResultados(data) {
+				data.anio = '<?= date('Y') ?>';
+				data.mes = '<?= date('m') ?>';
+				$.post($apiUrl+'add/', data, function(resp) {
+					if(resp.response) {
+						$('#tbl-items tbody').prepend(setValuesOnRow($('<tr data-id="'+resp.result+'"></tr>')));
+						$('#frm-item').modal('hide');
+					}
+				}, 'json');
+			}
+
+			function editEdoResultados(data, id) {
+				$.ajax({
+					url: $apiUrl+'edit/'+id,
+					type: 'PUT',
+					data: data,
+					dataType: 'json',
+					success: function(resp) {
+						if(resp.response) {
+							$.each($('#tbl-items tbody tr'), function(index, item) {
+								item = $(item);
+								if(item.data('id') == id) {
+									console.log(item);
+									item.replaceWith(setValuesOnRow(item));
+									return false;
+								}
+							});
+
+							$('#frm-item').modal('hide');
+						}
+					}
+				});
+			}
+
+			function setValuesOnRow(tr) {
+				if(tr.find('td').length > 0) {
+					trOld = tr.clone();
+					tr.empty();
+					console.log(trOld.find('td').length);
+					tr.append('<td class="text-center form-control-sm">'+trOld.find('td:eq(0)').html()+'</td>');
+				} else {
+					tr.empty();
+					td = $('<td class="text-center form-control-sm><?= date('F Y') ?></td>');
+					<?php if(in_array(MOD_ACTION_RESULT_EDIT, $permisos)): ?>
+					td.append('<a href="#" data-popup="tooltip" title="Modificar" class="btnUpdate pull-right"><i class="mdi mdi-table-edit"></i></a>');
+					<?php endif; ?>
+					tr.append(td);
+				}
+				tr.append('<td class="text-right form-control-sm">$ '+$('#resultados-gastos_operativos').val()+'</td>');
+				tr.append('<td class="text-right form-control-sm">$ '+$('#resultados-gastos_administrativos').val()+'</td>');
+				tr.append('<td class="text-right form-control-sm">$ '+$('#resultados-gastos_financieros').val()+'</td>');
+				tr.append('<td class="text-right form-control-sm">$ '+$('#resultados-ing_utilidad_bruta').val()+'</td>');
+				tr.append('<td class="text-right form-control-sm">$ '+$('#resultados-uti_antes_impuestos').val()+'</td>');
+				tr.append('<td class="text-right form-control-sm">$ '+$('#resultados-utilidad_neta').val()+'</td>');
+				tr.append('<td class="text-right form-control-sm">$ '+$('#resultados-uti_isr_descuento').val()+'</td>');
+				tr.append('<td class="text-center form-control-sm"><?= date('d/m/Y') ?></td>');
+
+				return tr;
+			}
+			<?php endif; ?>
+		});
+	</script>
+<?php 
+	else :
+		header('Location: '.URL_API.'403');
+		exit;
+	endif; 
+?>

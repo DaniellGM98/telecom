@@ -1,0 +1,437 @@
+<?php 
+	include 'header.phtml';
+
+	define('MOD_EXTRAS', 	15);
+	define('MOD_INGRESO_ADD', 	96);
+	define('MOD_INGRESO_DEL', 	97);
+	define('MOD_COSTO_ADD', 	98);
+	define('MOD_STATUS_UPD', 	99);
+	define('MOD_ENTREGAR', 	100);
+
+	if(isset($_SESSION['sucursal']) && (!isset($solicitudes) || count($solicitudes)==0)):
+?>
+	<link href="<?= URL_ROOT ?>/assets/plugins/x-editable/dist/bootstrap3-editable/css/bootstrap-editable.css" rel="stylesheet" />
+
+	<div class="row page-titles">
+		<div class="col-md-5 align-self-center">
+			<h3 class="text-themecolor"><i class="mdi mdi-wrench fa-lg"></i> Reparaciones</h3>
+		</div>
+		<div class="col-sm-7">
+			<div class="form-inline pull-right <?= $_SESSION['sucursal'] > 0 ? 'hide' : '' ?>">
+				<input type="date" class="form-control form-control-sm m-r-10" id="rpt-ini" value="<?= date('Y-m-01') ?>">
+				<input type="date" class="form-control form-control-sm m-r-10" id="rpt-fin" value="<?= date('Y-m-d') ?>">
+				<select id="rpt-suc" class="form-control form-control-sm">
+					<option value="0">Todas las sucursales</option>
+				</select>
+			</div>
+		</div>
+	</div>
+
+	<div class="container-fluid">
+		<div class="card">
+			<div class="card-header">
+				<div class="pull-right form-inline">
+					<div class="input-group input-group-sm">
+						<div class="input-group-prepend">
+							<span class="input-group-text"><i class="fa fa-filter"></i></span>
+						</div>
+						<input type="search" placeholder="Buscar por cliente o equipo" class="form-control form-control-sm filter">
+					</div>
+					<?php if(in_array(MOD_INGRESO_ADD, $permisos)) : ?>
+					<button class="btn btn-sm btn-success m-l-10 <?= intval($_SESSION['sucursal']) == 0 ? 'hide' : '' ?>" id="btnAdd"><i class="mdi mdi-plus"></i></button>
+					<?php endif; ?>
+				</div>
+				<h4 class="card-title">Equipos en reparación</h4>
+			</div>
+			<div class="card-body">
+				<div class="table-responsive">
+					<table id="tbl-items" class="table table-sm table-striped table-hover">
+						<thead>
+							<tr>
+								<th>Fecha</th>
+								<th class="<?= $_SESSION['sucursal'] > 0 ? 'hide' : '' ?>">Sucursal</th>
+								<th>Cliente</th>
+								<th>Equipo</th>
+								<th class="text-right <?= $_SESSION['sucursal'] > 0 ? 'hide' : '' ?>">Costo</th>
+								<th class="text-right">Total</th>
+								<th class="text-right">Anticipo</th>
+								<th class="text-right">Saldo</th>
+								<th class="text-center">Estado</th>
+								<th></th>
+							</tr>
+						</thead>
+						<tbody></tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	<?php if(in_array(MOD_INGRESO_ADD, $permisos)) : ?>
+	<div id="frm-item" class="modal" data-backdrop="static" data-keyboard="false" tabindex="-1">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h3 class="modal-title"><i class="mdi mdi-wrench"></i> Ingresar Equipo</h3>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+				<div class="modal-body">
+					<div class="form-horizontal">
+						<div class="form-group row m-b-10">
+							<label for="item-cliente" class="col-md-4 col-form-label">Cliente</label>
+							<div class="col-md-8">
+								<input type="text" class="form-control" id="item-cliente" placeholder="Nombre completo del cliente" required>
+							</div>
+						</div>
+						<div class="form-group row m-b-10">
+							<label for="item-imei" class="col-md-4 col-form-label">No. IMEI:</label>
+							<div class="col-md-8">
+								<input type="number" class="form-control text-center" id="item-imei" placeholder="# IMEI" required maxlength="15">
+							</div>
+						</div>
+						<div class="form-group row m-b-10">
+							<label for="item-marca" class="col-md-4 col-form-label">Marca:</label>
+							<div class="col-md-8">
+								<input type="text" class="form-control" id="item-marca" placeholder="Marca del equipo" required>
+							</div>
+						</div>
+						<div class="form-group row m-b-10">
+							<label for="item-modelo" class="col-md-4 col-form-label">Modelo:</label>
+							<div class="col-md-8">
+								<input type="text" class="form-control" id="item-modelo" placeholder="Modelo el equipo" required>
+							</div>
+						</div>
+						<div class="form-group row m-b-10">
+							<label for="item-anticipo" class="col-md-4 col-form-label">Anticipo</label>
+							<div class="col-md-8">
+								<div class="input-group">
+									<div class="input-group-prepend">
+										<span class="input-group-text" id="basic-addon1">$</span>
+									</div>
+									<input type="text" class="form-control text-right" id="item-anticipo" placeholder="Anticipo" value="0.00" required>
+								</div>
+							</div>
+						</div>
+						<div class="form-group row m-b-0">
+							<label class="col-md-4 col-form-label" for="item-observaciones">Observaciones</label>
+							<div class="col-md-8">
+								<textarea class="form-control" id="item-observaciones" placeholder="Observaciones" rows="3"></textarea>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="submit" class="btn btn-inverse waves-effect waves-light m-r-20" data-dismiss="modal">Cancelar</button>
+					<?php if(in_array(MOD_INGRESO_ADD, $permisos)) : ?>
+					<button type="submit" class="btn btn-success waves-effect waves-light" id="btnSave">Guardar</button>
+					<?php endif; ?>
+				</div>
+			</div>
+		</div>
+	</div>
+	<?php endif; ?>
+		
+	<?php include 'footer.phtml';?>
+	<script src="<?=URL_ROOT?>/assets/plugins/inputmask/dist/min/jquery.inputmask.bundle.min.js"></script>
+	<script src="<?=URL_ROOT?>/assets/js/mask.init.js"></script>
+	<script type="text/javascript" src="<?=URL_ROOT?>/assets/plugins/x-editable/dist/bootstrap3-editable/js/bootstrap-editable.js"></script>
+
+	<script type="text/javascript">
+		$(function() {
+
+			$apiUrl = '<?= URL_API ?>';
+			$('#item-anticipo').inputmask({ alias: "numeric", groupSeparator: ',', digits: 2, digitsOptional: false, placeholder: '0.00' });
+			
+			arrSuc = [];
+			function getItems(){
+				blockPage();
+				$.get($apiUrl+"pos/getReparaciones/<?= $_SESSION['sucursal'] ?>",
+					function (data) {
+						$('#rpt-suc').empty().append('<option value="0">Todas las sucursales</option>');
+						arrSuc = [];
+						if(data.length > 0){
+							$.each(data, function (index, item) { 
+								addRow(item);
+								if(!arrSuc.includes(item.sucursal_id)){ $('#rpt-suc').append('<option value="'+item.sucursal+'">'+item.sucursal+'</option>'); arrSuc.push(item.sucursal_id)};
+							});
+						}else{
+							$('#tbl-items tbody').append('<tr class="no-data"><td colspan="8"><small>No hay reparaciones pendientes</small></td></tr>');
+						}
+						$('[data-toggle="popover"]').popover();
+						$.unblockUI();
+					},
+					"json"
+				);
+			}
+			getItems();
+
+			$.fn.editable.defaults.mode = 'inline';
+			$.fn.editable.defaults.url = '<?= URL_API ?>pos/reparacion/set';
+			$.fn.editable.defaults.source = ['En Almacen', 'En Reparación', 'Reparado', 'No Reparado'];
+			function addRow(item){
+				tr = $('<tr></tr>');
+
+				tr.append('<td>'+item.fecha+'</td>');
+				tr.append('<td class="<?= $_SESSION['sucursal'] > 0 ? 'hide' : '' ?>">'+item.sucursal+'</td>');
+				tr.append('<td>'+item.cliente+'</td>');
+				obs = '<i class="mdi mdi-comment pull-right" data-container="body" title="Observaciones" data-toggle="popover" data-content="'+item.observaciones+'" data-trigger="hover"></i>';
+				tr.append('<td>'+item.marca+' '+item.modelo+' '+item.imei+obs+'</td>');
+				<?php if(in_array(MOD_COSTO_ADD, $permisos)) : ?>
+				costo = '<a href="#" class="editable" data-type="number" data-pk="'+item.id+'" data-name="costo">'+(item.costo!=null?item.costo:'--')+'</a>';
+				tr.append('<td class="text-right"><span>'+costo+'</span></td>');
+				if(item.estado.indexOf('Entregado') > -1) total = '<span>'+(item.total!=null?item.total:'--')+'</span>';
+				else total = '<a href="#" class="editable" data-type="number" data-pk="'+item.id+'" data-name="total">'+(item.total!=null?item.total:'--')+'</a>';
+				tr.append('<td class="text-right"><span>'+total+'</span></td>');
+				<?php else : ?>
+				tr.append('<td class="text-right <?= $_SESSION['sucursal'] > 0 ? 'hide' : '' ?>"><span>'+(item.costo!=null?item.costo:'--')+'</span></td>');
+				tr.append('<td class="text-right"><span>'+(item.total!=null?item.total:'--')+'</span></td>');
+				<?php endif; ?>
+				tr.append('<td class="text-right">'+item.anticipo+'</td>');
+				tr.append('<td class="text-right">'+(item.total!=null?(item.total-item.anticipo).toFixed(2):'--')+'</td>');
+				edo = 'secondary'; if(item.estado == 'En Reparación') edo = 'primary'; if(item.estado.indexOf('Reparado') > -1) edo = 'warning';
+				if(item.estado.indexOf('Entregado') > -1) edo = 'success';
+				<?php if(in_array(MOD_STATUS_UPD, $permisos)) : ?>
+				if(item.estado.indexOf('Entregado') > -1) estado = '<span class="badge badge-'+edo+'">'+item.estado+'</span>';
+				else estado = '<a href="#" class="editable badge badge-'+edo+'" data-type="select" data-pk="'+item.id+'" data-name="estado" data-value="'+item.estado+'">'+item.estado+'</a>';
+				tr.append('<td class="text-center">'+estado+'</td>');
+				<?php else : ?>
+				tr.append('<td class="text-center"><span class="badge badge-'+edo+'">'+item.estado+'</span></td>');
+				<?php endif; ?>
+
+				tda = $('<td class="text-right" data-id="'+item.id+'"></td>');
+				<?php if(in_array(MOD_INGRESO_DEL, $permisos)) : ?>
+				if(item.estado == 'En Sucursal') tda.append('<a href="#" data-popup="tooltip" title="Eliminar" class="btnDel"><i class="mdi mdi-delete" style="color:red;"></i></a>');
+				<?php endif; ?>
+				<?php if(in_array(MOD_ENTREGAR, $permisos)) : ?>
+				if(item.estado.indexOf('Reparado') > -1 && item.estado.indexOf('Entregado') == -1) tda.append('<a href="#" data-popup="tooltip" title="Entregar" class="btnEntregar"><i class="mdi mdi-send"></i></a>');
+				<?php endif; ?>
+				tr.append(tda);
+				
+				$('#tbl-items .no-data').remove();
+				$('#tbl-items tbody').append(tr);
+				$('.editable').editable();
+				$('[data-toggle="popover"]').popover();
+			}
+		
+			$('.filter').keyup(function(e) { 
+				q = $.trim($(this).val()).toUpperCase();
+				$.each($(this).parents('.card').find('table tbody tr'), function (index, elem) { 
+					cli = $(elem).find('td:eq(2)').text().toUpperCase();
+					equi = $(elem).find('td:eq(3)').text().toUpperCase();
+					suc = $(elem).find('td:eq(1)').text();
+					if((cli.indexOf(q) > -1 || equi.indexOf(q) > -1) && ($('#rpt-suc').val() == '0' || suc == $('#rpt-suc').val())){
+						$(elem).css('display', '');
+					}else{
+						$(elem).css('display', 'none');
+					}
+				});
+			 });
+
+			 $(".filter").on("search", function(evt){
+				$.each($(this).parents('.card').find('table tbody tr'), function (index, elem) { 
+					$(elem).css('display', '');
+				});
+			});
+
+			$('#rpt-suc').change(function(){
+				$('.filter').val('');
+				suc = $(this).val();
+				if(suc == '0'){
+					$.each($('#tbl-items tbody tr'), function (index, elem) { 
+						$(elem).css('display', '');
+					});
+				}else{
+					$.each($('#tbl-items tbody tr'), function (index, elem) { 
+						if($(elem).find('td:eq(1)').text() == suc){
+							$(elem).css('display', '');
+						}else{
+							$(elem).css('display', 'none');
+						}
+					});
+				}
+			});
+
+			$('#rpt-ini, #rpt-fin').change(function(){
+				blockPage();
+				$('#tbl-items tbody').empty();
+				$.get($apiUrl+"pos/getReparaciones/"+$('#rpt-ini').val()+"/"+$('#rpt-fin').val(),
+					function (data) {
+						$('#rpt-suc').empty().append('<option value="0">Todas las sucursales</option>');
+						arrSuc = [];
+						if(data.length > 0){
+							$.each(data, function (index, item) { 
+								addRow(item);
+								if(!arrSuc.includes(item.sucursal_id)){ $('#rpt-suc').append('<option value="'+item.sucursal+'">'+item.sucursal+'</option>'); arrSuc.push(item.sucursal_id)};
+							});
+						}else{
+							$('#tbl-items tbody').append('<tr class="no-data"><td colspan="8"><small>No hay reparaciones pendientes</small></td></tr>');
+						}
+						$('[data-toggle="popover"]').popover();
+						$.unblockUI();
+					},
+					"json"
+				);
+			});
+
+			<?php if(in_array(MOD_INGRESO_ADD, $permisos)) : ?>
+			$('#btnAdd').click(function(e) {
+				e.preventDefault();
+				$('#frm-item input, #item-observaciones').val('');
+				$('#item-anticipo').val('0.00');
+				$('#frm-item').modal('show');
+			});
+			<?php endif; ?>
+
+			$('#frm-item').on('shown.bs.modal', function () { $('#item-cliente').focus(); });
+
+			<?php if(in_array(MOD_INGRESO_DEL, $permisos)) : ?>
+			$('tbody').on('click', '.btnDel', function(event) {
+				event.preventDefault();
+				id = $(this).parent().data('id');
+				trp = $(this).parents('tr');
+				swal({   
+					title: "Eliminar registro",
+					text: "No podrá revertir esta acción",
+					type: "warning",   
+					html: true,
+					showCancelButton: true,   
+					cancelButtonText: "Cancelar",
+					confirmButtonColor: "#DD6B55",   
+					confirmButtonText: "Si, eliminar",
+					closeOnConfirm: false 
+				}, function() {
+					//data: {fk_usuario: 1, fk_session: 1}, 
+					blockPage();
+					$.ajax({
+						url: $apiUrl+'pos/delReparacion/'+id,
+						type: 'PUT',
+						dataType: 'json',
+						success: function(resp) {
+							if(resp.response) {
+								trp.remove();
+								swal({
+									type: "success",
+									title: "¡Listo!",   
+									text: "Se eliminó el registro",   
+									timer: 4000
+								});
+							}
+							$.unblockUI();
+						}
+					});
+				});
+			});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_ENTREGAR, $permisos)) : ?>
+			$('tbody').on('click', '.btnEntregar', function(event) {
+				event.preventDefault();
+				id = $(this).parent().data('id');
+				trp = $(this).parents('tr');
+				costo = trp.find('td:eq(4)').text();
+				saldo = parseFloat(trp.find('td:eq(7)').text()).toFixed(2);
+				swal({   
+					title: "Entregar equipo",
+					text: "Costo de reparación: <strong>"+costo+"</strong><br>Saldo por cobrar: <span class='font-weight-bold'>"+saldo+"</span>",
+					type: "warning",   
+					html: true,
+					showCancelButton: true,   
+					cancelButtonText: "Cancelar",
+					//confirmButtonColor: "#DD6B55",   
+					confirmButtonText: "Entregar",
+					closeOnConfirm: false 
+				}, function() {
+					//data: {fk_usuario: 1, fk_session: 1}, 
+					blockPage();
+					$.ajax({
+						url: $apiUrl+'pos/reparacion/delivery/'+id,
+						data: {saldo: saldo},
+						type: 'PUT',
+						dataType: 'json',
+						success: function(resp) {
+							if(resp.response) {
+								//trp.remove();
+								// trp.find('td:eq(7)').html('<span class="badge badge-success">Entregado</span>');
+								trp.find('td:eq(8)').html('<span class="badge badge-success">Entregado</span>');
+								$('.btnEntregar').hide();
+								swal({
+									type: "success",
+									title: "¡Listo!",   
+									text: "Se entregó registro",   
+									timer: 4000
+								});
+							}
+							$.unblockUI();
+						}
+					});
+				}); 
+			});
+			<?php endif; ?>
+
+			<?php if(in_array(MOD_INGRESO_ADD, $permisos)) : ?>
+			$('#btnSave').click(function() {
+				$('.invalid-tooltip').remove();
+				data = {};
+				$.each($('#frm-item input'), function (index, elem) { 
+					ide = $(elem).attr('id').replace('item-','');
+					data[ide] = $.trim($(elem).val());
+				});
+				data.observaciones = $.trim($('#item-observaciones').val());
+
+				$errLabel = $('<div class="invalid-tooltip"></div>');
+				if(data.cliente == '') {
+					$errLabel.html('Debe ingresar el cliente');
+					$('#item-cliente').after($errLabel);
+					$errLabel.show();
+				}else if(data.imei == '') {
+					$errLabel.html('Debe ingresar el imei');
+					$('#item-imei').after($errLabel);
+					$errLabel.show();
+				}else if(data.marca == '') {
+					$errLabel.html('Debe ingresar la marca');
+					$('#item-marca').after($errLabel);
+					$errLabel.show();
+				}else if(data.modelo == '') {
+					$errLabel.html('Debe ingresar el modelo');
+					$('#item-modelo').after($errLabel);
+					$errLabel.show();
+				}/*else if(data.anticipo == '' || !$.isNumeric(data.anticipo) || parseFloat(data.anticipo) == 0.00) {
+					$errLabel.html('Debe ingresar el anticipo');
+					$('#item-anticipo').after($errLabel);
+					$errLabel.show();
+				}*/else{
+					blockPage();
+					if(data.anticipo == '') data.anticipo = 0;
+					$.post($apiUrl+'pos/addReparacion/', data, 
+						function(resp) {
+							if(resp.response) {
+								data.id = resp.result;
+								data.fecha = resp.fecha;
+								data.estado = 'En Sucursal';
+								addRow(data);
+								$('#frm-item').modal('hide');									
+								swal({
+									type: "success",
+									title: "¡Listo!",   
+									text: "Se guardaron los datos correctamente.",   
+									timer: 4000
+								});
+							}else{
+								swal({
+									type: "warning",
+									title: "Oops!",   
+									text: resp.message,   
+									timer: 4000
+								});
+							}
+							$.unblockUI();
+					},'json');
+				}
+			});
+			<?php endif; ?>
+		});
+		
+	</script>
+<?php else: include 'footer.phtml'; endif; ?>

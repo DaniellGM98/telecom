@@ -1,0 +1,228 @@
+<?php 
+	include 'header.phtml';
+
+	if(isset($_SESSION['sucursal']) && (!isset($solicitudes) || count($solicitudes)==0)):
+?>
+	<link href="<?=URL_ROOT?>/assets/plugins/bootstrap-daterangepicker/daterangepicker.css" rel="stylesheet">
+			
+	<div class="row page-titles">
+		<div class="col-md-5 align-self-center">
+			<h3 class="text-themecolor"><i class="mdi mdi-chart-pie fa-lg"></i> Reportes de ventas</h3>
+		</div>
+        <div class="col-md-7 align-self-center">
+            <div class="form-inline pull-right">
+                <div class="input-group input-group-sm">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text"><i class="fa fa-calendar"></i></span>
+                    </div>
+                    <input class="form-control form-control-sm input-daterange-datepicker" type="text" id="fechas" value="<?= date("d/m/Y",strtotime(date("01-m-Y"))) . ' - ' . date('d/m/Y') ?>" />
+                </div>
+                <div class="input-group input-group-sm m-l-10 sucursal">
+                    <div class="input-group-prepend"><span class="input-group-text"><i class="fa fa-home"></i></span></div>
+                    <select class="form-control form-control-sm" id="busSuc">
+                        <option value="0">Sucursal</option>
+                        <?php foreach ($sucursales as $suc) {
+                            echo '<option value="'.$suc->id.'">'.$suc->nombre.'</option>';
+                        }
+                        ?>
+                    </select>
+                </div>
+                <div class="input-group input-group-sm m-l-10 hide">
+                    <div class="input-group-prepend"><span class="input-group-text"><i class="mdi mdi-clipboard-account"></i></span></div>
+                    <select class="form-control form-control-sm" id="busVend">
+                        <option value="0">Vendedor</option>
+                        <?php foreach ($vendedores as $vend) {
+                            echo '<option value="'.$vend->usuario_id.'">'.$vend->nombre.'</option>';
+                        }
+                        ?>
+                    </select>
+                </div>
+            </div>
+        </div>
+	</div>
+	<div class="container-fluid">
+		<div class="row">
+            <div class="col-sm-4">
+                <article class="card">
+                    <div class="card-header">
+                        <h4 class="card-title">Vendedores</h4>
+                    </div>
+                    <div class="card-body graph">
+                        <canvas id="salesByVendedor"></canvas>
+                    </div>
+                </article>
+            </div>
+            <div class="col-sm-4">
+                <article class="card">
+                    <div class="card-header">
+                        <h4 class="card-title">Categorías</h4>
+                    </div>
+                    <div class="card-body graph">
+                        <canvas id="salesByCategoria"></canvas>
+                    </div>
+                </article>
+            </div>
+            <div class="col-sm-4">
+                <article class="card">
+                    <div class="card-header">
+                        <h4 class="card-title">Teléfonos Vendedor</h4>
+                    </div>
+                    <div class="card-body graph">
+                        <canvas id="phonesByVendedor"></canvas>
+                    </div>
+                </article>
+            </div>
+		</div>
+	</div>
+	<?php include 'footer.phtml';?>
+	<script src="<?=URL_ROOT?>/assets/plugins/bootstrap-daterangepicker/daterangepicker.js"></script>
+
+	<script type="text/javascript">
+		$(function() {
+			$apiUrl = '<?= URL_API ?>venta/';
+            $('#mnu-rpt').addClass('active');
+			$('.input-daterange-datepicker').daterangepicker({
+				buttonClasses: ['btn', 'btn-sm'],
+				applyClass: 'btn-primary',
+				cancelClass: 'btn-inverse',
+				maxDate: '<?= date('d/m/Y') ?>',
+				locale: $dateRangeLocale,
+				ranges: $dateRanges,
+				alwaysShowCalendars: true,
+				autoApply: true
+			}, function(start, end, label) {
+				createGraphSalesByVendedor();
+                createGraphSalesByCategoria();
+                createGraphPhonesByVendedor();
+			});
+
+			function getRandomRGB() {
+				universo = ['A', 'B', 'C', 'D', 'E', 'F', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']; size = 6; word = '';
+				while (word.length < size) { 
+					word += universo[parseInt(Math.random()*(universo.length-1))];
+				}
+
+				return '#'+word;
+			}
+            createGraphSalesByVendedor();
+            createGraphSalesByCategoria();
+            createGraphPhonesByVendedor();
+
+			function createGraphSalesByVendedor() {
+				blockPage();
+				fechas = $('#fechas').data('daterangepicker');
+				inicial = fechas.startDate.format('YYYY-MM-DD');
+				final = fechas.endDate.format('YYYY-MM-DD');
+				sucursal = $('#busSuc').val();
+				$.get($apiUrl+'rptVentasVendedor/'+inicial+'/'+final+'/'+sucursal, function(resp) {
+					$('#salesByVendedorDateStart').html(moment(inicial).format('DD/MM/YYYY'));
+					$('#salesByVendedorDateEnd').html(moment(final).format('DD/MM/YYYY'));
+					labels = []; data = []; colors = []; hoverColors = [];
+					$.each(resp.result, function(index, item) { labels.push(item.nombre); data.push(item.total); colors.push(getRandomRGB()); hoverColors.push(getRandomRGB()); });
+                    $('.graph:eq(0)').empty().append('<canvas id="salesByVendedor"></canvas>');
+					var chartSalesByVendedor = new Chart(document.getElementById("salesByVendedor").getContext('2d'), { 
+						type: 'pie',
+						data: {
+							labels: labels,
+							datasets: [{
+								data: data,
+								backgroundColor: colors,
+								hoverBackgroundColor: colors
+							}] 
+						},
+						options: {
+							responsive: true,
+							plugins: {
+								legend: { 
+									position: 'bottom',
+								},
+							}
+						}
+					});	
+					$.unblockUI();
+				}, 'json');
+			}
+
+			function createGraphSalesByCategoria() {
+                $('.graph:eq(1)').empty().append('<canvas id="salesByCategoria"></canvas>');
+				canvas = document.getElementById("salesByCategoria");
+				context = canvas.getContext('2d');
+
+				blockPage();
+				fechas = $('#fechas').data('daterangepicker');
+				inicial = fechas.startDate.format('YYYY-MM-DD');
+				final = fechas.endDate.format('YYYY-MM-DD');
+				sucursal = $('#busSuc').val();
+				empleado = $('#busVend').val();
+				$.get($apiUrl+'rptVentasCategoria/'+inicial+'/'+final+'/'+sucursal+'/'+empleado, function(resp) {
+					$('#salesByCategoriaDateStart').html(moment(inicial).format('DD/MM/YYYY'));
+					$('#salesByCategoriaDateEnd').html(moment(final).format('DD/MM/YYYY'));
+					labels = []; data = []; colors = []; hoverColors = [];
+					$.each(resp.result, function(index, item) { labels.push(item.nombre!=''? item.nombre: 'recargas'); data.push(item.total); colors.push(getRandomRGB()); hoverColors.push(getRandomRGB()); });
+					var chartSalesByCategoria = new Chart(context, { 
+						type: 'pie',
+						data: {
+							labels: labels,
+							datasets: [{
+								data: data,
+								backgroundColor: colors,
+								hoverBackgroundColor: colors
+							}] 
+						},
+						options: {
+							responsive: true,
+							plugins: {
+								legend: { 
+									position: 'bottom',
+								},
+							}
+						}
+					});	
+					$.unblockUI();
+				}, 'json');
+			}
+
+			function createGraphPhonesByVendedor() {
+				blockPage();
+				fechas = $('#fechas').data('daterangepicker');
+				inicial = fechas.startDate.format('YYYY-MM-DD');
+				final = fechas.endDate.format('YYYY-MM-DD');
+				sucursal = $('#busSuc').val();
+				$.get($apiUrl+'rptTelefonosVendedor/'+inicial+'/'+final+'/'+sucursal, function(resp) {
+					$('#phonesByVendedorDateStart').html(moment(inicial).format('DD/MM/YYYY'));
+					$('#phonesByVendedorDateEnd').html(moment(final).format('DD/MM/YYYY'));
+					labels = []; data = []; colors = []; hoverColors = [];
+					$.each(resp.result, function(index, item) { labels.push(item.nombre); data.push(item.total); colors.push(getRandomRGB()); hoverColors.push(getRandomRGB()); });
+					$('.graph:eq(2)').empty().append('<canvas id="phonesByVendedor"></canvas>');
+                    var chartPhonesByVendedor = new Chart(document.getElementById("phonesByVendedor").getContext('2d'), { 
+						type: 'pie',
+						data: {
+							labels: labels,
+							datasets: [{
+								data: data,
+								backgroundColor: colors,
+								hoverBackgroundColor: colors
+							}] 
+						},
+						options: {
+							responsive: true,
+							plugins: {
+								legend: { 
+									position: 'bottom',
+								},
+							}
+						}
+					});	
+					$.unblockUI();
+				}, 'json');
+			}
+            
+			$('#busVend, #busSuc').change(function() { 
+                createGraphSalesByVendedor();
+                createGraphSalesByCategoria();
+                createGraphPhonesByVendedor();
+            });
+		});
+		
+	</script>
+<?php else: include 'footer.phtml'; endif; ?>

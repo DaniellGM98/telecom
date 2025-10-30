@@ -1,0 +1,93 @@
+<!-- Left Sidebar - style you can find in sidebar.scss  -->
+<!-- ============================================================== -->
+<aside class="left-sidebar d-print-none">
+	<!-- Sidebar scroll-->
+	<div class="scroll-sidebar">
+		<!-- User profile -->
+		<div class="user-profile">
+			<!-- User profile image -->
+			<div class="profile-img"> <img src="<?= $urlImgUser ?>" alt="user" />
+				<!-- this is blinking heartbit>
+				<div class="notify setpos"> <span class="heartbit"></span> <span class="point"></span> </div-->
+			</div>
+			<!-- User profile text-->
+			<div class="profile-text">
+				<h5><?= $user->nombre.' '.$user->apellidos ?></h5>
+				<!--a href="<?= URL_ROOT ?>/tienda" class="" data-toggle="tooltip" title="Tienda"><i class="mdi mdi-store"></i></a-->
+				<a href="<?= URL_ROOT ?>/perfil" class="" data-toggle="tooltip" title="Perfil"><i class="mdi mdi-settings"></i></a>
+				<a href="<?= URL_ROOT ?>/usuario/logout/" class="" data-toggle="tooltip" title="Cerrar Sesión"><i class="mdi mdi-power"></i></a>
+			</div>
+		</div>
+		<!-- End User profile text-->
+		<!-- Sidebar navigation-->
+		<nav class="sidebar-nav">
+			<ul id="sidebarnav">
+				<li class="nav-devider"></li>
+				<li class="nav-small-cap">PUNTO DE VENTA</li>
+				<?php
+				$menu = $_SESSION['permisos'];
+				foreach ($menu as $modulo) {
+					$urlMod = '#';
+					if(!in_array($modulo->id, array(3,4,5,6,9,17,8)))
+					if($modulo->accionesUrl == 0) {
+						$urlMod = SITE_ROOT.$modulo->url;
+						echo '<li id="mnu-'.$modulo->id_html.'"><a href="'.$urlMod.'" aria-expanded="false"><i class="'.$modulo->icono.'"></i><span class="hide-menu">'.$modulo->nombre.'</span></a></li>';
+					}else {
+					?>
+						<li id="mnu-<?= $modulo->id_html ?>"> 
+							<a class="has-arrow waves-effect waves-dark" href="<?= $urlMod ?>" aria-expanded="false"><i <?php echo 'class="'.$modulo->icono.'"'?>></i><span class="hide-menu"><?php echo $modulo->nombre?> </span></a>
+							<ul aria-expanded="false" class="collapse">
+							<?php
+								$accion = $modulo->acciones;
+								foreach ($accion as $a) {
+									if($a->url !="") {
+										?><li><a href="<?= SITE_ROOT.$a->url ?>" class="submenu"><?= $a->nombre?></a></li><?php
+									}
+								}
+							?>
+							</ul>
+						</li>
+					<?php
+					}
+				}
+				?>
+				<!-- <li id="mnu-help"><a href="<?= URL_ROOT ?>/data/Conforta_Manual_v1.0.1.pdf" aria-expanded="false" target="_blank"><i class="mdi mdi-help-circle"></i><span class="hide-menu">Manual de Usuario</span></a></li> -->
+				<?php //if($_SESSION['sucursal'] == 0) : ?>
+				<li class="nav-small-cap">ADMINISTRADOR</li>
+				<?php
+				foreach ($menu as $modulo) {
+					$urlMod = '#';
+					if(in_array($modulo->id, array(3,4,5,6,8,9,17,8)))
+					if($modulo->accionesUrl == 0) {
+						$urlMod = SITE_ROOT.$modulo->url;
+						echo '<li id="mnu-'.$modulo->id_html.'"><a href="'.$urlMod.'" aria-expanded="false"><i class="'.$modulo->icono.'"></i><span class="hide-menu">'.$modulo->nombre.'</span></a></li>';
+					}else {
+					?>
+						<li id="mnu-<?= $modulo->id_html ?>"> 
+							<a class="has-arrow waves-effect waves-dark" href="<?= $urlMod ?>" aria-expanded="false"><i <?php echo 'class="'.$modulo->icono.'"'?>></i><span class="hide-menu"><?php echo $modulo->nombre?> </span></a>
+							<ul aria-expanded="false" class="collapse">
+							<?php
+								$accion = $modulo->acciones;
+								foreach ($accion as $a) {
+									if($a->url !="") {
+										?><li><a href="<?= SITE_ROOT.$a->url ?>" class="submenu"><?= $a->nombre?></a></li><?php
+									}
+								}
+							?>
+							</ul>
+						</li>
+					<?php
+					}
+				}
+				//endif; ?>
+			</ul>
+		</nav>
+		<!-- End Sidebar navigation -->
+	</div>
+	<!-- End Sidebar scroll-->
+</aside>
+<!-- ============================================================== -->
+<!-- End Left Sidebar - style you can find in sidebar.scss  -->
+<!-- ============================================================== -->
+<!-- ============================================================== -->
+<!-- Page wrapper  -->

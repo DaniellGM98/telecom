@@ -1,0 +1,890 @@
+<?php 
+	include 'header.phtml';
+
+	define('MOD_TRASPASOS_VER', 	86);
+	define('MOD_TRASPASOS_ADD', 	87);
+	define('MOD_TRASPASOS_DEL', 	88);
+
+	if(isset($_SESSION['sucursal']) && (!isset($solicitudes) || count($solicitudes)==0)):
+		if(in_array(MOD_TRASPASOS_VER, $permisos)):
+?>
+	<div class="row page-titles">
+		<div class="col-md-5 align-self-center">
+			<h3 class="text-themecolor"><i class="fa fa-exchange"></i> Traspasos</h3>
+		</div>
+	</div>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-12">
+				<div class="card">
+					<div class="card-body">
+						<?php if(in_array(MOD_TRASPASOS_ADD, $permisos)) : ?>
+						<button class="btn btn-success pull-right" id="btnAddTraspaso"><i class="mdi mdi-plus"></i> Registrar nuevo traspaso</button>
+						<?php endif; ?>
+						<h4 class="card-title">Traspasos</h4>
+						<h6 class="card-subtitle">Traspasos de productos entre sucursales</h6>
+
+						<div id="tbl-toolbar"></div>
+						<div class="table-responsive">
+							<table id="tbl-traspaso" class="table table-hover table-striped m-t-0">
+								<thead>
+									<tr>
+										<th class="text-center font-weight-bold">Fecha</th>
+										<th class="text-center font-weight-bold">Empleado</th>
+										<th class="text-center font-weight-bold">Folio<a href="#" data-toggle="tooltip" title="Buscar por folio" class="pull-right text-primary" id="btnFolio"><i class="mdi mdi-magnify"></i></a></th>
+										<th class="text-center font-weight-bold">Origen</th>
+										<th class="text-center font-weight-bold">Destino</th>
+										<th class="text-center font-weight-bold">No. Productos</th>
+										<th class="text-center font-weight-bold">Estado</th>
+										<th></th>
+									</tr>
+								</thead>
+								<tbody></tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div id="frm-traspaso" class="modal " data-backdrop="static">
+		<div class="modal-dialog modal-lg">
+			<div class="modal-content d-flex p-2">
+				<div class="modal-header pb-0">
+					<div class="col-sm-12">
+						<div class="row">
+							<h3 class="modal-title"><i class="fa fa-exchange"></i> Nuevo traspaso</h3>
+						</div>
+						<div class="row" style="margin-top: 10px;">
+							<ul class="nav nav-tabs" id="tras-tabs" role="tablist" style="border-bottom: 0px; padding-bottom: 0px; margin-bottom: 0px;">
+								<li class="nav-item">
+									<a class="nav-link active" id="home-tab" data-toggle="tab" href="#home" role="tab" aria-controls="home" aria-selected="true">Traspaso</a>
+								</li>
+								<li class="nav-item">
+									<a class="nav-link" id="productos-tab" data-toggle="tab" href="#productos" role="tab" aria-controls="productos" aria-selected="false">Productos</a>
+								</li>
+							</ul>
+						</div>
+					</div>
+				</div>
+				<div class="modal-body">
+					<div class="tab-content" id="tras-tabsContent">
+						<div class="tab-pane  show active" id="home" role="tabpanel" aria-labelledby="home-tab">
+							<form class="form form-horizontal">
+								<div class="row">
+									<div class="col-sm-12">
+										<div class="form-group row hide">
+											<label for="traspaso-fecha" class="col-form-label text-right col-sm-2">Fecha</label>
+											<div class="col-sm-4">
+												<div class="input-group">
+													<div class="input-group-prepend">
+														<span class="input-group-text" id="basic-addon1">
+															<i class="fa fa-calendar"></i>
+														</span>
+													</div>
+													<input class="form-control input-datepicker" type="text" id="traspaso-fecha" value="<?= date('d/m/Y') ?>" />
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="row">
+									<div class="col-sm-12">
+										<div class="form-group row">
+											<label for="traspaso-origen" class="col-form-label text-right col-sm-2">Origen</label>
+											<div class="col-sm-4">
+												<select class="form-control" id="traspaso-origen"></select>
+											</div>
+											<label for="traspaso-destino" class="col-form-label text-right col-sm-2" disabled>Destino</label>
+											<div class="col-sm-4">
+												<select class="form-control" id="traspaso-destino"></select>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="row">
+									<div class="col-sm-12">
+										<div class="form-group row">
+											<label for="traspaso-folio" class="col-form-label text-right col-sm-2">Folio</label>
+											<div class="col-sm-4">
+												<input type="text" class="form-control" id="traspaso-folio" placeholder="Folio" readonly="readonly">
+											</div>
+										</div>
+									</div>
+								</div>
+							</form>
+						</div>
+						<div class="tab-pane " id="productos" role="tabpanel" aria-labelledby="productos-tab">
+							<div class="pull-right">
+								<button class="btn btn-success" id="btnAddProducto"><i class="mdi mdi-plus"></i> Agregar</button>
+							</div>
+							<div class="table-responsive">
+								<table class="table table-hover table-striped table-sm" id="tbl-productos">
+									<thead>
+										<tr>
+											<th class="text-center">Producto</th>
+											<th class="text-center">SKU</th>
+											<th class="text-center">Cantidad</th>
+											<th></th>
+										</tr>
+									</thead>
+									<tbody></tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer d-flex justify-content-end">
+					<button type="submit" class="btn btn-inverse waves-effect waves-light m-r-20" data-dismiss="modal">Cancelar</button>
+					<?php if(in_array(MOD_TRASPASOS_ADD, $permisos)) : ?><div><button type="submit" class="btn btn-success waves-effect waves-light" id="btnSaveTraspaso">Guardar</button></div><?php endif; ?>
+				</div>
+			</div>
+		</div>
+	</div>
+<?php if(in_array(MOD_TRASPASOS_ADD, $permisos)) : ?>
+	<div id="frm-producto" class="modal " data-backdrop="static">
+		<div class="modal-dialog modal-lg">
+			<div class="modal-content d-flex p-2">
+				<div class="modal-header">
+					<h3 class="modal-title"><i class="mdi mdi-inbox-arrow-down"></i> Agregar concepto</h3>
+				</div>
+				<div class="modal-body">
+					<form class="form form-horizontal">
+						<div class="form-group row">
+							<div class="col-sm-12">
+								<div class="row">
+									<div class="offset-sm-4"></div>
+									<label for="item-prod_categoria_id" class="col-form-label text-right col-sm-2">Categor&iacute;a</label>
+									<div class="col-sm-6">
+										<select class="form-control" id="item-prod_categoria_id"></select>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="form-group row">
+							<div class="col-sm-12">
+								<div class="row">
+									<label for="producto-producto" class="col-form-label text-right col-sm-2">Producto</label>
+									<div class="col-sm-10">
+										<input type="text" class="form-control" id="producto-producto" placeholder="Producto" required>
+										<input type="hidden" id="producto-producto_id" value="0">
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="form-group row hide" id="sku">
+							<div class="col-sm-12">
+								<div class="row">
+									<label for="producto-sku" class="col-form-label text-right col-sm-2"></label>
+									<div class="col-sm-10">
+										<select id="producto-sku" class="form-control" multiple size="3"></select>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="form-group row">
+							<div class="col-sm-12">
+								<div class="row">
+									<label for="producto-existencia" class="col-form-label text-right col-sm-2">Existencia</label>
+									<div class="col-sm-4">
+										<input type="text" class="form-control" id="producto-existencia" readonly="readonly">
+									</div>
+									<label for="producto-cantidad" class="col-form-label text-right col-sm-2">Cantidad</label>
+									<div class="col-sm-4">
+										<input type="text" class="form-control" id="producto-cantidad" placeholder="Cantidad" readonly="readonly" required>
+									</div>
+								</div>
+							</div>
+						</div>
+					</form>
+				</div>
+				<div class="modal-footer d-flex justify-content-end">
+					<button type="submit" class="btn btn-inverse waves-effect waves-light m-r-20" data-dismiss="modal">Cancelar</button>
+					<button type="submit" class="btn btn-success waves-effect waves-light" id="btnSaveProducto">Guardar</button>
+				</div>
+			</div>
+		</div>
+	</div>
+<?php endif; ?>
+	<div id="frm-resultados" class="modal " data-backdrop="static">
+		<div class="modal-dialog">
+			<div class="modal-content d-flex p-2">
+				<div class="modal-header">
+					<h3 class="modal-title"><i class="fa fa-info-circle"></i> Resultados</h3>
+				</div>
+				<div class="modal-body">
+					<form class="form form-horizontal">
+						<div class="alert alert-info"  role="alert">
+							<h4 class="alert-heading">El traspaso se canceló parcialmente</h4>
+							<p class="text-justify"><small>Algunos de los productos ya fueron agotados por la sucursal <strong class="destino"></strong>, por lo que no se pudieron regresar a la sucursal <strong class="origen"></strong>.</small></p>
+							<hr>
+							<p class="text-justify"><small>Puede ver los detalles dando click sobre el siguiente enlace. <a href="#det-resultados" class="alert-link" data-toggle="collapse" role="button" aria-expanded="false">Ver Detalles</a></small></p>
+						</div>
+						<div class="collapse" id="det-resultados">
+							<div class="table-responsive table-sm">
+								<table id="tbl-resultados" class="table table-hover table-striped m-t-0">
+									<thead>
+										<tr>
+											<th class="text-center small font-weight-bold">Producto</small></th>
+											<th class="text-center small font-weight-bold">Cant.</small></th>
+											<th class="text-center small font-weight-bold">Dev.</strong></small></th>
+											<th></th>
+										</tr>
+									</thead>
+									<tbody></tbody>
+								</table>
+							</div>
+						</div>
+					</form>
+				</div>
+				<div class="modal-footer d-flex justify-content-end">
+					<button type="submit" class="btn btn-sm btn-inverse waves-effect waves-light m-r-20" data-dismiss="modal">Cerrar</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<?php include 'footer.phtml';?>
+	<script type="text/javascript">
+		$(function() {
+			$('#mnu-prod').addClass('active');
+			$apiUrl = '<?= URL_API ?>traspaso/';
+
+			cleanTable('tbl-traspaso'); createTable('tbl-traspaso'); getItems(); cleanTable('tbl-productos'); createTable('tbl-productos', false);
+			function getItems() { blockPage();
+				$('#btnFolio').popover('hide');
+				fechas = $('#fechas-tbl-traspaso').data('daterangepicker'); ini = fechas.startDate.format('YYYY-MM-DD'); fin = fechas.endDate.format('YYYY-MM-DD');
+				arrColumnas = $('#columnas-tbl-traspaso').val(); arrFechas = fechas.startDate.format('DD/MM/YYYY')+' - '+fechas.endDate.format('DD/MM/YYYY'); arrSucursal = $('#sucursal-tbl-traspaso').val();
+				cleanTable('tbl-traspaso'); $('#tbl-traspaso tbody').empty();
+				$.get($apiUrl+'getAllBusca/'+ini+'/'+fin, function(traspasos) {
+					$.each(traspasos.result, function(index, traspaso) {
+						arrSucursales = [0, parseInt(traspaso.origen), parseInt(traspaso.destino)];
+						// arrSucursales = [0]; arrSucursales.push(parseInt(traspaso.origen));
+						if(arrSucursales.includes(parseInt('<?= $_SESSION['usuario']->sucursal_id ?>'))) {
+							addTraspasoRow(traspaso);
+						}
+					});
+					createTable('tbl-traspaso', true, arrColumnas, arrFechas, arrSucursal);
+					$.unblockUI();
+				});
+			}
+
+			function addTraspasoRow(info) {
+				container = $('#tbl-traspaso tbody');
+				container.find('tr[data-id="'+info.id+'"]').remove();
+				tr = $('<tr data-id="'+info.id+'" data-sucursal="'+info.origen+'"></tr>').appendTo(container);
+
+				tr.append('<td class="text-center"><small class="fecha">'+info.fecha+'</small></td>');
+				tr.append('<td class="text-center"><small class="empleado">'+info.empleado+'</small></td>');
+				tr.append('<td class="text-center"><small class="folio">'+info.folio+'</small></td>');
+				tr.append('<td class="text-center"><small class="origen">'+info.origen_nombre+'</small></td>');
+				tr.append('<td class="text-center"><small class="destino">'+info.destino_nombre+'</small></td>');
+				tr.append('<td class="text-center"><small class="productos">'+info.sumaProductos+'</small></td>');
+				tr.append('<td class="text-center"><small class="estado">'+(info.status==1? 'Realizado': (info.status==2? 'Pendiente por aprobar': 'Rechazado'))+'</small></td>');
+
+				td = $('<td class="text-center"></td>').appendTo(tr)
+				actions = $('<div class="pull-right"></div>').appendTo(td);
+				actions.append('<a href="#" data-popup="tooltip" title="Ver detalles" class="btnInfoTraspaso"><i class="mdi mdi-eye"></i></a> ');
+				<?php if(in_array(MOD_TRASPASOS_DEL, $permisos)) : ?>
+				// actions.append('<a href="#" data-popup="tooltip" title="Cancelar" class="btnDelTraspaso"><i class="mdi mdi-delete" style="color:red;"></i></a>');
+				<?php endif; ?>
+			}
+		
+			$('#btnFolio').popover({
+				placement: 'top',
+				html:true,
+				sanitize: false, 
+				content:  '<div class="form"><div class="input-group"><input type="text" class="form-control form-control-sm" placeholder="Folio" id="buscafolioi"><div class="input-group-append"><button type="button" class="btn btn-secondary btn-sm" id="btn-busf"><i class="fa fa-search"></i></button></div></div></div>'
+			}).on('click', function(e) {
+				e.preventDefault();
+				$('#buscafolioi').keyup(function(e) { if(e.keyCode == 13) { buscaFolio(); } });
+				$('#btn-busf').click(function() { buscaFolio(); });
+			});
+
+			$('#btnFolio').on('shown.bs.popover', function () { $('#buscafolioi').val('').focus(); });
+
+			function buscaFolio() {
+				folio = $.trim($('#buscafolioi').val());
+				if(folio != '') { blockPage();
+					$('#btnFolio').popover('hide');
+					arrColumnas = $('#columnas-tbl-traspaso').val(); arrFechas = $('#fechas-tbl-traspaso').val(); arrSucursal = $('#sucursal-tbl-traspaso').val();
+					fechas = $('#fechas-tbl-traspaso').data('daterangepicker');
+					ini = fechas.startDate.format('YYYY-MM-DD');
+					fin = fechas.endDate.format('YYYY-MM-DD');
+					cleanTable('tbl-traspaso'); $('#tbl-traspaso tbody').empty();
+					$.get($apiUrl+'buscaFolio/'+folio+'/'+ini+'/'+fin, function(traspasos) {
+						$.each(traspasos.result, function(index, traspaso) {
+							arrSucursales = [0]; arrSucursales.push(parseInt(traspaso.origen));
+							if(arrSucursales.includes(parseInt('<?= $_SESSION['usuario']->sucursal_id ?>'))) {
+								addTraspasoRow(traspaso);
+							}
+						});
+						createTable('tbl-traspaso', arrColumnas, arrFechas, arrSucursal);
+						$.unblockUI();
+					});
+				}
+			}
+
+			$.get($apiUrl.replace('traspaso', 'sucursal')+'getAll/', function(sucursales) {
+				<?php if(intval($_SESSION['sucursal']) == 0): ?>$('#traspaso-origen').append('<option value="0">Selecciona una opción</option>');<?php endif; ?>
+				$('#traspaso-destino').append('<option value="0">Selecciona una opción</option>');
+				$.each(sucursales.result, function(index, sucursal) {
+					arrSucursales = [0]; arrSucursales.push(parseInt(sucursal.id));
+					if(arrSucursales.includes(parseInt('<?= $_SESSION['usuario']->sucursal_id ?>'))) {
+						$('#traspaso-origen').append('<option value="'+sucursal.id+'"'+(parseInt('<?= $_SESSION['usuario']->sucursal_id ?>')==parseInt(sucursal.id)? ' selected="selected"': '')+'>'+sucursal.nombre+'</option>');
+					}
+					$('#traspaso-destino').append('<option value="'+sucursal.id+'" class="hide">'+sucursal.nombre+'</option>');
+				});
+			}, 'json');
+
+			$('#traspaso-origen').change(function() {
+				$('.invalid-tooltip').remove();
+				value = $(this).val();
+				$('#traspaso-destino').val(0);
+				$('#traspaso-destino option').removeClass('hide');
+				if(value == 0) { $('#traspaso-destino option:not([value="0"])').addClass('hide'); }
+				else { $('#traspaso-destino option[value="'+value+'"]').addClass('hide'); }
+
+				$.get('<?= URL_ROOT ?>/traspaso/sigFolio/'+value, function(folio) {
+					$('#traspaso-folio').val(folio);
+				}, 'json');
+			});
+
+			function addProductoRow(producto) {
+				container = $('#tbl-productos tbody');
+				cleanTable('tbl-productos');
+
+				container.find('tr[data-id="'+producto.id+'"]').remove();
+				tr = $('<tr data-id="'+producto.id+'"></tr>').appendTo(container);
+				tr.append('<td class="text-left"><small class="producto">'+producto.producto+'</small></td>');
+				tr.append('<td class="text-left"><small class="arrSku">'+((producto.sku==null || producto.sku.length==0)? '': producto.sku)+'</small></td>');
+				tr.append('<td class="text-center"><small class="cantidad">'+producto.cantidad+'</small></td>');
+				
+				tr.append('<td class="pull-right"><div><a href="#" data-popup="tooltip" title="Eliminar" class="btnDelProducto"><i class="mdi mdi-delete" style="color:red;"></i></a></div></td>');
+
+				createTable('tbl-productos', false);
+			}
+
+			$('tbody').on('click', '.btnInfoTraspaso', function(e) { blockPage();
+				e.preventDefault();
+				$.get($apiUrl+'get/'+$(this).parents('tr').data('id'), function(traspaso) {
+					cleanTable('tbl-productos'); $('#tbl-productos tbody').empty(); createTable('tbl-productos');
+					if(traspaso.response) { traspaso = traspaso.result;
+						$('#traspaso-origen').val(traspaso.origen).prop('disabled', true);
+						$('#traspaso-destino').val(traspaso.destino).prop('disabled', true);
+						$('#traspaso-folio').val(traspaso.folio).prop('disabled', true);
+						$('#btnSaveTraspaso').parent().addClass('hide').prev('button').html('Cerrar');
+						$('#btnAddProducto').parent().addClass('hide');
+						$('#frm-traspaso .modal-title').html('<i class="mdi mdi-information"></i> Información traspaso')
+
+						$.each(traspaso.detalles, function(index, detalle) {
+							addProductoRow(detalle);
+						});
+						$('#tbl-productos tbody tr').find('.btnDelProducto').remove();
+						$('#frm-traspaso').modal('show');
+						setTimeout(() => { $('#productos-tab').tab('show'); $.unblockUI(); }, 1000);
+					} else { $.unblockUI(); }
+				}, 'json')
+			});
+
+<?php if(in_array(MOD_TRASPASOS_ADD, $permisos)) : ?>
+			// $('#frm-traspaso').on('shown.bs.modal', function () { $('#traspaso-folio').focus(); });
+			$('#frm-traspaso').on('hidden.bs.modal', function () {
+				$('#btnSaveTraspaso').parent().removeClass('hide').prev('button').html('Cancelar');
+				$('#btnAddProducto').parent().removeClass('hide');
+				$('#frm-traspaso .modal-title').html('<i class="mdi mdi-plus"></i> Registrar nuevo traspaso');
+			});
+			$('#frm-traspaso').on('hide.bs.modal', function () {
+				$('#home-tab').click();
+			});
+
+			$('#btnAddTraspaso').click(function(e) { e.preventDefault();
+				clearData();
+				$('#frm-traspaso').modal('show');
+				$('#home-tab').tab('show');
+				$('#traspaso-origen').val(0).prop('disabled', false);
+				$('#traspaso-destino').val(0).prop('disabled', false);
+				cleanTable('tbl-productos'); 
+				$('#tbl-productos tbody').empty();
+				createTable('tbl-productos', false);
+				/*if(parseInt($('#traspaso-origen').val()) > 0) {
+					$.get('<?= URL_ROOT ?>/traspaso/sigFolio/'+$('#traspaso-origen').val(), function(folio) {
+						$('#traspaso-origen').trigger('change');
+						$('#traspaso-folio').val(folio);
+					}, 'json');
+				}*/
+			});
+
+			// $('#traspaso-folio').change(function() {
+			// 	$('.invalid-tooltip').remove();
+			// });
+
+			function confirmAllData() {
+				$('.invalid-tooltip').remove();
+				$errLabel = $('<div class="invalid-tooltip"></div>');
+				data = { folio: $.trim($('#traspaso-folio').val()), origen: $('#traspaso-origen').val(), destino: $('#traspaso-destino').val(), };
+				if($('#tras-tabs a[aria-selected="true"]').attr('id') == 'home-tab') {
+					if(data.origen == 0) {
+						$errLabel.html('Debe seleccionar el origen');
+						$('#traspaso-origen').after($errLabel).focus();
+						$errLabel.show();
+					} else if(data.destino == 0) {
+						$errLabel.html('Debe seleccionar el destino');
+						$('#traspaso-destino').after($errLabel).focus();
+						$errLabel.show();
+					} else if(data.folio == '') {
+						$errLabel.html('Debe ingresar el folio');
+						$('#traspaso-folio').after($errLabel).focus();
+						$errLabel.show();
+					} else {
+						return true;
+					}
+				} else { return true; }
+
+				return false;
+			}
+
+			function saveTraspaso() {
+				$('.invalid-tooltip').remove();
+				$errLabel = $('<div class="invalid-tooltip"></div>');
+				if(confirmAllData() && $('#tras-tabs a[aria-selected="true"]').attr('id') == 'productos-tab') {
+					data = { folio: $.trim($('#traspaso-folio').val()), origen: $('#traspaso-origen').val(), destino: $('#traspaso-destino').val(), };
+					data.detalles = [];
+					$.each($('#tbl-productos tbody tr'), function(index, tr) {
+						trItem = $(tr);
+						trInfo = getTrElement('tbl-productos', tr);
+						detalles = { producto_id: trItem.data('id'), cantidad: trInfo.find('.cantidad').text() };
+						if(trInfo.find('.arrSku').text().length > 0) { detalles.arrSku = trInfo.find('.arrSku').text().split(', '); }
+
+						data.detalles.push(detalles);
+					});
+					if(data.detalles.length == 0) {
+						$errLabel.html('Debe agregar productos al traspaso');
+						$('#tbl-productos').after($errLabel);
+						$errLabel.show();
+					} else {
+						blockPage();
+						btn = $('#btnSaveTraspaso').prop('disabled', true);
+						$.post($apiUrl+'solicitarTraspaso/', data, function(traspaso) {
+							if(traspaso.response) {
+								clearData();
+								clearDataProducto();
+								getItems();
+								$('#frm-traspaso').modal('hide');
+								swal({ type:"success", title:"¡Listo!", text:"Se guardaron los datos correctamente.", timer:4000 });
+							} else { swal({ type:"warning", title:"Oops!", text:resp.message, timer:4000 }); }
+							btn.prop('disabled', false);
+							$.unblockUI();
+						}, 'json');
+					}
+				}
+
+				return false;
+			}
+
+			$('#home-tab').on('hide.bs.tab', function(e) { if(!confirmAllData()) { e.preventDefault(); } });
+			$('#btnSaveTraspaso').click(function(e) { 
+				if($('#tras-tabs a[aria-selected="true"]').attr('id')=='home-tab') {
+					if(confirmAllData()) {
+						$('#productos-tab').tab('show');
+						cleanTable('tbl-productos'); createTable('tbl-productos');
+					}
+				} else {
+					saveTraspaso();
+				}
+			});
+
+			$('#frm-producto').on('show.bs.modal', function() { 
+				$.get('<?= URL_API ?>prod_categoria/getAll/', function(categorias) {
+					$('#item-prod_categoria_id').empty().append('<option value="0">TODAS</option>');
+					$.each(categorias.result, function(index, categoria) { $('#item-prod_categoria_id').append('<option value="'+categoria.id+'">'+categoria.nombre.toUpperCase()+'</option>'); });
+				}, 'json');
+			});
+
+			$('#frm-producto').on('hidden.bs.modal', function() { $('#frm-traspaso').modal('show'); $('#producto-cantidad').attr('readonly', 'readonly'); clearDataProducto(); });
+			$('#btnAddProducto').click(function(e) {
+				e.preventDefault();
+				clearDataProducto();
+				$('#frm-traspaso').modal('hide');
+				$('#frm-producto').modal('show');
+			});
+
+			$('#item-prod_categoria_id').change(function() {
+				clearDataProducto();
+			});
+
+			var fndProds = new Bloodhound({
+				initialize: false,
+				datumTokenizer: Bloodhound.tokenizers.obj.whitespace('value'),
+				queryTokenizer: Bloodhound.tokenizers.whitespace,
+				remote: {
+					wildcard: '%QUERY',
+					url: '<?= URL_API ?>producto/find/%QUERY',
+					replace: function(url, uriEncodedQuery) {
+						prod_categoria_id = $('#item-prod_categoria_id').val();
+						if(!prod_categoria_id) return url.replace('%QUERY', uriEncodedQuery);
+						return url.replace('%QUERY', uriEncodedQuery) + '/0/' + encodeURIComponent(prod_categoria_id);
+					}
+				}
+			});
+			// var fndProds = new Bloodhound({
+			// 	datumTokenizer: Bloodhound.tokenizers.obj.whitespace('value'),
+			// 	queryTokenizer: Bloodhound.tokenizers.whitespace,
+			// 	remote: {
+			// 		url: $apiUrl.replace('traspaso', 'producto')+'find/%QUERY',
+			// 		wildcard: '%QUERY'
+			// 	}
+			// });
+
+			$('#producto-producto').typeahead({hint: true, highlight: true, minLength: 3 }, { limit: 60,  display: 'producto', source: fndProds });
+			$('#producto-producto').change(function() { 
+				$('.invalid-tooltip').remove();
+				$('#frm-traspaso small.text-danger').html('');
+				if($.trim($(this).val()) == '') {
+					$('#producto-producto_id').val(0);
+					$('#producto-existencia').val(undefined);
+					$('#producto-cantidad').attr('readonly', 'readonly').val(undefined);
+				}
+			});
+
+			$('#producto-producto').bind('typeahead:select', function(ev, suggestion) {
+				$('.invalid-tooltip, .msgStock').remove();
+				$('#frm-traspaso small.text-danger').html('');
+				if(!prodExists(suggestion.id)) { 
+					sucursal_id = $('#traspaso-origen').val();
+					$.get($apiUrl.replace('traspaso', 'prod_kardex')+'getStockSuc/'+sucursal_id+'/'+suggestion.id, function(stock) {
+						$('#producto-producto_id').val(suggestion.id);
+						$('#producto-existencia').val(stock.result.final);
+						if(suggestion.sku_nombre!='') {
+							$('#sku').removeClass('hide');
+							$('label[for="producto-sku"]').html(suggestion.sku_nombre.length>0? suggestion.sku_nombre: 'sku');
+							$.get('<?= URL_API ?>prod_entrada_detalle/getListaSkuDisp/'+suggestion.id+'/'+sucursal_id, function(arrSku) {
+								$('#producto-sku').empty();
+								if(arrSku.result.length == 0) {
+									$('#producto-existencia').val(0);
+									$errLabel = $('<div class="invalid-tooltip">El producto no tiene existencias</div>').addClass('.msgStock');
+									$('#producto-sku').after($errLabel).focus();
+									$errLabel.show();
+								} else {
+									$('#producto-existencia').val(arrSku.result.length);
+									$.each(arrSku.result, function(index, sku) {
+										$('#producto-sku').append('<option value="'+sku.sku+'">'+sku.sku+'</option>');
+									});
+								}
+							}, 'json');
+						} else {
+							$('#sku').addClass('hide');
+							if(parseInt(stock.result.final) == 0) {
+								$errLabel = $('<div class="invalid-tooltip">El producto no tiene existencias</div>').addClass('msgStock');
+								$('#producto-producto').after($errLabel);
+								$errLabel.show();
+							} else {
+								$('#producto-cantidad').removeAttr('readonly').focus();
+							}
+						}
+					}, 'json');
+				}
+			});
+
+			$('#producto-sku').change(function() {
+				$('#producto-cantidad').val($(this).val().filter(imei => $.trim(imei).length>0).length)
+			});
+
+			$('#producto-producto').keyup(function(event) {
+				if(event.keyCode == 8 || event.keyCode == 46) {
+					$('#producto-producto_id').val(0);
+					$('#producto-existencia').val(undefined);
+					$('#producto-cantidad').attr('readonly', 'readonly').val(undefined);
+				}
+			});
+
+			function prodExists(prod) {
+				if($('#tbl-productos [data-id="'+prod+'"]').length > 0) {
+					$errLabel = $('<div class="invalid-tooltip">Ya existe el producto</div>');
+					$('#producto-producto').after($errLabel).select().focus();
+					$('#producto-producto_id').val(0);
+					$errLabel.show();
+
+					return true;
+				}
+				return false;
+			}
+
+			function addProducto() {
+				if($('.msgStock').length == 0) {
+					$('.invalid-tooltip').remove();
+					$('#frm-traspaso small.text-danger').html('');
+					data = { id: $('#producto-producto_id').val(), producto: $('#producto-producto').val(), cantidad: $('#producto-cantidad').val()};
+					if($('#sku').is(':visible')) { data.sku = $('#producto-sku').val(); }
+	
+					$errLabel = $('<div class="invalid-tooltip"></div>');
+					if(data.id == 0) {
+						$errLabel.html('Debe seleccionar el producto a traspasar');
+						$('#producto-producto').after($errLabel).focus();
+						$errLabel.show();
+					} else if(!$('#sku').is(':visible') && (data.cantidad.length==0 || parseInt(data.cantidad)==0)) {
+						$errLabel.html('Debe ingresar la cantidad a traspasar');
+						$('#producto-cantidad').after($errLabel).focus();
+						$errLabel.show();
+					} else if($('#sku').is(':visible') && data.sku.length==0) {
+						$errLabel.html('Debe seleccionar los '+$('label[for="producto-sku"]').text()+' a traspasar');
+						$('#producto-sku').after($errLabel).focus();
+						$errLabel.show();
+					} else {
+						if(!prodExists(data.id)) {
+							url = '2/' + $('#traspaso-origen').val() + '/' + data.id;
+							if($('#sku').is(':visible')) { url += '/' + data.sku; }
+							$.get('<?= URL_API ?>traspaso/getAll/'+url, function(traspasos) {
+								if(traspasos.result.length==0 || (!$('#sku').is(':visible') && parseInt(traspasos.suma)+parseInt(data.cantidad)<=parseInt(traspasos.stock))) {
+									if(data.sku != undefined) { data.sku = data.sku.join(', '); }
+									addProductoRow(data);
+									clearDataProducto();
+									$('#frm-producto').modal('hide');
+									setTimeout(function(){ $('#productos-tab').click(); }, 600);
+								} else {
+									swal({ type:"warning", title:"Oops!", text:'El producto seleccionado cuenta con traspasos pendientes<br>Confirma o cancela dichas solicitudes e intentalo una vez más', html: true, timer:4000 }); 
+								}
+							}, 'json');
+						}
+					}
+				}
+			}
+
+			$("#producto-existencia, #producto-cantidad").inputmask({ alias: "numeric"});
+			$("#producto-cantidad").change(function() {
+				$('.invalid-tooltip').remove();
+				$errLabel = $('<div class="invalid-tooltip"></div>');
+				if(parseInt($(this).val()) > parseInt($('#producto-existencia').val())) {
+					$errLabel.html('Stock insuficiente');
+					$('#producto-cantidad').after($errLabel).val(0).focus();
+					$errLabel.show();
+				}
+			});
+
+			$("#producto-cantidad").keyup(function(event) { if(event.keyCode == 13) addProducto(); });
+			$('#btnSaveProducto').click(function() { addProducto(); });
+
+			$('tbody').on('click', '.btnDelTraspaso', function(event) { event.preventDefault();
+				tr = $(this).parents('tr');
+				id = tr.data('id');
+				trInfo = getTrElement('tbl-traspaso', tr); fecha = trInfo.find('.fecha').text();
+				swal({ title:"Eliminar traspaso", text:"Se eliminará el traspaso realizado el <strong>'"+fecha+"'</strong>.<br/>¿Deseas Continuar?", type:"warning", html:true, showCancelButton:true, cancelButtonText:"Cancelar", confirmButtonColor:"#DD6B55", confirmButtonText:"Si, eliminar", },
+					function(resp) {
+						if(resp) {
+							$.ajax({ url:$apiUrl+'del/'+id, type:'PUT', dataType:'json', success: function(resp) {
+								if(resp.response) {
+									getItems();
+									if(parseInt(resp.regresados) == 0) { swal({ type: 'warning', title: 'Oops', text: 'No se pudo cancelar el traspaso.<br>Todas las unidades ya fueron agotadas por la sucursal.', html: true, }); }
+									else if(parseInt(resp.incompletos) == 0) { swal({ type:"success", title:"¡Listo!", text:"Se cancelo el traspaso exitosamente<br>Todos los productos fueron devueltos a la sucursal <strong>"+trInfo.find('.origen').text()+"</strong>", html: true, timer:4000 });  }
+									else {
+										$('#frm-resultados').modal('show');
+										$('.origen').html(trInfo.find('.origen').text());
+										$('.destino').html(trInfo.find('.destino').text());
+
+										// cleanTable('tbl-resultados'); 
+										container = $('#tbl-resultados tbody'); container.empty();
+										$.each(resp.bitacora, function(index, item) {
+											tr = $('<tr'+(parseInt(item.faltante)>0? ' class="table-warning"': "")+'></tr>').appendTo(container);
+											tr.append('<td class="text-left small">'+(item.producto+(item.sku!=undefined? ' - <strong>'+item.sku+'</strong>': ''))+'</td>');
+											tr.append('<td class="text-center small">'+item.cantidad+'</td>');
+											tr.append('<td class="text-center small">'+(parseInt(item.cantidad)-parseInt(item.faltante))+'</td>');
+										});
+										// createTable('tbl-resultados');
+									}
+								} else { swal({ type:"warning", title:"Oops!", text:resp.message, timer:4000 }); }
+
+								$.unblockUI();
+							}});
+						}
+					}
+				);
+			});
+
+			$('#frm-resultados').on('show.bs.modal', function() {
+				$('#det-resultados').collapse('hide');
+			});
+
+			function clearDataProducto() {
+				$('.invalid-tooltip').remove();
+				$('#frm-producto input').val('');
+				$('#producto-producto').typeahead('val','');
+				$('#producto-producto_id').val(0);
+				$('#sku').addClass('hide');
+				$('#producto-sku').empty();
+			}
+			
+			function clearData() {
+				$('.invalid-tooltip').remove();
+				$('#frm-traspaso input').val('').prop('disabled', false);
+				// $('#frm-traspaso select').val(0).prop('disabled', false);
+				$('#frm-traspaso select option:first').prop('selected', true).prop('disabled', false);
+				$('#traspaso-id').val(0);
+				$('#producto-producto_id').val(0);
+				$('#tbl-productos tbody').empty();
+			}
+<?php endif; ?>
+
+			<?php if(in_array(MOD_TRASPASOS_DEL, $permisos)) : ?>
+			$('tbody').on('click', '.btnDelProducto', function(event) {
+				event.preventDefault();
+				trp = $(this).parents('tr');
+				id = trp.data('id');
+				nombre = getTrElement('tbl-productos', trp).find('.producto').text();
+				swal({ title: "Cancelar detalle traspaso", text: "Se eliminará el detalle <strong>"+nombre+"</strong> del traspaso, ¿Continuar?", type: "warning", html: true, showCancelButton: true, cancelButtonText: "No", confirmButtonColor: "#DD6B55", confirmButtonText: "Si, continuar", closeOnConfirm: false }, 
+					function() {
+						cleanTable('tbl-productos'); trp.remove(); createTable('tbl-productos', false);
+						swal({ type: "success", title: "¡Listo!", text: "Se eliminó el detalle", timer: 4000 });
+					}
+				);
+			});
+			<?php endif; ?>
+
+			// <?php if(in_array(MOD_TRASPASOS_ADD, $permisos)) : ?>
+			
+			// <?php endif; ?>
+
+			// $('body').on('click', '#pag li a', function(event) {
+			// 	event.preventDefault();
+			// 	pag = parseInt($(this).attr('href'));
+			// 	cont = parseInt($('#cont').val());
+			// 	if(!$(this).parent().hasClass('active') && !$(this).parent().hasClass('active'))
+			// 		getItems(pag, cont);
+			// });
+
+			function getTrElement(tblName, tr) {
+				container = $('<div></div>');
+				trInfo = $('#'+tblName).DataTable().row(tr).data();
+				$.each(trInfo, function(index, trInfoRow) {
+					container.append(trInfoRow);
+				});
+				
+				return container;
+			}
+
+			function setTrData(tblName, row, trElement) {
+				arrContent = [];
+				$.each(trElement.children(), function(index, element) { element = $(element);
+					tagName = element.prop('tagName').toLowerCase();
+					html = '<'+tagName;
+					$.each(element[0].attributes, function(index, attr) {
+						html += ' '+attr.name+'="'+attr.value+'"';
+					});
+					html += '>'+element.html()+'</'+tagName+'>';
+
+					arrContent.push(html);
+				});
+
+				$('#'+tblName).DataTable().row(row).data(arrContent);
+				swal({ type:"success", title:"¡Listo!", text:"Se guardaron los cambios correctamente.", timer:4000 });
+			}
+
+			function cleanTable(tbl) {
+				if($.fn.dataTable.isDataTable('#'+tbl)) {
+					table = $('#'+tbl).DataTable();
+					table.destroy();
+				}
+				$("#nodata").remove();
+			}
+
+			function createTable(tbl, paging=true, arrColumnas=null, arrFechas=null, arrSucursal=null) {
+				container = $('<div class="form-inline d-flex flex-row-reverse" style="overflow: visible"></div>');
+				searchContainer = $('<div class="input-group col-sm-3"></div>').appendTo(container);
+				search = $('<input type="text" id="bus" placeholder="Buscar por nombre" class="form-control">').appendTo(searchContainer);
+				searchContainer.append('<input type="hidden" id="producto-id" value="0">');
+				search.keyup(function(e) { $("#"+tbl+"_filter label input").val($.trim($(this).val())).trigger('keyup'); });
+				search.on("search", function(evt) { $("#"+tbl+"_filter label input").val(undefined).trigger('keyup'); });
+				if(tbl == 'tbl-traspaso') {
+					fSucursalContainer = $('<div <?= intval($_SESSION['sucursal'])>0? 'class="hide"': '' ?>></div>').appendTo(container);
+					fSucursal = $('<select class="selectpicker" id="sucursal-'+tbl+'" title="Sucursal" data-width="fit"></select>').appendTo(fSucursalContainer);
+					fSucursal.append('<option class="form-control-sm" value="0">Todas</option>');
+					<?php $sucursales = $todo->model->sucursal->getAll()->result; foreach($sucursales as $sucursal): ?>
+					fSucursal.append('<option class="form-control-sm" value="<?= $sucursal->id ?>"><?= ucfirst(mb_strtolower($sucursal->nombre)) ?></option>');
+					<?php endforeach; ?>
+					fSucursal.selectpicker('val', '<?= $_SESSION['sucursal'] ?>');
+					fSucursal.on('changed.bs.select', function(e, index) { blockPage();
+						$.fn.dataTable.ext.search.pop();
+						index--; if(index > 0) {
+							$.fn.dataTable.ext.search.push(
+								function(settings, data, dataIndex) {
+									if(settings.nTable.id === 'tbl-traspaso') {
+										return $($('#'+tbl).DataTable().row(dataIndex).node()).attr('data-sucursal') == index;
+									}
+
+									return true;
+								}
+							);
+						}
+						$('#'+tbl).DataTable().draw();
+						$.unblockUI();
+					});
+
+					fFechasContainer = $('<div class="col-sm-3"></div>').appendTo(container);
+					fFechasContainer2 = $('<div class="form-group"></div>').appendTo(fFechasContainer);
+					fFechas = $('<div class="input-group"><div class="input-group-prepend"><span class="input-group-text"><i class="fa fa-calendar"></i></span></div><input type="text" class="form-control input-daterange-datepicker" id="fechas-'+tbl+'"></div>').appendTo(fFechasContainer2);
+					if(arrFechas==null) { fFechas.find('#fechas-'+tbl).val('<?= date("d/m/Y", strtotime(date('d-m-Y'))).' - '.date('d/m/Y') ?>'); } else { fFechas.find('#fechas-'+tbl).val(arrFechas); }
+					fFechas.find('#fechas-'+tbl).daterangepicker({ buttonClasses:['btn','btn-sm'], applyClass:'btn-primary', cancelClass:'btn-inverse', maxDate:'<?= date('d/m/Y') ?>', locale:$dateRangeLocale, ranges:$dateRanges, alwaysShowCalendars:true, autoApply:true },
+						function(start, end, label) { getItems(); }
+					);
+
+					fColumnas = $('<select class="selectpicker" data-container="body" multiple data-selected-text-format="static" id="columns-'+tbl+'" title="Mostrar/Ocultar columnas" data-width="fit"></select>').appendTo(container);
+					fColumnas.append('<option class="form-control-sm" value="0">Fecha</option>');
+					fColumnas.append('<option class="form-control-sm" value="1">Empleado</option>');
+					fColumnas.append('<option class="form-control-sm" value="2">Folio</option>');
+					fColumnas.append('<option class="form-control-sm" value="3">Origen</option>');
+					fColumnas.append('<option class="form-control-sm" value="4">Destino</option>');
+					fColumnas.append('<option class="form-control-sm" value="5">No. Productos</option>');
+					fColumnas.append('<option class="form-control-sm" value="6">Estado</option>');
+					fColumnas.selectpicker('val', arrColumnas!=null? arrColumnas: ['0', '2', '3', '4', '6']);
+					fColumnas.on('changed.bs.select', function(e, index) { blockPage();
+						column = $('#'+tbl).DataTable().column(index);
+						column.visible(!column.visible());
+						$.unblockUI();
+					});
+
+					columnDefs = [
+						{"orderable": true, "targets": [0], "visible": fColumnas.val().includes('0')},
+						{"orderable": true, "targets": [1], "visible": fColumnas.val().includes('1')},
+						{"orderable": true, "targets": [2], "visible": fColumnas.val().includes('2')},
+						{"orderable": true, "targets": [3], "visible": fColumnas.val().includes('3')},
+						{"orderable": true, "targets": [4], "visible": fColumnas.val().includes('4')},
+						{"orderable": true, "targets": [5], "visible": fColumnas.val().includes('5')},
+						{"orderable": true, "targets": [6], "visible": fColumnas.val().includes('6')},
+						{"orderable": false, "targets": [7]},
+					]
+					order = [0, 'ASC'];
+					dom = 'R<"#toolbar-'+tbl+'"l>frtip';
+				} else if(tbl = 'tbl-productos') {
+					columnDefs = [
+						{"orderable": true, "targets": [0, 1], "visible": true},
+						{"orderable": false, "targets": [2, 3]},
+					]
+					order = [0, 'ASC'];
+					dom = 'R<"#toolbar-'+tbl+'">frt';
+				}
+
+				
+				// icon = $('<div class="input-group-append"></div>').appendTo(searchContainer);
+				// icon.append('<button type="button" class="btn btn-secondary btn-sm" id="btn-bus"><i class="fa fa-search"></i></button>');
+				
+				// search.find("#btn-bus").click(function(evt) { evt.preventDefault(); $("#"+tbl+"_filter label input").val($.trim($('#bus').val())).trigger('keyup'); });
+
+				$('#tbl-traspaso_length').remove();
+				$('#'+tbl).dataTable({
+					'scrollX': false,
+					'paging': paging,
+					'pagingType': "full_numbers",
+					'dom': dom,
+					'columnDefs': columnDefs,
+					'order': order
+				});
+
+				$('#toolbar-'+tbl).html(container).addClass('pull-right');
+				$("#"+tbl+"_filter label").hide();
+				$('#toolbar-tbl-traspaso').appendTo('#tbl-toolbar');
+				$('#tbl-traspaso_length').appendTo('#tbl-toolbar');
+				$('#tbl-traspaso_filter').appendTo('#tbl-toolbar');
+			}
+		});
+		
+	</script>
+<?php else: header('Location: '.URL_ROOT.'/403'); exit; endif; ?>
+<?php else: include 'footer.phtml'; endif; ?>

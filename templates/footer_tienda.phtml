@@ -1,0 +1,275 @@
+<footer class="typefooter-2">
+				<div class="newletter">
+					<div class="container">
+						<div class="row">
+							<div class="col-lg-12 col-md-12 col-sm-12 newletter-left">
+								<h4 class="new-letter-title">¿NECESITAS AYUDA?</h4>
+								<p>LLAMA A NUESTRO EQUIPO DE SOPORTE EN HORARIO LABORAL AL <a href="tel:+527437910211"> (743) 7910211</a> O AL <a href="tel:+527437910872"> (743) 7910872</a> O AL <a href="https://api.whatsapp.com/send?phone=+527713317819" target="_BLANK">WhatsApp (771) 3317819</a></p>
+							</div>
+							<!-- <div class="col-lg-6 col-md-6 col-sm-12 newletter-right hide">
+								<form action="#" method="post" class="send-letter form-inline">
+									<div class="form-group form-box">
+										<input type="text" name="email" placeholder="Enter your email address" class="form-control">
+										<button type="submit" class="form-control">SUBSCRIBETE</button>
+									</div>
+								</form>
+							</div> -->
+						</div>
+					</div>
+				</div>
+				<div class="footer-box">
+					<div class="footer-middle">
+						<div class="container">
+							<div class="row">
+								<div class="col-lg-9 col-md-9 col-sm-9">
+									<div class="col-lg-12 col-md-12 col-sm-12">
+										<div class="col-lg-3 col-md-3 col-sm-3">
+											<div class="footer-middle-box">
+												<h3 class="footer-title">Informaci&oacute;n</h3>
+												<ul class="footer-list">
+													<li>
+														<a href="<?= URL_ROOT ?>/envios" class="smooth" title>Env&iacute;os Gratis</a>
+													</li>
+													<li>
+														<a href="<?= URL_ROOT ?>/garantia" class="smooth" title>P&oacute;liza de Garant&iacute;a</a>
+													</li>
+													<li>
+														<a href="<?= URL_ROOT ?>/terminos_y_condiciones" target="_BLANK" class="smooth" title>T&eacute;rminos y Condiciones</a>
+													</li>
+													<!-- <li>
+														<a href="<?= URL_ROOT ?>/contacto" class="smooth" title>Contactanos</a>
+													</li> -->
+												</ul>
+											</div>
+										</div>
+										<div class="col-lg-3 col-md-3 col-sm-3">
+											<div class="footer-middle-box">
+												<h3 class="footer-title">Sucursales</h3>
+												<ul class="footer-list">
+													<li>
+														<a href="<?= URL_ROOT ?>/sucursales/actopan" class="smooth" title>Actopan</a>
+													</li>
+													<li>
+														<a href="<?= URL_ROOT ?>/sucursales/ixmiquilpan" class="smooth" title>Ixmiquilpan</a>
+													</li>
+													<li>
+														<a href="<?= URL_ROOT ?>/sucursales/zapotlan" class="smooth" title>Zapotl&aacute;n de Ju&aacute;rez</a>
+													</li>
+												</ul>
+											</div>
+										</div>
+										<div class="col-lg-3 col-md-3 col-sm-3">
+											<div class="footer-middle-box">
+												<h3 class="footer-title">Mi Cuenta</h3>
+												<ul class="footer-list">
+													<?php if(isset($_SESSION['cliente'])) : ?>
+													<li>
+														<a href="<?= URL_ROOT ?>/account/toInfo" class="smooth" title>Informaci&oacute;n Personal</a>
+													</li>
+													<li>
+														<a href="<?= URL_ROOT ?>/account/toOrders" class="smooth hide" title>Mis pedidos</a>
+													</li>
+													<li>
+														<a href="<?= URL_ROOT ?>/account/toAddresses" class="smooth" title>Direcciones de env&iacute;o</a>
+													</li>
+													<li>
+														<a href="<?= URL_ROOT ?>/account/toPassword" class="smooth" title>Cambiar Contrase&ntilde;a</a>
+													</li>
+													<li>
+														<a href="<?= URL_ROOT ?>/cliente/logout/" class="smooth" title>Cerrar Sesi&oacute;n</a>
+													</li>
+													<?php else : ?>
+													<li>
+														<a href="<?= URL_ROOT ?>/login" class="smooth" title>Iniciar Sesi&oacute;n</a>
+													</li>
+													<li>
+														<a href="<?= URL_ROOT ?>/client_register" class="smooth" title>Crear Cuenta</a>
+													</li>
+													<?php endif; ?>
+												</ul>
+											</div>
+										</div>
+										<div class="col-lg-3 col-md-3 col-sm-3">
+											<div class="footer-bottom">
+												<div class="footer-bottom-right">
+													<div class="footer-middle-box">
+														<h3 class="footer-title">SIGUENOS</h3>
+														<ul class="footer-social">
+															<li>
+																<a href="https://www.facebook.com/MuebleriaCasaPerez/" target="_BLANK" class="smooth">
+																	<i class="fa fa-lg fa-facebook" aria-hidden="true" style="color: #FFF;"></i>
+																</a>
+															</li>
+															<li>
+																<a href="https://api.whatsapp.com/send?phone=+527713317819" target="_BLANK" class="smooth" style="background-color: #28A318;">
+																	<i class="fa fa-lg fa-whatsapp" aria-hidden="true" style="color: #FFF;"></i>
+																</a>
+															</li>
+															<li>
+																<a href="https://twitter.com/MUEBCASAPEREZ" target="_BLANK" class="smooth" style="background-color: #1DA1F2;">
+																	<i class="fa fa-lg fa-twitter" aria-hidden="true" style="color: #FFF;"></i>
+																</a>
+															</li>
+															<!-- </li>
+																<a href="#" class="smooth" title="">
+																	<i class="fa fa-wifi" aria-hidden="true"></i>
+																</a>
+															</li>
+															<li>
+																<a href="#" class="smooth" title="">
+																	<i class="fa fa-google-plus" aria-hidden="true"></i>
+																</a>
+															</li>
+															<li>
+																<a href="#" class="smooth" title="">
+																	<i class="fa fa-pinterest" aria-hidden="true"></i>
+																</a>
+															</li> -->
+														</ul><br>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="col-md-offset-6 col-md-6 col-sm-offset-3 col-sm-9 hidden-xs" style="transform: translateY(100%);">
+										<img src="<?= URL_ROOT."/assets/image/tarjetas.png" ?>">
+									</div>
+									<div class="hidden-sm hidden-md hidden-lg col-xs-offset-1 col-xs-10" style="z-index: 1000;">
+										<img src="<?= URL_ROOT."/assets/image/tarjetas.png" ?>">
+									</div>
+								</div>
+								<div class="col-lg-3 col-md-3 col-sm-3">
+									<div class="hidden-sm hidden-md hidden-lg"><br><br><br></div>
+									<div class="footer-middle-box footer-middle-right">
+										<h3 class="footer-title">CONTACTANOS</h3>
+										<ul class="contact-list">
+											<li>
+												<i class="fa fa-map-marker" aria-hidden="true"></i> Av. Emilio Carranza No. 12, Col. Centro, Zapotlán de Juárez, Hgo. C.P. 42190 
+											</li>
+											<li>
+												<i class="fa fa-mobile" aria-hidden="true"></i><a href="tel:+527437910211"> (743) 7910211</a> /<br>
+												<a href="tel:+527437910872"> (743) 7910872</a> /<br>
+												<i class="fa fa-whatsapp" aria-hidden="true"></i> <a href="https://api.whatsapp.com/send?phone=+527713317819" target="_BLANK">WhatsApp (771) 3317819</a>
+											</li>
+											<li>
+												<i class="fa fa-envelope" aria-hidden="true"></i><a href="mailto:muebleria_cp@hotmail.com" style="text-transform: lowercase;">muebleria_cp@hotmail.com</a>
+											</li>
+										</ul>
+										<div class="payment hide">
+											<!-- <img src="<?= URL_ROOT ?>/assets/image/catalog/demo/footer/paymen.png" class="img-responsive" alt=""> -->
+											<h3 class="footer-title">Eres el visitante n&uacute;mero</h3>
+											<input type="text" readonly="readonly" class="form-control text-right" value="<?= $num_visitas ?>">
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="footer-bottom">
+						<div class="container">
+							<div class="row">
+								<div class="col-lg-12 col-sm-12 col-xs-12">
+									<div class="copyright text-center">
+										Muebler&iacute;a Casa P&eacute;rez ©
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</footer>
+			<div class="back-to-top">
+				<i class="fa fa-angle-up" aria-hidden="true"></i>
+			</div>
+		</div>
+		<div class="floating-wpp" style="z-index: 100;"></div>
+
+		<script type="text/javascript" src="<?= URL_ROOT ?>/assets/js/jquery-2.2.4.min.js"></script>
+		<script type="text/javascript" src="<?= URL_ROOT ?>/assets/plugins/bootstrap/js/bootstrap.min.2.js"></script>
+		<script type="text/javascript" src="<?= URL_ROOT ?>/assets/plugins/theme/js/so_megamenu.js"></script>
+		<script type="text/javascript" src="<?= URL_ROOT ?>/assets/plugins/lightslider/js/lightslider.js"></script>
+		<script type="text/javascript" src="<?= URL_ROOT ?>/assets/plugins/owl-carousel/js/owl.carousel.js"></script>
+		<script type="text/javascript" src="<?= URL_ROOT ?>/assets/plugins/slick-slider/js/slick.js"></script>
+		<script type="text/javascript" src="<?= URL_ROOT ?>/assets/plugins/theme/js/libs.js"></script>
+		<script type="text/javascript" src="<?= URL_ROOT ?>/assets/plugins/unveil/js/jquery.unveil.js"></script>
+		<script type="text/javascript" src="<?= URL_ROOT ?>/assets/plugins/countdown/js/jquery.countdown.min.js"></script>
+		<script type="text/javascript" src="<?= URL_ROOT ?>/assets/plugins/dcjqaccordion/js/jquery.dcjqaccordion.2.8.min.js"></script>
+		<script type="text/javascript" src="<?= URL_ROOT ?>/assets/plugins/datetimepicker/js/moment.js"></script>
+		<script type="text/javascript" src="<?= URL_ROOT ?>/assets/plugins/datetimepicker/js/bootstrap-datetimepicker.min.js"></script>
+		<script type="text/javascript" src="<?= URL_ROOT ?>/assets/plugins/jquery-ui/js/jquery-ui.min.js"></script>
+		<script type="text/javascript" src="<?= URL_ROOT ?>/assets/plugins/modernizr/js/modernizr-2.6.2.min.js"></script>
+		<script type="text/javascript" src="<?= URL_ROOT ?>/assets/plugins/minicolors/js/jquery.miniColors.min.js"></script>
+		<script type="text/javascript" src="<?= URL_ROOT ?>/assets/js/jquery.nav.js"></script>
+		<script type="text/javascript" src="<?= URL_ROOT ?>/assets/js/quickview/jquery.elevateZoom-3.0.8.min.js"></script>
+		<script type="text/javascript" src="<?= URL_ROOT ?>/assets/js/quickview/jquery.magnific-popup.min.js"></script>
+		<script type="text/javascript" src="<?= URL_ROOT ?>/assets/js/wow/wow.js"></script>
+		<script type="text/javascript" src="<?= URL_ROOT ?>/assets/plugins/theme/js/application.js"></script>
+		<script type="text/javascript" src="<?= URL_ROOT ?>/assets/plugins/theme/js/homepage.js"></script>
+		<script type="text/javascript" src="<?= URL_ROOT ?>/assets/plugins/theme/js/cd1.js"></script>
+		<script type="text/javascript" src="<?= URL_ROOT ?>/assets/plugins/theme/js/addtocart.js"></script>  
+		<script type="text/javascript" src="<?= URL_ROOT ?>/assets/plugins/theme/js/nouislider.js"></script>
+		<script type="text/javascript" src="<?= URL_ROOT ?>/assets/plugins/theme/js/script.js"></script>
+		<script type="text/javascript" src="<?= URL_ROOT ?>/assets/plugins/blockUI/jquery.blockUI.js"></script>
+		<script type="text/javascript" src="<?= URL_ROOT ?>/assets/plugins/sweetalert/js/sweetalert.min.js"></script>
+		<script type="text/javascript" src="<?= URL_ROOT ?>/assets/plugins/confirm/js/jquery-confirm.min.js"></script>
+		<script type="text/javascript" src="<?= URL_ROOT ?>/assets/js/cart.js"></script>
+		<script type="text/javascript" src="<?= URL_ROOT ?>/assets/plugins/floatwhats/floatwhats/floating-wpp.min.js"></script>
+		<script>
+			if ($(window).width() > 768) {
+				new WOW().init();
+			}
+		</script>
+		<script>
+			$(function(){
+				$apiUrl = '<?= URL_API ?>';
+				<?php if(isset($filter)): ?>
+					$('#prod_filter').val('<?= $filter ?>'.replace('_', ''));
+				<?php endif; ?>
+
+				$('#prod_filter').keydown(function(key) {
+					filter = $.trim($('#prod_filter').val());
+					if(key.keyCode == 13) {
+						if(filter != '') {
+							window.location.href = '<?= URL_ROOT ?>/search/'+$(this).val();
+						} else {
+							window.location.href = '<?= URL_ROOT ?>/search';
+						}
+					}
+				});
+
+				$('#btn_search').click(function(e) {
+					e.preventDefault();
+					filter = $.trim($('#prod_filter').val());
+					if(filter != '') {
+						window.location.href = '<?= URL_ROOT ?>/search/'+filter;
+					} else {
+						window.location.href = '<?= URL_ROOT ?>/search';
+					}
+				});
+			});
+		</script>
+		<!-- Global site tag (gtag.js) - Google Analytics -->
+		<script async src="https://www.googletagmanager.com/gtag/js?id=UA-175638694-1"></script>
+		<script>
+			window.dataLayer = window.dataLayer || [];
+			function gtag(){dataLayer.push(arguments);}
+			gtag('js', new Date());
+
+			gtag('config', 'UA-175638694-1');
+		</script>
+		<script type="text/javascript">
+		$(function () {
+				$('.floating-wpp').floatingWhatsApp({
+					phone: '527713317819',
+					popupMessage: 'Hola en que podemos ayudarte',
+					showPopup: true,
+					message: 'Hola necesito información ',
+					autoOpen: false,
+					autoOpenTimer: 4000,
+					headerColor: '#128C7E',
+					headerTitle: 'M. Casa Perez'
+				});
+			});
+	</script>
+	</body>
+</html>

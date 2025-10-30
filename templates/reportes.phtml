@@ -1,0 +1,400 @@
+<?php 
+	include 'header.phtml';
+
+	if(isset($_SESSION['sucursal']) && (!isset($solicitudes) || count($solicitudes)==0)):
+?>
+	<link href="<?=URL_ROOT?>/assets/plugins/bootstrap-daterangepicker/daterangepicker.css" rel="stylesheet">
+			
+	<div class="row page-titles">
+		<div class="col-md-5 align-self-center">
+			<h3 class="text-themecolor"><i class="mdi mdi-chart-areaspline"></i> Reportes</h3>
+		</div>
+	</div>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-12">
+				<div class="card">
+					<div class="card-body">
+						<h4 class="card-title">Reportes de ventas por vendedor</h4>
+						<h6 class="card-subtitle">Seleccione un periodo de ventas y un vendedor para generar el reporte</h6>
+								
+						<div class="row">
+							<div class="col-sm-3">
+								<div class="form-group mb-0">
+									<div class="input-group">
+										<div class="input-group-prepend">
+											<span class="input-group-text"><i class="fa fa-calendar"></i></span>
+										</div>
+										<input class="form-control input-daterange-datepicker" type="text" id="fechas" value="<?= date("d/m/Y",strtotime(date("01-m-Y"))) . ' - ' . date('d/m/Y') ?>" />
+									</div>
+								</div>
+							</div>
+							<div class="col-sm-4">
+								<div class="input-group hide" data-toggle="tooltip" title="Producto">
+									<div class="input-group-prepend">
+										<span class="input-group-text"><i class="fa fa-cube"></i></span>
+									</div>
+									<input type="text" id="bus" placeholder="Buscar por nombre, modelo o SKU" class="form-control">
+									<div class="input-group-append">                                    
+										<button type="button" class="btn btn-secondary btn-sm" id="btn-bus"><i class="fa fa-search"></i></button>
+									</div>
+								</div>
+							</div>
+							<div class="col-sm-2">
+								<div class="input-group sucursal">
+									<div class="input-group-prepend"><span class="input-group-text"><i class="fa fa-home"></i></span></div>
+									<select class="form-control" id="busSuc">
+										<!--option value="0">Todas</option-->
+									</select>
+								</div>
+							</div>
+							<div class="col-sm-3">
+								<div class="input-group" data-toggle="tooltip" title="Vendedor">
+									<div class="input-group-prepend"><span class="input-group-text"><i class="mdi mdi-clipboard-account"></i></span></div>
+									<select class="form-control" id="busVend">
+										<option value="0">Todos</option>
+									</select>
+								</div>
+							</div>
+						</div>
+						<hr>
+						<div class="row">
+							<div class="col-sm-4">
+								<div class="jumbotron">
+									<h1 class="display-6">Por vendedor</h1>
+									<p class="lead">del <strong id="salesByVendedorDateStart"></strong> al <strong id="salesByVendedorDateEnd"></strong></p>
+									<hr class="my-4">
+									<canvas id="salesByVendedor"></canvas>
+								</div>
+							</div>
+							<div class="col-sm-4">
+								<div class="jumbotron">
+									<h1 class="display-6">Por categoría</h1>
+									<p class="lead">del <strong id="salesByCategoriaDateStart"></strong> al <strong id="salesByCategoriaDateEnd"></strong></p>
+									<hr class="my-4">
+									<div id="container-canvasByCategoria">
+										<canvas id="salesByCategoria"></canvas>
+									</div>
+								</div>
+							</div>
+							<div class="col-sm-4">
+								<div class="jumbotron">
+									<h1 class="display-6"><strong>Tel&eacute;fonos</strong> por vendedor</h1>
+									<p class="lead">del <strong id="phonesByVendedorDateStart"></strong> al <strong id="phonesByVendedorDateEnd"></strong></p>
+									<hr class="my-4">
+									<canvas id="phonesByVendedor"></canvas>
+								</div>
+							</div>
+						</div>
+						<div class="table-responsive">
+							<table id="tbl-items" class="table table-hover table-striped">
+								<thead>
+									<tr>
+										<th>Folio</th>
+										<th>Fecha</th>
+										<th>Cliente</th>
+										<th class="hide">CFDi</th>
+										<th>SKU / Producto</th>
+										<th class="text-center">Cantidad</th>
+										<th class="text-right">Costo</th>
+										<th class="text-right">Importe</th>
+										<!--th>Acciones</th-->
+									</tr>
+								</thead>
+								<tbody>
+									<tr><td colspan="7"><small>Seleccione un vendedor</small></td></tr>
+								</tbody>
+								<tfoot>
+									<tr>
+										<th colspan="4"><small></small></th>
+										<th colspan="2" class="text-right">TOTAL:</th>
+										<th class="text-right"></th>
+									</tr>
+								</tfoot>
+							</table>
+						</div>
+						<div class="row hide">
+							<div class="col-sm-6">
+								<div class="dataTables_length" id="editable-datatable_length">
+									<label>
+										<select name="editable-datatable_length" aria-controls="editable-datatable" class="form-control input-sm" id="cont">
+											<option value="100">Ver 100</option>
+											<option value="10">Ver 10</option>
+											<option value="25">Ver 25</option>
+											<option value="50">Ver 50</option>
+										</select>
+									</label>
+									<span id="reg" class="heading-text"></span>
+								</div>
+							</div>
+							<div class="col-sm-6">
+								<div class="card-body">
+									<nav aria-label="Page navigation example">
+										<ul id="pag" class="pagination pull-right"></ul>
+									</nav>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<?php include 'footer.phtml';?>
+	<script src="<?=URL_ROOT?>/assets/plugins/bootstrap-daterangepicker/daterangepicker.js"></script>
+	<script src="<?=URL_ROOT?>/assets/plugins/typeahead.js-master/dist/typeahead.bundle.min.js"></script>
+	<script src="<?=URL_ROOT?>/assets/plugins/select2/dist/js/select2.full.min.js" type="text/javascript"></script>
+
+	<script type="text/javascript">
+		$(function() {
+			$apiUrl = '<?= URL_API ?>venta/';
+			$('.input-daterange-datepicker').daterangepicker({
+				buttonClasses: ['btn', 'btn-sm'],
+				applyClass: 'btn-primary',
+				cancelClass: 'btn-inverse',
+				maxDate: '<?= date('d/m/Y') ?>',
+				locale: $dateRangeLocale,
+				ranges: $dateRanges,
+				alwaysShowCalendars: true,
+				autoApply: true
+			}, function(start, end, label) {
+				getItems(0,100);
+			});
+
+			function getRandomRGB() {
+				universo = ['A', 'B', 'C', 'D', 'E', 'F', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']; size = 6; word = '';
+				while (word.length < size) { 
+					word += universo[parseInt(Math.random()*(universo.length-1))];
+				}
+
+				return '#'+word;
+			}
+
+			$.get($apiUrl.replace('venta','empleado')+'getAll/', function(data) { $('#busVend').empty();
+				$.each(data.result, function(index, item) { $('#busVend').append('<option value="'+item.usuario_id+'">'+item.nombre+'</option>'); });
+				<?php if(intval($_SESSION['sucursal']) == 0): ?>
+					$('#busVend').prepend('<option value="0" selected="selected">Selecciona una opción</option>');
+					$('#tbl-items tbody').empty().append('<tr><td colspan="7">Seleccione un vendedor de la lista</td></tr>')
+					$.get($apiUrl.replace('venta','sucursal')+'getAll/', function(data) { $('#busSuc').empty();
+						$.each(data.result, function(index, item) { $('#busSuc').append('<option value="'+item.id+'">'+item.nombre+'</option>'); });
+						$('#busSuc').prepend('<option value="0" selected="selected">Selecciona una opción</option>');
+
+						createGraphSalesByVendedor();
+						createGraphSalesByCategoria();
+						createGraphPhonesByVendedor();
+					},'json');
+				<?php else: ?>
+					$('#busVend').val('<?= $_SESSION['usuario']->id ?>');
+					$.get($apiUrl.replace('venta','sucursal')+'get/<?= $_SESSION['sucursal'] ?>', function(sucursal) { $('#busSuc').empty();
+						$('#busSuc').append('<option value="'+sucursal.result.id+'">'+sucursal.result.nombre+'</option>');
+						$('#busSuc').val('<?= $_SESSION['sucursal'] ?>').addClass('hide');
+
+						getItems(0,100);
+						createGraphSalesByVendedor();
+						createGraphSalesByCategoria();
+						createGraphPhonesByVendedor();
+					},'json');
+				<?php endif; ?>
+			},'json');
+
+			function createGraphSalesByVendedor() {
+				blockPage();
+				fechas = $('#fechas').data('daterangepicker');
+				inicial = fechas.startDate.format('YYYY-MM-DD');
+				final = fechas.endDate.format('YYYY-MM-DD');
+				sucursal = $('#busSuc').val();
+				$.get($apiUrl+'rptVentasVendedor/'+inicial+'/'+final+'/'+sucursal, function(resp) {
+					$('#salesByVendedorDateStart').html(moment(inicial).format('DD/MM/YYYY'));
+					$('#salesByVendedorDateEnd').html(moment(final).format('DD/MM/YYYY'));
+					labels = []; data = []; colors = []; hoverColors = [];
+					$.each(resp.result, function(index, item) { labels.push(item.nombre); data.push(item.total); colors.push(getRandomRGB()); hoverColors.push(getRandomRGB()); });
+					var chartSalesByVendedor = new Chart(document.getElementById("salesByVendedor").getContext('2d'), { 
+						type: 'pie',
+						data: {
+							labels: labels,
+							datasets: [{
+								data: data,
+								backgroundColor: colors,
+								hoverBackgroundColor: colors
+							}] 
+						},
+						options: {
+							responsive: true,
+							plugins: {
+								legend: { 
+									position: 'bottom',
+								},
+							}
+						}
+					});	
+					$.unblockUI();
+				}, 'json');
+			}
+
+			function createGraphSalesByCategoria() {
+				$('#container-canvasByCategoria').empty().append($('<canvas id="salesByCategoria"></canvas>'));
+				canvas = document.getElementById("salesByCategoria");
+				context = canvas.getContext('2d');
+
+				blockPage();
+				fechas = $('#fechas').data('daterangepicker');
+				inicial = fechas.startDate.format('YYYY-MM-DD');
+				final = fechas.endDate.format('YYYY-MM-DD');
+				sucursal = $('#busSuc').val();
+				empleado = $('#busVend').val();
+				$.get($apiUrl+'rptVentasCategoria/'+inicial+'/'+final+'/'+sucursal+'/'+empleado, function(resp) {
+					$('#salesByCategoriaDateStart').html(moment(inicial).format('DD/MM/YYYY'));
+					$('#salesByCategoriaDateEnd').html(moment(final).format('DD/MM/YYYY'));
+					labels = []; data = []; colors = []; hoverColors = [];
+					$.each(resp.result, function(index, item) { labels.push(item.nombre!=''? item.nombre: 'recargas'); data.push(item.total); colors.push(getRandomRGB()); hoverColors.push(getRandomRGB()); });
+					var chartSalesByCategoria = new Chart(context, { 
+						type: 'pie',
+						data: {
+							labels: labels,
+							datasets: [{
+								data: data,
+								backgroundColor: colors,
+								hoverBackgroundColor: colors
+							}] 
+						},
+						options: {
+							responsive: true,
+							plugins: {
+								legend: { 
+									position: 'bottom',
+								},
+							}
+						}
+					});	
+					$.unblockUI();
+				}, 'json');
+			}
+
+			function createGraphPhonesByVendedor() {
+				blockPage();
+				fechas = $('#fechas').data('daterangepicker');
+				inicial = fechas.startDate.format('YYYY-MM-DD');
+				final = fechas.endDate.format('YYYY-MM-DD');
+				sucursal = $('#busSuc').val();
+				$.get($apiUrl+'rptTelefonosVendedor/'+inicial+'/'+final+'/'+sucursal, function(resp) {
+					$('#phonesByVendedorDateStart').html(moment(inicial).format('DD/MM/YYYY'));
+					$('#phonesByVendedorDateEnd').html(moment(final).format('DD/MM/YYYY'));
+					labels = []; data = []; colors = []; hoverColors = [];
+					$.each(resp.result, function(index, item) { labels.push(item.nombre); data.push(item.total); colors.push(getRandomRGB()); hoverColors.push(getRandomRGB()); });
+					var chartPhonesByVendedor = new Chart(document.getElementById("phonesByVendedor").getContext('2d'), { 
+						type: 'pie',
+						data: {
+							labels: labels,
+							datasets: [{
+								data: data,
+								backgroundColor: colors,
+								hoverBackgroundColor: colors
+							}] 
+						},
+						options: {
+							responsive: true,
+							plugins: {
+								legend: { 
+									position: 'bottom',
+								},
+							}
+						}
+					});	
+					$.unblockUI();
+				}, 'json');
+			}
+
+			// function getVendedores(sucursal) {
+			// 	$('#busVend').empty();
+			// 	$('#tbl-items tbody').empty();
+			// 	//$('#busVend').append('<option value="0">Todos</option>');
+			// 	$.get($apiUrl.replace('venta','empleado')+'getAll/', function(data) {
+			// 		$.each(data.result, function(index, item) {
+			// 			$('#busVend').append('<option value="'+item.usuario_id+'">'+item.nombre+'</option>');
+			// 		});
+			// 		< ?php if(intval($_SESSION['sucursal']) == 0): ?>
+			// 		$('#busVend').prepend('<option value="0" selected="selected">Selecciona una opción</option>');
+			// 		$('#tbl-items tbody').empty().append('<tr><td colspan="7">Seleccione un vendedor de la lista</td></tr>')
+			// 		< ?php else: ?>
+			// 		$('#busVend').val('< ?= $_SESSION['usuario']->id ?>');
+			// 		createGraphSalesByVendedor();
+			// 		getItems(0,100);
+			// 		< ?php endif; ?>
+			// 	},'json');
+			// }
+
+			function getItems(pag, lim) {
+				blockPage();
+				$('#btnFolio').popover('hide');
+				$('#tbl-items tbody').empty();
+				//bus ='';
+				//bus = $.trim($('#bus').val());
+				//if(bus == '') bus = 0;;
+				//suc = $('#busSuc').val();
+				vend = $('#busVend').val();
+				suc = $('#busSuc').val();
+				var fechas = $('#fechas').data('daterangepicker');
+				ini = fechas.startDate.format('YYYY-MM-DD');
+				fin = fechas.endDate.format('YYYY-MM-DD');
+				$.get($apiUrl+'getVentasByVendedor/'+ini+'/'+fin+'/'+vend+'/'+suc, function(resp) {
+					total = 0;
+					if(resp.result.length > 0) {
+						$.each(resp.result, function(index, item) {
+							addRow(item);
+							total += parseFloat(item.total);
+						});
+					}else{
+						$('#tbl-items tbody').append('<tr><td colspan="7"><small>No existen ventas para este vendedor en el periodo</small></td></tr>');
+					}
+					$('#tbl-items tfoot th:eq(0) small').html(resp.result.length+' ventas registradas en el periodo');
+					$('#tbl-items tfoot th:eq(2)').html('$ '+total.toFixed(2));
+					doPagination(resp.result.length, lim, pag);
+					$.unblockUI();
+				});
+			}
+
+			function addRow(item) {
+				tr = $('<tr data-ent="'+item.id+'"></tr>');
+				if($('#tbl-items [data-id="'+item.id+'"]').length > 0) {
+					tr = $('#tbl-items [data-id="'+item.id+'"]').parents('tr');
+					tr.empty();
+				}
+
+				rspan = item.detalles.length;
+				btnPrint = '';//'<a href="<?= URL_ROOT ?>/venta/print/'+item.id+'?dl=1" target="_blank" data-popup="tooltip" title="Imprimir" class="btnPrint"><i class="mdi mdi-printer"></i></a> ';
+				tr.append('<td rowspan="'+rspan+' "data-id="'+item.id+'">'+btnPrint+item.folio+'</td>');
+				tr.append('<td rowspan="'+rspan+'">'+item.fecha+'</td>');
+				tr.append('<td rowspan="'+rspan+'"><small>'+item.cliente_nombre+'</small></td>');
+
+				btnFact = item.fk_cfdi == 0 ? 'NO' : 'SI';
+				tr.append('<td rowspan="'+rspan+'" data-mail="'+item.mail+'" class="hide">'+btnFact+'</td>');
+				$.each(item.detalles, function(index, det) {
+					tr.append('<td><small>'+det.prodSku+' '+det.nombre+' '+det.modelo+(det.sku!=null? ' - <strong>'+det.sku+'</strong>': '')+'</small></td>');
+					tr.append('<td class="text-center">'+det.cantidad+'</td>');
+					tr.append('<td class="text-right">$ '+det.costo+'</td>');
+					tr.append('<td class="text-right">$ '+det.importe+'</td>');
+
+					$('#tbl-items tbody').append(tr);
+					tr = $('<tr data-ent="'+item.id+'"></tr>');
+				});
+			}
+		
+			$('#bus').keyup(function(e) { if(e.keyCode == 13) { getItems(0, $('#cont').val()); } });
+			$('#btn-bus').click(function(e) { getItems(0, $('#cont').val()); });
+			$('#cont').change(function() { cont = $(this).val(); getItems(0,cont); });
+			//$('#busSuc').change(function() { getItems(0,$('#cont').val()); });
+			$('#busVend').change(function() { createGraphSalesByCategoria(); getItems(0,$('#cont').val()); });
+
+			$('#busSuc').change(function() { createGraphSalesByCategoria(); getItems(0,$('#cont').val()); });
+
+			$('body').on('click', '#pag li a', function(event) {
+				event.preventDefault();
+				pag = parseInt($(this).attr('href'));
+				cont = parseInt($('#cont').val());
+				if(!$(this).parent().hasClass('active') && !$(this).parent().hasClass('active'))
+					getItems(pag, cont);
+			});
+		});
+		
+	</script>
+<?php else: include 'footer.phtml'; endif; ?>
