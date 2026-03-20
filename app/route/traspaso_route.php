@@ -107,8 +107,8 @@
 			$traspaso->state = $this->model->transaction->confirmaTransaccion(); return $response->withJson($traspaso);
 		})->add( new MiddlewareToken() );
 
-		$this->put('aceptarTraspaso/{id}', function($request, $response, $arguments) {
-			ini_set('memory_limit','256M');
+		/*$this->put('aceptarTraspaso/{id}', function($request, $response, $arguments) {
+			ini_set('memory_limit','512M');
 			$this->model->transaction->iniciaTransaccion();
 			$id_traspaso = $arguments['id'];
 			$infoTraspaso = $this->model->traspaso->get($id_traspaso)->result;
@@ -130,6 +130,46 @@
 										$data = [ 'sucursal_id'=>$infoTraspaso->destino, 'producto_id'=>$producto, 'empleado_id'=>$empleado, 'fecha'=>$fecha, 'tipo'=>$tipo, 'inicial'=>$inicial, 'cantidad'=>$cantidad, 'final'=>$inicial + ($tipo * $cantidad), 'origen'=>$prod_entrada_id, 'origen_tipo'=>5, ];
 										$prod_kardex_entrada = $this->model->prod_kardex->add($data); if($prod_kardex_entrada->response) {
 											$seg_log = $this->model->seg_log->add('Acepta traspaso', 'prod_entrada_detalle', $prod_entrada_detalle->result); if(!$seg_log->response) { 
+												$seg_log->state = $this->model->transaction->regresaTransaccion(); return $response->withJson($seg_log);
+											}
+										} else { $prod_kardex_entrada->state = $this->model->transaction->regresaTransaccion(); return $response->withJson($prod_kardex_entrada); }
+									} else { $prod_entrada_detalle->state = $this->model->transaction->regresaTransaccion(); return $response->withJson($prod_entrada_detalle); }
+								} else { $prod_kardex_salida->state = $this->model->transaction->regresaTransaccion(); return $response->withJson($prod_kardex_salida); }
+							} else { $prod_salida_detalle->state = $this->model->transaction->regresaTransaccion(); return $response->withJson($prod_salida_detalle); }
+						}
+					} else { $prod_entrada->state = $this->model->transaction->regresaTransaccion(); return $response->withJson($prod_entrada); }
+				} else { $prod_salida->state = $this->model->transaction->regresaTransaccion(); return $response->withJson($prod_salida); }
+			} else { $apartado->state = $this->model->transaction->regresaTransaccion(); return $response->withJson($apartado); }
+
+			$apartado->state = $this->model->transaction->confirmaTransaccion(); return $response->withJson($apartado);
+		});*/
+
+		$this->put('aceptarTraspaso/{id}', function($request, $response, $arguments) {
+			ini_set('memory_limit','512M');
+			$this->model->transaction->iniciaTransaccion();
+			$id_traspaso = $arguments['id'];
+			$infoTraspaso = $this->model->traspaso->get($id_traspaso)->result;
+			error_log("ERROR 1 getByTraspaso : " . json_encode($infoTraspaso));
+			$detTraspaso = $this->model->traspaso_detalle->getByTraspaso($id_traspaso)->result;
+			error_log("ERROR 2 detTraspaso : " . json_encode($detTraspaso));
+			$folio = $infoTraspaso->folio; $empleado = $infoTraspaso->empleado_id; $fecha = date('Y-m-d H:i:s');
+
+			$apartado = $this->model->traspaso->edit(['status'=>1], $id_traspaso); error_log("ERROR 3 edit : " . json_encode($apartado)); if($apartado->response) {
+				$data = [ 'sucursal_id'=>$infoTraspaso->origen, 'empleado_id'=>$empleado, 'fecha'=>$fecha, 'folio'=>"S$folio", ];
+				$prod_salida = $this->model->prod_salida->add($data); error_log("ERROR 4 prod_salida : " . json_encode($prod_salida)); if($prod_salida->response) { $prod_salida_id = $prod_salida->result;
+					$data = [ 'empleado_id'=>$empleado, 'sucursal_id'=>$infoTraspaso->destino, 'fecha'=>$fecha, 'folio'=>"E$folio", 'subtotal'=>0, 'total'=>0, ];
+					$prod_entrada = $this->model->prod_entrada->add($data); error_log("ERROR 5 prod_entrada : " . json_encode($prod_entrada)); if($prod_entrada->response) { $prod_entrada_id = $prod_entrada->result;
+						foreach($detTraspaso as $detalle) { $detalle->traspaso_id = $id_traspaso; $producto = $detalle->producto_id; $cantidad = $detalle->cantidad;
+							$data = [ 'producto_id'=>$producto, 'prod_salida_id'=>$prod_salida_id, 'cantidad'=>$cantidad, ]; if($detalle->sku != null) { $data['sku'] = $detalle->sku; }
+							$prod_salida_detalle = $this->model->prod_salida_detalle->add($data); error_log("ERROR 6 prod_salida_detalle : " . json_encode($prod_salida_detalle)); if($prod_salida_detalle->response) { $tipo = -1; $inicial = intval($this->model->prod_kardex->getStockSuc($infoTraspaso->origen, $producto)->result->final);
+								error_log("ERROR 7 inicial : " . json_encode($inicial));
+								$data = [ 'sucursal_id'=>$infoTraspaso->origen, 'producto_id'=>$producto, 'empleado_id'=>$empleado, 'fecha'=>$fecha, 'tipo'=>$tipo, 'inicial'=>$inicial, 'cantidad'=>$cantidad, 'final'=>$inicial + ($tipo * $cantidad), 'origen'=>$prod_salida_id, 'origen_tipo'=>4, ];
+								$prod_kardex_salida = $this->model->prod_kardex->add($data); error_log("ERROR 8 prod_kardex_salida : " . json_encode($prod_kardex_salida)); if($prod_kardex_salida->response) {								
+									$data = [ 'prod_entrada_id'=>$prod_entrada_id, 'producto_id'=>$producto, 'cantidad'=>$cantidad, 'costo'=>0, 'importe'=>0 ]; if($detalle->sku != null) { $data['sku'] = $detalle->sku; }
+									$prod_entrada_detalle = $this->model->prod_entrada_detalle->add($data); error_log("ERROR 9 prod_entrada_detalle : " . json_encode($prod_entrada_detalle)); if($prod_entrada_detalle->response) { $tipo = 1; $inicial = intval($this->model->prod_kardex->getStockSuc($infoTraspaso->destino, $producto)->result->final); error_log("ERROR 10 inicial : " . json_encode($inicial));
+										$data = [ 'sucursal_id'=>$infoTraspaso->destino, 'producto_id'=>$producto, 'empleado_id'=>$empleado, 'fecha'=>$fecha, 'tipo'=>$tipo, 'inicial'=>$inicial, 'cantidad'=>$cantidad, 'final'=>$inicial + ($tipo * $cantidad), 'origen'=>$prod_entrada_id, 'origen_tipo'=>5, ];
+										$prod_kardex_entrada = $this->model->prod_kardex->add($data); error_log("ERROR 11 prod_kardex_entrada : " . json_encode($prod_kardex_entrada)); if($prod_kardex_entrada->response) {
+											$seg_log = $this->model->seg_log->add('Acepta traspaso', 'prod_entrada_detalle', $prod_entrada_detalle->result); error_log("ERROR 12 seg_log : " . json_encode($seg_log)); if(!$seg_log->response) { 
 												$seg_log->state = $this->model->transaction->regresaTransaccion(); return $response->withJson($seg_log);
 											}
 										} else { $prod_kardex_entrada->state = $this->model->transaction->regresaTransaccion(); return $response->withJson($prod_kardex_entrada); }
