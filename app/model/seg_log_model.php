@@ -59,10 +59,14 @@
 
 		public function add($descripcion, $tabla, $registro) {
 			require_once './core/defines.php';
+			date_default_timezone_set('America/Mexico_City');
 			if(isset($_SESSION['usuario'])) {
 				$usuario = $_SESSION['usuario']->id;
 				$sesion = $_SESSION['id_sesion'];
-				
+			}else{
+				$usuario = 1;
+				$sesion = 1;
+			}
 				$fecha = date('Y-m-d H:i:s');
 				$data = [
 					'usuario_id' => $usuario, 
@@ -80,7 +84,7 @@
 					if($resultado != 0){
 						$sesion = $this->db
 							->update($this->tableS, ['fin' => $fecha])
-							->where('id', $_SESSION['id_sesion'])
+							->where('id', $sesion)
 							->execute();
 						
 						$this->response->result = $resultado;
@@ -91,7 +95,6 @@
 					$this->response->errors = $ex;
 					$this->response->SetResponse(false, "catch: add model $this->table");
 				}
-			}
 			
 			return $this->response;
 		}
